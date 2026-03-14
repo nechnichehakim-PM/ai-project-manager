@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Dashboard Projet</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;}
+.sidebar{position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
+.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;}
+.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-item-icon{font-size:15px;width:18px;text-align:center;}
+.main{padding:40px 48px;position:relative;z-index:1;}
+
+/* PROJECT HEADER */
+.proj-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:32px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+.proj-header-left{display:flex;align-items:flex-start;gap:20px;}
+.proj-icon-wrap{width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--surface2);border:1px solid var(--border);flex-shrink:0;}
+.proj-meta{}
+.proj-ref{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;}
+.proj-name{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;line-height:1.1;letter-spacing:-0.02em;margin-bottom:10px;}
+.proj-type{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:14px;}
+.proj-progress-wrap{max-width:320px;}
+.proj-progress-header{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:8px;}
+.proj-progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.proj-progress-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.proj-header-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.proj-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:6px;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s;border:1px solid var(--border);background:var(--surface);color:var(--text);}
+.proj-btn:hover{border-color:var(--accent);color:var(--accent);}
+.proj-btn.primary{background:var(--accent);color:#060a0d;border-color:var(--accent);}
+.proj-btn.primary:hover{opacity:0.9;}
+.status-badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;padding:5px 12px;border-radius:20px;}
+.status-badge.active{background:rgba(99,210,180,0.1);color:var(--success);border:1px solid rgba(99,210,180,0.25);}
+.status-badge.hold{background:rgba(232,201,122,0.1);color:var(--warning);border:1px solid rgba(232,201,122,0.25);}
+.status-badge.closed{background:rgba(107,120,133,0.1);color:var(--text-muted);border:1px solid rgba(107,120,133,0.25);}
+.status-badge.risk{background:rgba(224,112,112,0.1);color:var(--danger);border:1px solid rgba(224,112,112,0.25);}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 24px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.g::before{background:var(--accent);}
+.kpi.b::before{background:var(--accent3);}
+.kpi.y::before{background:var(--accent2);}
+.kpi.r::before{background:var(--danger);}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;line-height:1;}
+.kpi.g .kpi-val{color:var(--accent);}
+.kpi.b .kpi-val{color:var(--accent3);}
+.kpi.y .kpi-val{color:var(--accent2);}
+.kpi.r .kpi-val{color:var(--danger);}
+.kpi-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:6px;}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;}
+.chart-card-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.chart-title{font-size:15px;font-weight:700;margin-bottom:4px;}
+.chart-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* DONUT AVANCEMENT */
+.donut-avancement{display:flex;align-items:center;gap:28px;}
+.donut-svg{flex-shrink:0;}
+.donut-center{text-align:center;}
+.donut-center .val{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;}
+.donut-center .lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* RAID LIST */
+.raid-list{display:flex;flex-direction:column;gap:0;}
+.raid-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;}
+.raid-row:last-child{border-bottom:none;}
+.raid-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.raid-dot.r{background:var(--danger);}
+.raid-dot.a{background:var(--accent3);}
+.raid-dot.i{background:var(--accent2);}
+.raid-dot.d{background:var(--accent);}
+.raid-text{flex:1;}
+.raid-more{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);margin-top:12px;}
+.raid-more a{color:var(--accent);text-decoration:none;}
+.raid-more a:hover{text-decoration:underline;}
+
+/* TEAM */
+.team-list{display:flex;flex-direction:column;gap:12px;}
+.team-item{display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+.team-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0;}
+.team-name{font-weight:600;font-size:13px;}
+.team-role{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* MILESTONES */
+.ms-list{display:flex;flex-direction:column;gap:0;}
+.ms-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.ms-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ms-dot.critical{background:var(--danger);}
+.ms-dot.normal{background:var(--accent3);}
+.ms-label{flex:1;font-size:12px;font-weight:600;}
+.ms-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* QUICK LINKS */
+.quick-links{display:flex;flex-wrap:wrap;gap:10px;}
+.quick-link{display:flex;align-items:center;gap:8px;padding:12px 18px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text-soft);font-size:13px;font-weight:600;transition:all .2s;}
+.quick-link:hover{border-color:var(--accent);color:var(--accent);}
+
+/* SUMMARY BOX */
+.summary-box{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft);line-height:1.75;}
+
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+@media(max-width:960px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .kpi-strip{grid-template-columns:repeat(2,1fr);}
+  .grid-2{grid-template-columns:1fr;}
+  .proj-name{font-size:32px;}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">PM Hub / Projet</div>
+  <div class="nav-links">
+    <a href="pm-hub.html">Dashboard</a>
+    <a href="pm-hub-gantt.html">Planning</a>
+    <a href="pm-hub-raid.html">RAID</a>
+    <a href="pm-hub-resources.html">Ressources</a>
+    <a href="pm-hub-report.html">Reporting</a>
+    <a href="pm-hub-templates.html">Templates</a>
+    <a href="pm-hub-ai.html">🤖 IA</a>
+    <a href="pm-hub-settings.html">⚙</a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📋</span> Templates</a>
+    <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+    <div class="sb-section-label" style="margin-top:16px;">Autre</div>
+    <a class="sb-item" href="/" style="border-left-color:rgba(79,140,255,0.4);color:#7eb4ff;"><span class="sb-item-icon">◇</span> AI Project Manager</a>
+    <div class="sb-section-label" style="margin-top:16px;">Ce projet</div>
+    <a class="sb-item active" href="#" id="sbProjName"><span class="sb-item-icon">📁</span> <span id="sbProjNameText">—</span></a>
+  </aside>
+  <main class="main">
+    <div id="projectContent"></div>
+  </main>
+</div>
+<script>
+(function() {
+  const projectId = PMHUB.getParam('project');
+  if (!projectId) {
+    PMHUB.goTo('pm-hub.html');
+    return;
+  }
+  const project = PMHUB.getProjectById(projectId);
+  if (!project) {
+    PMHUB.goTo('pm-hub.html');
+    return;
+  }
+
+  const raids = PMHUB.getRaids(projectId);
+  const resources = PMHUB.getResources();
+  const budgetData = PMHUB.getBudget && PMHUB.getBudget(projectId);
+  const statusLabel = { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' };
+  const statusClass = { active:'active', hold:'hold', closed:'closed', risk:'risk' };
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const [y,m,day] = d.split('-');
+    const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    return day + ' ' + M[parseInt(m)-1] + ' ' + y;
+  }
+
+  const progress = project.progress || 0;
+  const progressColor = project.status === 'risk' ? 'var(--danger)' : project.status === 'closed' ? 'var(--text-muted)' : 'var(--accent)';
+  const raidCount = (raids.risks||[]).length + (raids.actions||[]).length + (raids.issues||[]).length;
+  const raidItems = [
+    ...(raids.risks||[]).slice(0,3).map(r => ({ type:'r', label: r.desc || r.title || 'Risque' })),
+    ...(raids.actions||[]).slice(0,2).map(a => ({ type:'a', label: a.desc || a.title || 'Action' })),
+    ...(raids.issues||[]).slice(0,2).map(i => ({ type:'i', label: i.desc || i.title || 'Issue' })),
+    ...(raids.decisions||[]).slice(0,1).map(d => ({ type:'d', label: d.desc || d.title || 'Décision' })),
+  ].slice(0,5);
+
+  const teamIds = project.team || [];
+  const teamMembers = teamIds.map(id => resources.find(r => r.id === id)).filter(Boolean);
+  if (teamMembers.length === 0 && teamIds.length) {
+    teamIds.forEach(id => teamMembers.push({ id, name: id, role: 'Membre équipe', color: project.color || 'var(--accent)' }));
+  }
+
+  const raidUrl = 'pm-hub-raid.html?project=' + projectId;
+  const ganttUrl = 'pm-hub-gantt.html?project=' + projectId;
+  const templatesUrl = 'pm-hub-templates.html?project=' + projectId;
+  const wizardUrl = 'pm-hub-wizard.html?project=' + projectId;
+
+  document.getElementById('sbProjName').href = 'pm-hub-project.html?project=' + projectId;
+  document.getElementById('sbProjNameText').textContent = project.name.length > 20 ? project.name.slice(0,19) + '…' : project.name;
+  const ab=document.getElementById('aiFloatBtn');if(ab)ab.href='pm-hub-ai.html?from=Dashboard%20projet&project='+projectId;
+
+  const nextMilestone = project.end ? { label: 'Fin projet', date: formatDate(project.end), critical: true } : null;
+
+  // Donut SVG for progress
+  const donutR = 48;
+  const donutStroke = 12;
+  const circumference = 2 * Math.PI * (donutR - donutStroke/2);
+  const progressOffset = circumference - (progress / 100) * circumference;
+  const donutSvg = `
+    <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="${donutR - donutStroke/2}" fill="none" stroke="var(--surface2)" stroke-width="${donutStroke}"/>
+      <circle cx="60" cy="60" r="${donutR - donutStroke/2}" fill="none" stroke="${progressColor}" stroke-width="${donutStroke}" stroke-dasharray="${circumference}" stroke-dashoffset="${progressOffset}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+    </svg>`;
+
+  document.getElementById('projectContent').innerHTML = `
+    <div class="proj-header">
+      <div class="proj-header-left">
+        <div class="proj-icon-wrap">${project.icon || '📁'}</div>
+        <div class="proj-meta">
+          <div class="proj-ref">${project.ref} · ${project.type}</div>
+          <h1 class="proj-name">${project.name}</h1>
+          <div class="proj-type">${project.methodology ? (typeof PMHUB.getMethodology==='function' ? PMHUB.getMethodology(project.methodology).label : project.methodology) + ' · ' : ''} ${project.client ? 'Client : ' + project.client : ''} ${project.client && project.start ? ' · ' : ''} ${project.start ? 'Début : ' + formatDate(project.start) : ''}</div>
+          <div class="proj-progress-wrap">
+            <div class="proj-progress-header">
+              <span>Avancement</span>
+              <span style="color:${progressColor}">${progress}%</span>
+            </div>
+            <div class="proj-progress-bar">
+              <div class="proj-progress-fill" style="width:${progress}%;background:${progressColor}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
+        <span class="status-badge ${statusClass[project.status]}">${statusLabel[project.status]}</span>
+        <div class="proj-header-actions">
+          <a class="proj-btn primary" href="${wizardUrl}">🧭 Wizard</a>
+          <a class="proj-btn" href="${templatesUrl}">📋 Templates</a>
+          <a class="proj-btn" href="${ganttUrl}">📅 Gantt</a>
+          <a class="proj-btn" href="pm-hub-kanban.html?project=${projectId}">📋 Kanban</a>
+          <a class="proj-btn" href="${raidUrl}">⚠️ RAID</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi g">
+        <div class="kpi-label">Avancement</div>
+        <div class="kpi-val">${progress}%</div>
+        <div class="kpi-sub">Progression globale</div>
+      </div>
+      <div class="kpi y">
+        <div class="kpi-label">Budget</div>
+        <div class="kpi-val">${(budgetData && (budgetData.planned || budgetData.consumed)) ? (budgetData.consumed || 0).toLocaleString('fr-FR') + ' / ' + (budgetData.planned || 0).toLocaleString('fr-FR') + ' ' + (budgetData.currency || '€') : (project.budget || '—')}</div>
+        <div class="kpi-sub">${(budgetData && budgetData.planned) ? 'Consommé / Prévu' : project.budget ? '€ planifié' : 'Renseignez dans Pilotage'}</div>
+      </div>
+      <div class="kpi r">
+        <div class="kpi-label">Points RAID</div>
+        <div class="kpi-val">${raidCount}</div>
+        <div class="kpi-sub">Risques · Actions · Issues</div>
+      </div>
+      <div class="kpi b">
+        <div class="kpi-label">Prochaine échéance</div>
+        <div class="kpi-val">${nextMilestone ? nextMilestone.date.split(' ')[0] : '—'}</div>
+        <div class="kpi-sub">${nextMilestone ? nextMilestone.label : 'Aucun jalon'}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">Suivi avancement</div>
+          <div class="chart-sub">Progression du projet</div>
+        </div>
+        <div class="donut-avancement">
+          <div>${donutSvg}</div>
+          <div class="donut-center">
+            <div class="val" style="color:${progressColor}">${progress}%</div>
+            <div class="lbl">complété</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">Résumé & objectifs</div>
+          <div class="chart-sub">Contexte et livrables</div>
+        </div>
+        <div class="summary-box">${(project.desc || 'Aucune description renseignée.').replace(/\n/g, '<br>')}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">RAID — Résumé</div>
+          <div class="chart-sub">Risques, actions, issues, décisions</div>
+        </div>
+        <div class="raid-list">
+          ${raidItems.length ? raidItems.map(item => `
+            <div class="raid-row">
+              <span class="raid-dot ${item.type}"></span>
+              <span class="raid-text">${item.label.length > 50 ? item.label.slice(0,49)+'…' : item.label}</span>
+            </div>
+          `).join('') : '<div class="raid-row"><span class="raid-text" style="color:var(--text-muted);">Aucun point RAID pour ce projet.</span></div>'}
+        </div>
+        <div class="raid-more"><a href="${raidUrl}">Voir tout le RAID →</a></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">Équipe projet</div>
+          <div class="chart-sub">Ressources assignées</div>
+        </div>
+        <div class="team-list">
+          ${teamMembers.length ? teamMembers.map(r => `
+            <div class="team-item">
+              <div class="team-avatar" style="background:${(r.color||project.color||'var(--accent)')}33;color:${r.color||project.color||'var(--accent)'};border:2px solid ${(r.color||project.color||'var(--accent)')}66;">${r.id}</div>
+              <div>
+                <div class="team-name">${r.name}</div>
+                <div class="team-role">${r.role || 'Membre'}</div>
+              </div>
+            </div>
+          `).join('') : '<div class="team-item"><span style="color:var(--text-muted);">Aucune ressource assignée.</span></div>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px;">
+      <div class="chart-card-header">
+        <div class="chart-title">Accès rapides</div>
+        <div class="chart-sub">Outils de pilotage pour ce projet</div>
+      </div>
+      <div class="quick-links">
+        <a class="quick-link" href="${wizardUrl}">🧭 PM Wizard</a>
+        <a class="quick-link" href="${templatesUrl}">📋 Templates</a>
+        <a class="quick-link" href="${ganttUrl}">📅 Planning Gantt</a>
+        <a class="quick-link" href="pm-hub-kanban.html?project=${projectId}">📋 Kanban</a>
+        <a class="quick-link" href="${raidUrl}">⚠️ RAID Log</a>
+        <a class="quick-link" href="pm-hub-transverse.html?project=${projectId}">🎯 Pilotage (Stakeholders, Budget, REX)</a>
+        <a class="quick-link" href="pm-hub-ai.html">🤖 Assistant IA</a>
+      </div>
+    </div>
+  `;
+})();
+</script>
+</body>
+</html>

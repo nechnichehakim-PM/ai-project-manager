@@ -1,6 +1,9 @@
-# AI Project Manager — React + Tailwind
+# AI Project Manager + PM Hub
 
-Premium AI-powered project management dashboard built with **React**, **Vite**, and **Tailwind CSS**.
+Premium AI-powered project management dashboard (React + Tailwind) + **PM Hub** (site multi-pages HTML).
+
+- **/** — Dashboard React (AI Project Manager)
+- **/hub/** — PM Hub (Dashboard, Planning Gantt, Kanban, RAID, Ressources, Reporting, etc.)
 
 ## Run
 

@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   ]},
   { section: 'Config', items: [
     { id: 'settings', icon: '⚙', label: 'Settings' },
+    { id: 'pm-hub', icon: '◉', label: 'PM Hub', href: '/hub/' },
   ]},
 ]
 
@@ -40,9 +41,21 @@ export default function Sidebar({ currentView, onNavigate }) {
             <div className="font-mono text-[0.7rem] tracking-widest uppercase text-text-soft px-3 pb-2">
               {section}
             </div>
-            {items.map(({ id, icon, label, ai }) => {
+            {items.map(({ id, icon, label, ai, href }) => {
               const isActive = currentView === id
               const isAi = !!ai
+              if (href) {
+                return (
+                  <a
+                    key={id}
+                    href={href}
+                    className="w-full flex items-center gap-3 py-2.5 px-3 rounded-card-sm text-left text-sm font-medium text-text-muted border border-transparent hover:text-[#E6EDF5] hover:bg-white/5 transition-all duration-200 mb-0.5"
+                  >
+                    <span className="w-[22px] text-center text-[1.1rem] opacity-90">{icon}</span>
+                    {label}
+                  </a>
+                )
+              }
               return (
                 <button
                   key={id}
