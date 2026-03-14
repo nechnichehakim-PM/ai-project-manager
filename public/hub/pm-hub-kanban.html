@@ -54,18 +54,35 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 </head>
 <body>
 <nav>
-  <div class="nav-logo">PM Hub / Kanban</div>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / Kanban</a></div>
   <div class="nav-links">
-    <a href="pm-hub.html">← Accueil</a>
-    <a href="pm-hub-gantt.html">Gantt</a>
-    <a href="pm-hub-templates.html">Templates</a>
-    <a href="pm-hub-ai.html">🤖 IA</a>
-    <a href="pm-hub-settings.html">⚙</a>
-    <a href="pm-hub-kanban.html" class="active">Kanban</a>
-    <a href="pm-hub-report.html">KPIs</a>
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
   </div>
 </nav>
 
+<div class="layout" style="display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;">
+  <aside class="sidebar" style="position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);">
+    <div class="sb-profile"><div class="sb-avatar">AN</div><div class="sb-name">Abdelhakim Nechniche</div><div class="sb-role">PM Telecom & IT · PMP® · PRINCE2 7th</div></div>
+    <div class="sb-section-label">Vue d'ensemble</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <div class="sb-section-label">Planning & exécution</div>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item active" href="pm-hub-kanban.html"><span class="sb-item-icon">📋</span> Kanban</a>
+    <div class="sb-section-label">Suivi & gouvernance</div>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-transverse.html"><span class="sb-item-icon">🎯</span> Pilotage</a>
+    <div class="sb-section-label">Ressources & bibliothèque</div>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📄</span> Templates</a>
+    <div class="sb-section-label">Configuration</div>
+    <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+    <div class="sb-section-label sb-section-projects">Projets actifs</div>
+    <div id="sbProjects"></div>
+    <div class="sb-footer"><div class="sb-status"><div class="status-dot"></div>Disponible</div></div>
+  </aside>
+  <div style="display:flex;flex-direction:column;min-height:0;">
 <div class="kanban-bar">
   <span class="proj-label">Projet :</span>
   <select id="projectSelect" onchange="switchProject(this.value)"></select>
@@ -76,6 +93,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 <main class="main-kanban">
   <div class="kanban-board" id="kanbanBoard"></div>
 </main>
+</div>
+</div>
 
 <div class="toast-k" id="toastK"></div>
 <a href="pm-hub-ai.html?from=Kanban" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>

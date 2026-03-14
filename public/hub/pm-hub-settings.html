@@ -274,36 +274,38 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 <body>
 <a href="pm-hub-ai.html?from=Paramètres" class="ai-float-btn" title="Assistant IA">🤖</a>
 <nav>
-  <div class="nav-logo">PM Hub / Paramètres</div>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / Paramètres</a></div>
   <div class="nav-links">
-    <a href="pm-hub.html">Dashboard</a>
-    <a href="pm-hub-gantt.html">Planning</a>
-    <a href="pm-hub-kanban.html">Kanban</a>
-    <a href="pm-hub-raid.html">RAID</a>
-    <a href="pm-hub-resources.html">Ressources</a>
-    <a href="pm-hub-report.html">Reporting</a>
-    <a href="pm-hub-templates.html">Templates</a>
-    <a href="pm-hub-settings.html" class="active" style="color:var(--accent);">⚙ Paramètres</a>
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon active" title="Paramètres">⚙</a>
   </div>
 </nav>
 
 <div class="layout">
   <aside class="sidebar">
-    <div class="sb-section">Configuration</div>
-    <div class="sb-item active" id="nav-ai" onclick="showSection('ai')">
+    <div class="sb-profile"><div class="sb-avatar">AN</div><div class="sb-name">Abdelhakim Nechniche</div><div class="sb-role">PM Telecom & IT · PMP® · PRINCE2 7th</div></div>
+    <div class="sb-section-label">Vue d'ensemble</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <div class="sb-section-label">Planning & exécution</div>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item" href="pm-hub-kanban.html"><span class="sb-item-icon">📋</span> Kanban</a>
+    <div class="sb-section-label">Suivi & gouvernance</div>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-transverse.html"><span class="sb-item-icon">🎯</span> Pilotage</a>
+    <div class="sb-section-label">Ressources & bibliothèque</div>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📄</span> Templates</a>
+    <div class="sb-section-label">Configuration</div>
+    <a class="sb-item active" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+    <div class="sb-section-label sb-section-projects">Réglages</div>
+    <div class="sb-item" id="nav-ai" onclick="showSection('ai')" style="cursor:pointer;">
       <span class="sb-item-icon">🤖</span> Intelligence IA
-      <div class="sb-ai-dot off" id="aiDot"></div>
+      <div class="sb-ai-dot off" id="aiDot" style="margin-left:auto;"></div>
     </div>
-    <div class="sb-item" id="nav-profile" onclick="showSection('profile')">
-      <span class="sb-item-icon">👤</span> Mon Profil
-    </div>
-    <div class="sb-section">Système</div>
-    <div class="sb-item" id="nav-data" onclick="showSection('data')">
-      <span class="sb-item-icon">💾</span> Données & Export
-    </div>
-    <div class="sb-item" id="nav-prefs" onclick="showSection('prefs')">
-      <span class="sb-item-icon">🎨</span> Préférences
-    </div>
+    <div class="sb-item" id="nav-profile" onclick="showSection('profile')" style="cursor:pointer;"><span class="sb-item-icon">👤</span> Mon Profil</div>
+    <div class="sb-item" id="nav-data" onclick="showSection('data')" style="cursor:pointer;"><span class="sb-item-icon">💾</span> Données & Export</div>
+    <div class="sb-item" id="nav-prefs" onclick="showSection('prefs')" style="cursor:pointer;"><span class="sb-item-icon">🎨</span> Préférences</div>
   </aside>
 
   <main class="main">

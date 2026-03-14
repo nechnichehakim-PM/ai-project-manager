@@ -456,15 +456,10 @@ nav {
 <a href="pm-hub-ai.html?from=Templates" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA" onclick="this.href='pm-hub-ai.html?from=Templates'+(typeof activeProjectId!=='undefined'&&activeProjectId?'&project='+activeProjectId:'')">🤖</a>
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">PM Hub / Templates</div>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / Templates</a></div>
   <div class="nav-links">
-    <a href="pm-hub.html" class="nav-back">← Accueil</a>
-    <a href="pm-hub-ai.html">🤖 IA</a>
-    <a href="pm-hub-settings.html">⚙</a>
-    <a href="pm-hub-templates.html" class="active">Templates</a>
-    <a href="pm-hub-gantt.html">Planification</a>
-    <a href="pm-hub-kanban.html">Kanban</a>
-    <a href="pm-hub-report.html">KPIs</a>
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
   </div>
 </nav>
 
@@ -490,12 +485,26 @@ nav {
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-section-label">Cycle Projet</div>
+    <div class="sb-profile"><div class="sb-avatar">AN</div><div class="sb-name">Abdelhakim Nechniche</div><div class="sb-role">PM Telecom & IT · PMP® · PRINCE2 7th</div></div>
+    <div class="sb-section-label">Vue d'ensemble</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <div class="sb-section-label">Planning & exécution</div>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item" href="pm-hub-kanban.html"><span class="sb-item-icon">📋</span> Kanban</a>
+    <div class="sb-section-label">Suivi & gouvernance</div>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-transverse.html"><span class="sb-item-icon">🎯</span> Pilotage</a>
+    <div class="sb-section-label">Ressources & bibliothèque</div>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item active" href="pm-hub-templates.html"><span class="sb-item-icon">📄</span> Templates</a>
+    <div class="sb-section-label">Configuration</div>
+    <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+    <div class="sb-section-label sb-section-projects">Cycle Projet</div>
     <a class="sidebar-item active" onclick="filterPhase('all')">
       <span class="sidebar-icon">📦</span> Tous les templates
       <span class="sidebar-badge" id="sb-all">10</span>
     </a>
-
     <div class="sidebar-section-label">Phases</div>
     <a class="sidebar-item" onclick="filterPhase('init')">
       <span class="sidebar-icon">🚀</span> Initialisation
@@ -513,7 +522,6 @@ nav {
       <span class="sidebar-icon">✅</span> Clôture
       <span class="sidebar-badge gold">2</span>
     </a>
-
     <div class="sidebar-section-label">Ressources</div>
     <a class="sidebar-item">
       <span class="sidebar-icon">📎</span> Documents liés

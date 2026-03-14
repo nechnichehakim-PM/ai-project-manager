@@ -122,6 +122,13 @@ nav {
   box-shadow: 0 0 20px var(--primary-glow);
 }
 .nav-cta:hover { opacity: 0.9; box-shadow: 0 0 28px var(--primary-glow); }
+.nav-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: 16px; text-decoration: none;
+  transition: var(--transition);
+}
+.nav-icon:hover { color: var(--primary); background: rgba(79, 140, 255, 0.1); }
 
 /* ── LAYOUT ── */
 .layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; padding-top: 56px; }
@@ -194,8 +201,10 @@ nav {
   text-transform: uppercase;
   color: var(--text-soft);
   padding: 0 20px 8px;
-  margin-top: 8px;
+  margin-top: 14px;
 }
+.sb-section-label:first-of-type { margin-top: 0; }
+.sb-section-label.sb-section-projects { margin-top: 18px; }
 
 .sb-item {
   display: flex;
