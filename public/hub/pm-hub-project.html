@@ -132,7 +132,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 <nav>
   <div class="nav-logo">PM Hub / Projet</div>
   <div class="nav-links">
-    <a href="pm-hub.html">Dashboard</a>
+    <a href="index.html">Dashboard</a>
     <a href="pm-hub-gantt.html">Planning</a>
     <a href="pm-hub-raid.html">RAID</a>
     <a href="pm-hub-resources.html">Ressources</a>
@@ -146,15 +146,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 <div class="layout">
   <aside class="sidebar">
     <div class="sb-section-label">Navigation</div>
-    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="index.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
     <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
     <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
     <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
     <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
     <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📋</span> Templates</a>
     <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
-    <div class="sb-section-label" style="margin-top:16px;">Autre</div>
-    <a class="sb-item" href="/" style="border-left-color:rgba(79,140,255,0.4);color:#7eb4ff;"><span class="sb-item-icon">◇</span> AI Project Manager</a>
     <div class="sb-section-label" style="margin-top:16px;">Ce projet</div>
     <a class="sb-item active" href="#" id="sbProjName"><span class="sb-item-icon">📁</span> <span id="sbProjNameText">—</span></a>
   </aside>
@@ -163,19 +161,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
   </main>
 </div>
 <script>
-(function() {
-  const projectId = PMHUB.getParam('project');
-  if (!projectId) {
-    PMHUB.goTo('pm-hub.html');
-    return;
-  }
-  const project = PMHUB.getProjectById(projectId);
-  if (!project) {
-    PMHUB.goTo('pm-hub.html');
-    return;
-  }
+function initProjectDashboard() {
+  try {
+    function getParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+    const projectId = getParam('project');
+    const dashboardUrl = 'index.html';
+    const projectContentEl = document.getElementById('projectContent');
+    if (!projectContentEl) return;
+    if (!projectId) {
+      window.location.href = dashboardUrl;
+      return;
+    }
+    const project = PMHUB.getProjectById(projectId);
+    if (!project) {
+      projectContentEl.innerHTML = '<div class="wiz-card" style="text-align:center;padding:48px;"><p style="margin-bottom:16px;">Projet introuvable.</p><a href="' + dashboardUrl + '" class="proj-btn primary">Retour au dashboard</a></div>';
+      return;
+    }
 
-  const raids = PMHUB.getRaids(projectId);
+    const raids = PMHUB.getRaids(projectId);
   const resources = PMHUB.getResources();
   const budgetData = PMHUB.getBudget && PMHUB.getBudget(projectId);
   const statusLabel = { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' };
@@ -354,7 +359,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
       </div>
     </div>
   `;
-})();
+  } catch (err) {
+    console.error('Erreur chargement dashboard projet:', err);
+    var el = document.getElementById('projectContent');
+    if (el) el.innerHTML = '<div class="wiz-card" style="text-align:center;padding:48px;"><p style="margin-bottom:16px;color:var(--danger);">Erreur de chargement.</p><a href="index.html" class="proj-btn primary">Retour au dashboard</a></div>';
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProjectDashboard);
+} else {
+  initProjectDashboard();
+}
 </script>
 </body>
 </html>
