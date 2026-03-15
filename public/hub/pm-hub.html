@@ -98,24 +98,24 @@
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-strip">
-      <div class="kpi-card green">
+    <!-- KPIs (ordre et visibilité personnalisables) -->
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="kpi-card green" data-kpi="active" id="kpiCardActive">
         <div class="kpi-label">Projets actifs</div>
         <div class="kpi-value green" id="kpiActive">—</div>
         <div class="kpi-sub" id="kpiActiveSub">En cours</div>
       </div>
-      <div class="kpi-card yellow">
+      <div class="kpi-card yellow" data-kpi="progress" id="kpiCardProgress">
         <div class="kpi-label">Avancement moyen</div>
         <div class="kpi-value yellow" id="kpiProgress">—</div>
         <div class="kpi-sub">Progression globale</div>
       </div>
-      <div class="kpi-card red">
+      <div class="kpi-card red" data-kpi="raid" id="kpiCardRaid">
         <div class="kpi-label">Points RAID ouverts</div>
         <div class="kpi-value red" id="kpiRaid">3</div>
         <div class="kpi-sub">Risques & actions</div>
       </div>
-      <div class="kpi-card blue">
+      <div class="kpi-card blue" data-kpi="total" id="kpiCardTotal">
         <div class="kpi-label">Portefeuille total</div>
         <div class="kpi-value blue" id="kpiTotal">—</div>
         <div class="kpi-sub" id="kpiTotalSub">projets</div>
@@ -126,6 +126,7 @@
     <div class="section-title-row">
       <div class="section-title">Portefeuille Projets</div>
       <div class="section-meta" id="totalLabel">— projets</div>
+      <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">⚙ Personnaliser</button>
     </div>
 
     <div class="toolbar">
@@ -397,8 +398,67 @@ function createAndWizard() {
   PMHUB.goTo('pm-hub-wizard.html', { project: project.id });
 }
 
+// ── DASHBOARD PERSONNALISABLE ──
+const DASHBOARD_PREFS_KEY = 'pmhub_dashboard_prefs';
+const DEFAULT_DASHBOARD_PREFS = { kpiOrder: ['active','progress','raid','total'], showWizard: true };
+
+function getDashboardPrefs() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_PREFS_KEY);
+    if (!raw) return DEFAULT_DASHBOARD_PREFS;
+    const p = JSON.parse(raw);
+    return { ...DEFAULT_DASHBOARD_PREFS, ...p, kpiOrder: p.kpiOrder || DEFAULT_DASHBOARD_PREFS.kpiOrder };
+  } catch (e) { return DEFAULT_DASHBOARD_PREFS; }
+}
+function saveDashboardPrefs(prefs) {
+  try { localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+}
+
+function applyDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const strip = document.getElementById('kpiStrip');
+  const wizardEl = document.getElementById('wizardPrompt');
+  if (wizardEl) wizardEl.style.display = prefs.showWizard !== false ? '' : 'none';
+
+  if (!strip) return;
+  const cards = {};
+  strip.querySelectorAll('[data-kpi]').forEach(function(el) { cards[el.getAttribute('data-kpi')] = el; });
+  prefs.kpiOrder.forEach(function(k) {
+    if (cards[k]) strip.appendChild(cards[k]);
+  });
+}
+
+function openDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const modal = document.getElementById('dashboardPrefsOverlay');
+  if (!modal) return;
+  ['active','progress','raid','total'].forEach(function(k) {
+    const cb = document.getElementById('prefKpi_' + k);
+    if (cb) cb.checked = prefs.kpiOrder.indexOf(k) !== -1;
+  });
+  const orderActive = document.getElementById('prefKpiOrder');
+  if (orderActive) orderActive.value = prefs.kpiOrder.join(',');
+  const cbWiz = document.getElementById('prefShowWizard');
+  if (cbWiz) cbWiz.checked = prefs.showWizard !== false;
+  modal.classList.add('open');
+}
+function closeDashboardPrefs() {
+  document.getElementById('dashboardPrefsOverlay').classList.remove('open');
+}
+function saveDashboardPrefsAndClose() {
+  const orderVal = (document.getElementById('prefKpiOrder') || {}).value || 'active,progress,raid,total';
+  const kpiOrder = orderVal.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return ['active','progress','raid','total'].indexOf(s) !== -1; });
+  if (kpiOrder.length === 0) kpiOrder.push('active','progress','raid','total');
+  const showWizard = (document.getElementById('prefShowWizard') || {}).checked !== false;
+  saveDashboardPrefs({ kpiOrder: kpiOrder, showWizard: showWizard });
+  applyDashboardPrefs();
+  closeDashboardPrefs();
+  showToast('Préférences enregistrées.');
+}
+
 PMHUB.onChange(applyFilters);
 applyFilters();
+applyDashboardPrefs();
 </script>
 
 <!-- CONFIRM DELETE -->
@@ -418,7 +478,32 @@ applyFilters();
   </div>
 </div>
 
+<!-- MODAL PERSONNALISATION DASHBOARD -->
+<div class="modal-overlay" id="dashboardPrefsOverlay" onclick="if(event.target===this)closeDashboardPrefs()">
+  <div class="modal modal-dashboard-prefs">
+    <button class="modal-close" onclick="closeDashboardPrefs()">✕</button>
+    <div class="modal-tag">Préférences</div>
+    <h2 class="modal-title">Personnaliser le dashboard</h2>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label class="form-label">Ordre des KPIs (séparés par des virgules)</label>
+      <input type="text" class="form-input" id="prefKpiOrder" placeholder="active, progress, raid, total" value="active,progress,raid,total"/>
+      <span style="font-size:11px;color:var(--text-muted);">Mots possibles : active, progress, raid, total</span>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="prefShowWizard" checked/>
+        <span>Afficher le bloc « Nouveau projet — Lancez le wizard »</span>
+      </label>
+    </div>
+    <div class="confirm-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="closeDashboardPrefs()">Annuler</button>
+      <button class="btn-primary" onclick="saveDashboardPrefsAndClose()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div id="ai-suggestions-bar"></div>
 <script src="pmhub-ai-suggestions.js"></script>
+<script src="pmhub-notifications.js"></script>
 </body>
 </html>

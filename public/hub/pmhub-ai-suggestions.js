@@ -107,7 +107,48 @@
     return '<div class="ai-suggestions-bar" id="aiSuggestionsBar" role="complementary" aria-label="Suggestions de l’assistant IA">' +
       '<span class="ai-suggestions-label">L\'IA vous suggère</span>' +
       '<div class="ai-suggestions-pills">' + pills + '</div>' +
+      '<div class="ai-suggestions-dynamic" id="aiSuggestionsDynamic"></div>' +
       '</div>';
+  }
+
+  function buildContextForAI() {
+    var parts = ['Page: ' + ctx];
+    if (projectId && typeof PMHUB !== 'undefined') {
+      var p = PMHUB.getProjectById && PMHUB.getProjectById(projectId);
+      if (p) parts.push('Projet: ' + (p.name || p.ref || projectId));
+    }
+    if (ctx === 'raid' && typeof PMHUB !== 'undefined' && projectId) {
+      var r = PMHUB.getRaids && PMHUB.getRaids(projectId);
+      if (r) {
+        var n = (r.risks && r.risks.length) || 0; var a = (r.actions && r.actions.length) || 0;
+        parts.push('Risques: ' + n + ', Actions: ' + a);
+      }
+    }
+    if (ctx === 'dashboard' && typeof PMHUB !== 'undefined') {
+      var list = PMHUB.getProjects && PMHUB.getProjects();
+      if (list) parts.push('Nombre de projets: ' + list.length);
+    }
+    return parts.join('. ');
+  }
+
+  function fetchDynamicSuggestions() {
+    var wrap = document.getElementById('aiSuggestionsDynamic');
+    if (!wrap || typeof PMHUB === 'undefined' || !PMHUB.isAIEnabled || !PMHUB.isAIEnabled()) return;
+
+    var ctxStr = buildContextForAI();
+    var sys = 'Tu es un assistant PM. Réponds UNIQUEMENT par 1 ou 2 courtes suggestions d\'action (une par ligne, max 6 mots chacune). Pas de numérotation, pas de tiret. Exemple:\nVérifier le RAID\nRelancer le sponsor';
+    var user = 'Contexte: ' + ctxStr + '. Quelles 1 ou 2 actions prioritaires suggères-tu maintenant ?';
+
+    wrap.innerHTML = '<span class="ai-suggestions-dynamic-loading">Suggestions IA…</span>';
+    PMHUB.callAI(sys, user).then(function(text) {
+      var lines = (text || '').split(/\n/).map(function(s) { return s.replace(/^[\s\-•*]+/, '').trim(); }).filter(function(s) { return s.length > 0 && s.length < 80; }).slice(0, 2);
+      if (lines.length === 0) { wrap.innerHTML = ''; return; }
+      var aiPills = lines.map(function(label) {
+        var href = 'pm-hub-ai.html?from=' + encodeURIComponent(ctx) + (projectId ? '&project=' + encodeURIComponent(projectId) : '') + '&q=' + encodeURIComponent(label);
+        return '<a class="ai-suggestion-pill ai-suggestion-pill-dynamic" href="' + href + '"><span class="ai-suggestion-icon">🤖</span>' + (label.replace(/</g, '&lt;')) + '</a>';
+      }).join('');
+      wrap.innerHTML = aiPills;
+    }).catch(function() { wrap.innerHTML = ''; });
   }
 
   function init() {
@@ -117,6 +158,7 @@
     if (!html) return;
     container.innerHTML = html;
     container.classList.add('ai-suggestions-bar-visible');
+    setTimeout(fetchDynamicSuggestions, 300);
   }
 
   if (document.readyState === 'loading') {

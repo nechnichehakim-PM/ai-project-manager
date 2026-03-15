@@ -467,6 +467,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <!-- ── SECTION DONNÉES ── -->
     <div class="settings-section" id="section-data">
       <div class="settings-card">
+        <div class="card-title">🔔 Rappels — Jalons à venir</div>
+        <div class="card-desc">Recevez une notification navigateur pour les jalons (Gantt) et dates de fin de projet prévus aujourd'hui ou demain.</div>
+        <div id="notificationsStatus" style="margin-bottom:14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);"></div>
+        <button type="button" class="btn-primary" id="btnEnableNotifications" onclick="enableNotifications()">Activer les notifications</button>
+        <button type="button" class="btn-secondary" id="btnDisableNotifications" style="display:none;" onclick="disableNotifications()">Désactiver les rappels</button>
+      </div>
+      <div class="settings-card">
         <div class="card-title">💾 Données stockées</div>
         <div class="card-desc">Toutes les données PM Hub sont stockées localement dans votre navigateur (localStorage). Vous pouvez exporter une sauvegarde ou réinitialiser.</div>
 
@@ -925,7 +932,31 @@ initDataSection();
 // Check URL param for direct section
 const sec = new URLSearchParams(window.location.search).get('section');
 if(sec) showSection(sec);
+
+function updateNotificationsUI() {
+  if (typeof PMHUB_Notifications === 'undefined') return;
+  var en = PMHUB_Notifications.isEnabled();
+  var perm = typeof Notification !== 'undefined' ? Notification.permission : '';
+  var statusEl = document.getElementById('notificationsStatus');
+  var btnOn = document.getElementById('btnEnableNotifications');
+  var btnOff = document.getElementById('btnDisableNotifications');
+  if (!statusEl || !btnOn) return;
+  if (perm === 'denied') { statusEl.textContent = 'Notifications bloquées par le navigateur. Autorisez-les dans les paramètres du site.'; btnOn.style.display = 'none'; btnOff.style.display = 'none'; return; }
+  if (en && perm === 'granted') { statusEl.textContent = 'Rappels activés. Vous serez notifié des jalons et fins de projet prévus aujourd\'hui et demain.'; btnOn.style.display = 'none'; btnOff.style.display = ''; return; }
+  statusEl.textContent = 'Cliquez sur « Activer les notifications » pour autoriser les rappels.';
+  btnOn.style.display = ''; btnOff.style.display = 'none';
+}
+function enableNotifications() {
+  if (typeof PMHUB_Notifications === 'undefined') return;
+  PMHUB_Notifications.requestPermission().then(function(ok) { updateNotificationsUI(); });
+}
+function disableNotifications() {
+  if (typeof PMHUB_Notifications === 'undefined') return;
+  PMHUB_Notifications.setEnabled(false); updateNotificationsUI();
+}
 </script>
+<script src="pmhub-notifications.js"></script>
+<script>setTimeout(updateNotificationsUI, 100);</script>
 <div id="ai-suggestions-bar"></div>
 <script src="pmhub-ai-suggestions.js"></script>
 </body>
