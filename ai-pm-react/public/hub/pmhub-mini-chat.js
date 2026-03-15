@@ -89,7 +89,7 @@
       '<div class="mini-chat-header"><span class="mini-chat-title">Assistant IA</span><button type="button" class="mini-chat-minimize" title="Réduire">−</button></div>',
       '<div class="mini-chat-messages" id="miniChatMessages">',
         '<div class="mini-chat-welcome" id="miniChatWelcome">',
-          '<p>Posez une question sur vos projets, risques, planning, budget, ressources ou rapports. J’ai accès à toutes les données du portefeuille.</p>',
+          '<p>Posez-moi n’importe quelle question : vos projets et votre portefeuille (j’ai accès aux données), ou toute autre sujet (général, code, conseils…).</p>',
           '<p>Si l’IA n’est pas configurée, <a href="pm-hub-settings.html" target="_blank">configurez-la dans Paramètres</a>.</p>',
         '</div>',
       '</div>',
@@ -142,7 +142,11 @@
       return;
     }
     var context = buildContext();
-    var sysPrompt = 'Tu es l’assistant PM du portefeuille. Tu dois répondre UNIQUEMENT à partir des données ci-dessous. Si une info n’y figure pas, dis que tu ne l’as pas. Réponds en français, de façon concise et actionable.\n\n--- DONNÉES ACTUELLES DU SITE ---\n' + context + '\n--- FIN DONNÉES ---';
+    var sysPrompt = 'Tu es un assistant IA polyvalent et utile. Tu peux répondre à TOUTES les questions : gestion de projet, culture générale, code, conseils, rédaction, etc.\n\n' +
+      'Quand l’utilisateur pose une question sur SES projets, son portefeuille, ses risques, son équipe ou les données de son outil PM, utilise UNIQUEMENT les données ci-dessous pour répondre (et dis si une info n’y figure pas).\n\n' +
+      'Pour toute autre question (hors contexte PM), réponds librement comme une vraie IA : sois précis, utile et naturel.\n\n' +
+      'Réponds toujours en français, de façon claire et adaptée à la question.\n\n' +
+      '--- DONNÉES DU PORTEFEUILLE (à utiliser seulement pour les questions sur les projets de l’utilisateur) ---\n' + context + '\n--- FIN DONNÉES ---';
     PMHUB.callAI(sysPrompt, text).then(function(reply) {
       window.appendMiniChatMessage('ai', reply || 'Pas de réponse.');
     }).catch(function(err) {
