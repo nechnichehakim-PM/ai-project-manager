@@ -200,9 +200,12 @@ function initProjectDashboard() {
   const templatesUrl = 'pm-hub-templates.html?project=' + projectId;
   const wizardUrl = 'pm-hub-wizard.html?project=' + projectId;
 
-  document.getElementById('sbProjName').href = 'pm-hub-project.html?project=' + projectId;
-  document.getElementById('sbProjNameText').textContent = project.name.length > 20 ? project.name.slice(0,19) + '…' : project.name;
-  const ab=document.getElementById('aiFloatBtn');if(ab)ab.href='pm-hub-ai.html?from=Dashboard%20projet&project='+projectId;
+  var sbProjName = document.getElementById('sbProjName');
+  var sbProjNameText = document.getElementById('sbProjNameText');
+  if (sbProjName) sbProjName.href = 'pm-hub-project.html?project=' + projectId;
+  if (sbProjNameText) sbProjNameText.textContent = project.name.length > 20 ? project.name.slice(0,19) + '…' : project.name;
+  const ab = document.getElementById('aiFloatBtn');
+  if (ab) ab.href = 'pm-hub-ai.html?from=Dashboard%20projet&project=' + projectId;
 
   const nextMilestone = project.end ? { label: 'Fin projet', date: formatDate(project.end), critical: true } : null;
 
