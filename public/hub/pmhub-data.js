@@ -33,7 +33,7 @@ const PMHUB = (() => {
   };
 
   const AI_PROVIDERS = {
-    openai:    { label:'OpenAI (ChatGPT)',   endpoint:'https://api.openai.com/v1/chat/completions',   models:['gpt-4o','gpt-4o-mini','gpt-4.1','gpt-4.1-mini','gpt-4-turbo','o1','o1-mini','o3-mini'], headerKey:'Authorization', headerPrefix:'Bearer ' },
+    openai:    { label:'OpenAI (ChatGPT)',   endpoint:'https://api.openai.com/v1/chat/completions',   models:['gpt-5.4','gpt-5-mini','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-4o-2024-08-06','gpt-4o-mini-2024-07-18','o1','o1-mini','o3-mini','gpt-3.5-turbo'], headerKey:'Authorization', headerPrefix:'Bearer ' },
     anthropic: { label:'Anthropic (Claude)', endpoint:'https://api.anthropic.com/v1/messages',        models:['claude-opus-4-5','claude-sonnet-4-5','claude-haiku-4-5'], headerKey:'x-api-key', headerPrefix:'' },
     mistral:   { label:'Mistral AI',         endpoint:'https://api.mistral.ai/v1/chat/completions',   models:['mistral-large-latest','mistral-medium-latest','mistral-small-latest','codestral-latest'], headerKey:'Authorization', headerPrefix:'Bearer ' },
     custom:    { label:'API Personnalisée',  endpoint:'', models:[], headerKey:'Authorization', headerPrefix:'Bearer ' },

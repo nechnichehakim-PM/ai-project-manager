@@ -6,18 +6,20 @@
 <title>PM Hub — Abdelhakim Nechniche</title>
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
 </head>
 <body>
 
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
-<!-- NAV (allégée : logo + actions) -->
+<!-- NAV : logo | rubrique du groupe en haut | actions -->
 <nav>
   <div class="nav-logo">
     <div class="nav-logo-dot"></div>
     <a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / v2.0</a>
   </div>
+  <div class="nav-context" id="nav-context"></div>
   <div class="nav-links">
     <a href="#" class="nav-cta" onclick="openModal(); return false;">+ Nouveau projet</a>
     <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
@@ -29,7 +31,7 @@
 <!-- LAYOUT -->
 <div class="layout">
 
-  <!-- SIDEBAR (navigation principale regroupée) -->
+  <!-- SIDEBAR : uniquement les groupes (rubriques) ; les fonctionnalités sont en haut -->
   <aside class="sidebar">
     <div class="sb-profile">
       <div class="sb-avatar" id="sbAvatar">AN</div>
@@ -43,24 +45,12 @@
       </div>
     </div>
 
-    <div class="sb-section-label">Vue d'ensemble</div>
-    <a class="sb-item active" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
-
-    <div class="sb-section-label">Planning & exécution</div>
-    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
-    <a class="sb-item" href="pm-hub-kanban.html"><span class="sb-item-icon">📋</span> Kanban</a>
-
-    <div class="sb-section-label">Suivi & gouvernance</div>
-    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log <span class="sb-badge-count red" id="sbRaidCount">3</span></a>
-    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
-    <a class="sb-item" href="pm-hub-transverse.html"><span class="sb-item-icon">🎯</span> Pilotage</a>
-
-    <div class="sb-section-label">Ressources & bibliothèque</div>
-    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
-    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📄</span> Templates</a>
-
-    <div class="sb-section-label">Configuration</div>
-    <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-group" data-group="dashboard" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Vue d'ensemble</a>
+    <a class="sb-group" data-group="planning" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning & exécution</a>
+    <a class="sb-group" data-group="governance" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> Suivi & gouvernance <span class="sb-badge-count red" id="sbRaidCount">3</span></a>
+    <a class="sb-group" data-group="resources" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources & bibliothèque</a>
+    <a class="sb-group" data-group="config" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Configuration</a>
 
     <div class="sb-section-label sb-section-projects">Projets actifs</div>
     <div id="sbProjects"></div>

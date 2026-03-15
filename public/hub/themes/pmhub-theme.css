@@ -101,6 +101,32 @@ nav {
 
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
 
+/* Contexte du groupe actif : onglets en haut (fonctionnalités du groupe) */
+.nav-context {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+  padding: 0 24px;
+}
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+.nav-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+.nav-tab.active { color: var(--primary); background: rgba(79, 140, 255, 0.12); border: 1px solid rgba(79, 140, 255, 0.2); }
+.nav-tab-icon { font-size: 14px; opacity: 0.9; }
+
 .nav-links { display: flex; gap: 6px; align-items: center; }
 .nav-links a {
   font-size: 11px;
@@ -225,6 +251,27 @@ nav {
 .sb-item:hover { background: rgba(79, 140, 255, 0.08); color: var(--text); border-left-color: rgba(79, 140, 255, 0.3); }
 .sb-item.active { background: rgba(79, 140, 255, 0.12); color: var(--primary); border-left-color: var(--primary); box-shadow: 0 0 20px rgba(79, 140, 255, 0.08); }
 .sb-item-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+
+/* Groupes uniquement dans la sidebar (rubriques) */
+.sb-group {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  border-left: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  margin: 0 8px 2px 0;
+  border-radius: var(--radius-sm);
+}
+.sb-group:hover { background: rgba(79, 140, 255, 0.08); color: var(--text); border-left-color: rgba(79, 140, 255, 0.3); }
+.sb-group.active { background: rgba(79, 140, 255, 0.12); color: var(--primary); border-left-color: var(--primary); box-shadow: 0 0 20px rgba(79, 140, 255, 0.08); }
+.sb-group .sb-badge-count { margin-left: auto; }
 
 .sb-badge-count {
   margin-left: auto;
