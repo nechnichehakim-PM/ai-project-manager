@@ -33,3 +33,5 @@ Puis ouvrir http://localhost:3000 et cliquer sur **« Dashboard projet »** (ou 
 - `public/hub/` — sources du site (HTML, thème, données)
 - `public/hub/themes/pmhub-theme.css` — design system (couleurs, typo, cartes glass, nav, sidebar)
 - `scripts/build-hub.js` — copie le hub vers `dist/` et génère `index.html` à la racine
+
+*Dernière mise à jour : sidebar unifiée sur toutes les pages du hub.*
