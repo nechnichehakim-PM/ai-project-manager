@@ -334,6 +334,33 @@
   }
   window.genRedac = genRedac;
 
+  function exportRedacPDF() {
+    var bodyEl = document.getElementById('redacBody');
+    var lblEl = document.getElementById('redacLbl');
+    if (!bodyEl || !bodyEl.textContent || bodyEl.classList.contains('loading')) {
+      toast('Aucun contenu à exporter. Générez un document d\'abord.', 'err');
+      return;
+    }
+    var title = (lblEl && lblEl.textContent) ? lblEl.textContent.trim() : 'Document';
+    var bodyText = bodyEl.textContent;
+    var bodyHtml = '<div class="print-body" style="white-space:pre-wrap;font-family:\'Segoe UI\',system-ui,sans-serif;font-size:13px;line-height:1.6;">' + esc(bodyText) + '</div>';
+    var printStyles = '*,::before,::after{margin:0;padding:0;box-sizing:border-box;} body{font-family:\'Segoe UI\',system-ui,sans-serif;background:#fff;color:#111;padding:32px;line-height:1.5;} .print-header{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #ddd;} .print-title{font-size:22px;font-weight:600;} .print-meta{font-size:11px;color:#666;margin-top:8px;} .print-body{font-size:13px;}';
+    var doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><style>' + printStyles + '</style></head><body><div class="print-header"><h1 class="print-title">' + esc(title) + '</h1><div class="print-meta">PM Hub — ' + (new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })) + '</div></div>' + bodyHtml + '<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>';
+    try {
+      var win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) {
+        toast('Autorisez les fenêtres pop-up pour exporter en PDF.', 'err');
+        return;
+      }
+      win.document.write(doc);
+      win.document.close();
+      toast('Fenêtre d\'impression ouverte → Choisissez « Enregistrer en PDF »');
+    } catch (e) {
+      toast('Erreur lors de l\'export PDF.', 'err');
+    }
+  }
+  window.exportRedacPDF = exportRedacPDF;
+
   // —— BRIEFING ——
   async function genBriefing() {
     if (typeof PMHUB === 'undefined') return;
