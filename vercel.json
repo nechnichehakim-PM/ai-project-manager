@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd ai-pm-react && npm install && npm run build",
+  "outputDirectory": "ai-pm-react/dist",
   "framework": null
 }
