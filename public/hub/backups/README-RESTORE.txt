@@ -11,3 +11,9 @@ Exemple (PowerShell, depuis public/hub) :
   Copy-Item backups\pm-hub.html.backup pm-hub.html -Force
 
 Ces sauvegardes ont été créées le 14 mars 2025.
+
+--- Backup v2 (style SaaS analytics) ---
+Fichiers : pmhub-theme.css.backup-v2, pm-hub.html.backup-v2
+Pour restaurer cette version :
+  Copy-Item backups\pmhub-theme.css.backup-v2 themes\pmhub-theme.css -Force
+  Copy-Item backups\pm-hub.html.backup-v2 pm-hub.html -Force

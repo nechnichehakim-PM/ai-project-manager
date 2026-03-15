@@ -70,8 +70,9 @@
     <!-- HERO BAR -->
     <div class="hero-bar">
       <div class="hero-left">
-        <span class="hero-badge">AI Assisted Project Governance</span>
-        <h1 class="hero-title">PM Hub<br><span class="hero-title-accent">AI Project Command Center</span></h1>
+        <span class="hero-badge">Assisté par l'intelligence artificielle</span>
+        <div class="hero-tag">Plateforme de gestion de projet</div>
+        <h1 class="hero-title">PM Hub — AI Project Management Platform</h1>
         <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
         <ul class="hero-benefits">
           <li>Pilotage centralisé</li>
@@ -107,7 +108,7 @@
         <div class="kpi-sub">Progression globale</div>
       </div>
       <div class="kpi-card red" data-kpi="raid" id="kpiCardRaid">
-        <div class="kpi-label">Risques critiques</div>
+        <div class="kpi-label">Points RAID ouverts</div>
         <div class="kpi-value red" id="kpiRaid">—</div>
         <div class="kpi-sub">Risques & actions</div>
       </div>

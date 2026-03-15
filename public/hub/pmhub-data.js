@@ -487,7 +487,7 @@ const PMHUB = (() => {
     if (s.provider === 'anthropic') {
       body = { model, max_tokens: 2048, system: systemPrompt, messages: [{ role:'user', content: userPrompt }] };
     } else {
-      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], temperature: 0.7, max_tokens: 2048 };
+      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], temperature: 0.7, max_completion_tokens: 2048 };
     }
 
     const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(body) });
