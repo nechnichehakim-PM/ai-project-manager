@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Gouvernance</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Gouvernance" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">PMO</span>
+        <h1 class="hero-title">Gouvernance</h1>
+        <p class="hero-sub">Comités, décisions, actions et suivi des arbitrages.</p>
+      </div>
+    </div>
+    <div class="section-title-row"><h2 class="section-title">Décisions récentes</h2></div>
+    <div class="exec-list" id="govDecisions"></div>
+    <div class="section-title-row"><h2 class="section-title">Actions en attente</h2></div>
+    <div class="exec-list" id="govActions"></div>
+  </main>
+</div>
+<script>
+(function(){
+  var decisions = [], actions = [];
+  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
+    var r = PMHUB.getRaids(p.id);
+    (r.decisions || []).forEach(function(d){ decisions.push({ project: p.name, desc: d.desc, status: d.status }); });
+    (r.actions || []).filter(function(a){ return a.status !== 'closed'; }).forEach(function(a){ actions.push({ project: p.name, desc: a.desc, owner: a.owner, due: a.due }); });
+  });
+  document.getElementById('govDecisions').innerHTML = decisions.length ? decisions.slice(0, 10).map(function(d){
+    return '<div class="exec-row"><span class="exec-row-name">' + d.project + '</span><span class="exec-row-desc">' + (d.desc || '—') + '</span><span class="exec-row-rag">' + (d.status === 'closed' ? 'Clôturé' : 'Ouvert') + '</span></div>';
+  }).join('') : '<p class="exec-empty">Aucune décision</p>';
+  document.getElementById('govActions').innerHTML = actions.length ? actions.slice(0, 10).map(function(a){
+    return '<div class="exec-row"><span class="exec-row-name">' + a.project + '</span><span class="exec-row-desc">' + (a.desc || '—') + '</span><span class="exec-row-pct">' + (a.owner || '—') + ' · ' + (a.due || '—') + '</span></div>';
+  }).join('') : '<p class="exec-empty">Aucune action ouverte</p>';
+})();
+</script>
+</body>
+</html>

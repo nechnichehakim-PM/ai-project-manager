@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Project Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);
+  background-size:56px 56px;pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 48px;border-bottom:1px solid var(--border);
+  background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:10px;}
+.nav-back{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--text-muted);text-decoration:none;padding:7px 14px;border:1px solid var(--border);border-radius:5px;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--border-a);}
+.nav-project-name{font-size:13px;font-weight:700;}
+
+/* LAYOUT */
+.page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:100px 48px 80px;}
+
+/* HEADER */
+.wiz-header{margin-bottom:48px;}
+.wiz-breadcrumb{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.wiz-breadcrumb::before{content:'';width:20px;height:1px;background:var(--accent);}
+.wiz-h1{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:12px;}
+.wiz-h1 em{font-style:italic;color:var(--accent);}
+.wiz-h1-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;}
+
+/* STEPPER */
+.stepper{display:flex;align-items:center;gap:0;margin-bottom:52px;overflow-x:auto;padding-bottom:4px;}
+.step-node{display:flex;align-items:center;flex-shrink:0;}
+.step-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 18px;background:var(--surface);
+  border:1px solid var(--border);border-radius:7px;cursor:pointer;
+  transition:all .2s;white-space:nowrap;
+  font-size:12px;font-weight:600;color:var(--text-soft);
+}
+.step-pill:hover{border-color:rgba(99,210,180,0.25);color:var(--text);}
+.step-pill.active{background:rgba(99,210,180,0.07);border-color:var(--accent);color:var(--accent);}
+.step-pill.done{background:rgba(99,210,180,0.04);border-color:rgba(99,210,180,0.2);color:var(--accent);}
+.step-num{
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:9px;flex-shrink:0;
+  background:var(--surface2);color:var(--text-muted);
+}
+.step-pill.active .step-num{background:var(--accent);color:#060a0d;}
+.step-pill.done .step-num{background:rgba(99,210,180,0.2);color:var(--accent);}
+.step-pill.done .step-num::before{content:'✓';}
+.step-icon{font-size:14px;}
+.step-arrow{color:var(--border);font-size:18px;margin:0 5px;flex-shrink:0;}
+
+/* STEP CONTENT */
+.step-content{display:none;animation:fadeUp .4s ease both;}
+.step-content.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARD */
+.wiz-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px;margin-bottom:28px;}
+.wiz-card-header{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.wiz-card-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.wiz-card-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;margin-bottom:6px;}
+.wiz-card-desc{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.8;}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.form-group{display:flex;flex-direction:column;gap:7px;}
+.form-group.full{grid-column:1/-1;}
+.form-group.third{grid-column:span 1;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+.form-label .hint{color:var(--text-muted);font-weight:300;font-style:italic;letter-spacing:0;}
+.form-input,.form-select,.form-textarea{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:11px 14px;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:12px;transition:border-color .2s;outline:none;width:100%;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-select{cursor:pointer;}
+.form-textarea{resize:vertical;min-height:90px;}
+
+/* SMART TIPS */
+.smart-tip{
+  background:rgba(99,210,180,0.05);border:1px solid rgba(99,210,180,0.15);
+  border-radius:8px;padding:14px 18px;margin-top:18px;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.tip-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.tip-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.7;}
+.tip-text strong{color:var(--accent);font-weight:500;}
+
+/* RACI TABLE */
+.raci-table{width:100%;border-collapse:collapse;margin-top:8px;}
+.raci-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.raci-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;}
+.raci-table tr:hover td{background:rgba(255,255,255,0.02);}
+.raci-select{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;transition:border-color .15s;}
+.raci-select:focus{border-color:var(--accent);}
+.raci-select option{background:var(--surface2);}
+.raci-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;}
+.raci-R{background:rgba(99,210,180,0.12);color:var(--accent);}
+.raci-A{background:rgba(232,201,122,0.12);color:var(--accent2);}
+.raci-C{background:rgba(122,184,232,0.12);color:var(--accent3);}
+.raci-I{background:rgba(255,255,255,0.05);color:var(--text-muted);}
+
+/* RISK TABLE */
+.raid-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.raid-header{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding-bottom:10px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;}
+.severity-badge{padding:3px 10px;border-radius:3px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.05em;cursor:pointer;border:1px solid;transition:all .15s;}
+.sev-high{background:rgba(224,112,112,0.1);color:var(--danger);border-color:rgba(224,112,112,0.25);}
+.sev-med{background:rgba(232,201,122,0.1);color:var(--warning);border-color:rgba(232,201,122,0.25);}
+.sev-low{background:rgba(99,210,180,0.08);color:var(--success);border-color:rgba(99,210,180,0.2);}
+
+/* WBS */
+.wbs-tree{padding:8px 0;}
+.wbs-level-1{margin-bottom:16px;}
+.wbs-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:6px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+.wbs-item:hover{background:rgba(255,255,255,0.02);border-color:var(--border);}
+.wbs-item.phase{background:rgba(99,210,180,0.06);border-color:rgba(99,210,180,0.15);margin-bottom:6px;}
+.wbs-item.task{margin-left:24px;}
+.wbs-item.subtask{margin-left:48px;}
+.wbs-item-icon{font-size:13px;flex-shrink:0;}
+.wbs-item-label{font-size:12px;font-weight:600;flex:1;}
+.wbs-item.task .wbs-item-label{font-size:11px;font-weight:400;font-family:'DM Mono',monospace;color:var(--text-soft);}
+.wbs-item-code{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:0.1em;flex-shrink:0;}
+.add-btn{font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border:1px dashed rgba(99,210,180,0.25);border-radius:4px;background:transparent;color:var(--accent);cursor:pointer;transition:all .15s;margin-top:6px;}
+.add-btn:hover{border-color:var(--accent);background:rgba(99,210,180,0.04);}
+
+/* GOV TABLE */
+.gov-table{width:100%;border-collapse:collapse;}
+.gov-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.gov-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
+.freq-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-family:'DM Mono',monospace;font-size:9px;background:rgba(122,184,232,0.1);color:var(--accent3);border:1px solid rgba(122,184,232,0.2);}
+
+/* MILESTONE */
+.milestone-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.ms-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.ms-dot.critical{background:var(--danger);}
+.ms-dot.normal{background:var(--accent3);}
+
+/* METHODOLOGY CARDS */
+.methodology-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:24px 0;}
+.methodology-card{
+  background:var(--surface2);border:2px solid var(--border);border-radius:12px;
+  padding:24px;cursor:pointer;transition:all .2s;position:relative;
+}
+.methodology-card:hover{border-color:rgba(99,210,180,0.3);background:rgba(99,210,180,0.04);}
+.methodology-card.selected{border-color:var(--accent);background:rgba(99,210,180,0.08);}
+.methodology-icon{font-size:32px;margin-bottom:12px;}
+.methodology-label{font-size:16px;font-weight:700;margin-bottom:8px;}
+.methodology-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;}
+.methodology-artifacts{font-family:'DM Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:0.05em;}
+@media(max-width:900px){.methodology-cards{grid-template-columns:1fr;}}
+@media print{
+  nav,.stepper,.step-nav .btn-prev,.step-nav .btn-next,.step-nav button[onclick*="print"]{display:none!important;}
+  .step-nav{justify-content:center;}
+  body{background:#fff;color:#111;}
+  .wiz-card{border-color:#ddd;background:#fafafa;}
+}
+
+/* NAVIGATION BUTTONS */
+.step-nav{display:flex;align-items:center;justify-content:space-between;margin-top:32px;padding-top:28px;border-top:1px solid var(--border);}
+.btn-prev{
+  display:flex;align-items:center;gap:8px;
+  background:transparent;color:var(--text-muted);
+  padding:12px 22px;border-radius:5px;
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:0.08em;text-transform:uppercase;
+  border:1px solid var(--border);cursor:pointer;transition:all .2s;
+}
+.btn-prev:hover{border-color:var(--accent);color:var(--accent);}
+.btn-cancel{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border-radius:5px;border:1px solid var(--border);
+  background:transparent;color:var(--text-muted);
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:0.06em;text-decoration:none;cursor:pointer;transition:all .2s;
+  margin-right:12px;
+}
+.btn-cancel:hover{border-color:var(--text-soft);color:var(--text);}
+.btn-next{
+  display:flex;align-items:center;gap:8px;
+  background:var(--accent);color:#060a0d;
+  padding:12px 28px;border-radius:5px;
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;
+}
+.btn-next:hover{background:#7fe0c8;transform:translateY(-1px);}
+.btn-finish{background:var(--accent2);color:#060a0d;}
+.btn-finish:hover{background:#f0d98a;}
+
+.step-counter{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);}
+
+/* SUMMARY CARD */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.summary-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;}
+.summary-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.summary-value{font-size:14px;font-weight:700;line-height:1.4;}
+.summary-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);}
+.check-icon{font-size:13px;flex-shrink:0;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+
+@media(max-width:768px){
+  .page{padding:90px 20px 60px;}
+  nav{padding:14px 20px;}
+  .form-grid{grid-template-columns:1fr;}
+  .stepper{gap:4px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🧭 PM Wizard</div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="nav-project-name" id="navProjectName">—</div>
+    <a class="nav-back" href="pm-hub.html">← Dashboard</a>
+    <a href="pm-hub-ai.html" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;">🤖 IA</a>
+    <a href="pm-hub-settings.html" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;">⚙</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="wiz-header">
+    <div class="wiz-breadcrumb">Séquençage Projet Guidé</div>
+    <h1 class="wiz-h1">PM <em>Wizard</em></h1>
+    <p class="wiz-h1-sub" id="wizSubtitle">Choisissez votre méthodologie puis suivez les étapes adaptées.<br>Waterfall, Agile ou Hybride — chaque mode a ses artefacts et sa visibilité.</p>
+  </div>
+
+  <!-- STEPPER -->
+  <div class="stepper" id="stepper"></div>
+
+  <!-- STEPS -->
+  <div id="stepsContainer"></div>
+
+</div>
+
+<script>
+let projectId = null;
+let project = null;
+let currentStep = 0;
+let wizardData = {};
+const METHODOLOGY_STEP = { id: 'methodology', label: 'Méthodologie', icon: '🔄', desc: 'Choisir le mode de gestion du projet' };
+
+function getSteps() {
+  const meth = wizardData.methodology || 'waterfall';
+  return [METHODOLOGY_STEP, ...PMHUB.getWizardSteps(meth)];
+}
+
+// ── STEP 0: CHOIX MÉTHODOLOGIE ──
+function renderMethodologyChoice() {
+  const methods = PMHUB.getMethodologies();
+  const current = wizardData.methodology || (project && project.methodology) || '';
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🔄 Étape 1 — Choix du mode de gestion</div>
+        <div class="wiz-card-title">Quelle méthodologie pour ce projet ?</div>
+        <div class="wiz-card-desc">Le wizard et les templates s'adapteront à votre choix. Vous pourrez filtrer les artefacts (Waterfall, Agile ou Hybride) partout dans le hub.</div>
+      </div>
+      <div class="methodology-cards">
+        ${Object.entries(methods).map(([key, m]) => `
+          <label class="methodology-card ${current===key?'selected':''}" data-methodology="${key}">
+            <input type="radio" name="methodology" value="${key}" ${current===key?'checked':''} style="display:none"/>
+            <div class="methodology-icon">${key==='waterfall'?'📐':key==='agile'?'🔄':'⚡'}</div>
+            <div class="methodology-label">${m.label}</div>
+            <div class="methodology-desc">${m.desc}</div>
+            <div class="methodology-artifacts">Artefacts : ${m.artifacts.slice(0,4).join(', ')}…</div>
+            ${key==='agile' ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);margin-top:8px;">Framework : Scrum (sprints, backlog, DoD)</div>' : ''}
+          </label>
+        `).join('')}
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">💡</span>
+        <div class="tip-text"><strong>Waterfall</strong> = Cycle en V, Gantt, WBS, Charte. <strong>Scrum</strong> = Product Backlog, Sprints, cérémonies, Definition of Done. <strong>Hybride</strong> = Jalons + itérations.</div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <div><a href="index.html" class="btn-cancel">Annuler</a></div>
+      <div class="step-counter">Étape 1 / ${getSteps().length}</div>
+      <button class="btn-next" onclick="saveMethodologyAndNext()">Choisir et continuer →</button>
+    </div>
+  `;
+}
+function saveMethodologyAndNext() {
+  const radio = document.querySelector('input[name=methodology]:checked');
+  const choice = radio ? radio.value : 'waterfall';
+  wizardData.methodology = choice;
+  if(projectId) PMHUB.updateProject(parseInt(projectId), { methodology: choice });
+  saveState();
+  nextStep();
+}
+function onMethodologyCardClick(e) {
+  const card = e.target.closest('.methodology-card');
+  if(card) {
+    document.querySelectorAll('.methodology-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    const r = card.querySelector('input[name=methodology]');
+    if(r) r.checked = true;
+  }
+}
+document.body.addEventListener('click', onMethodologyCardClick);
+
+// ── STEP RENDERERS ──
+const stepRenderers = {
+  methodology: renderMethodologyChoice,
+  cadrage: renderCadrage,
+  charte:  renderCharte,
+  wbs:     renderWBS,
+  raci:    renderRACI,
+  raid:    renderRAID,
+  planning: renderPlanning,
+  gouvernance: renderGouvernance,
+  vision:  renderVision,
+  backlog: renderBacklog,
+  sprints: renderSprints,
+  definition_of_done: renderDefinitionOfDone,
+  backlog_hybrid: renderBacklogHybrid,
+};
+
+function init() {
+  projectId = PMHUB.getParam('project');
+  if(projectId) {
+    project = PMHUB.getProjectById(projectId);
+    if(project && project.methodology) wizardData.methodology = project.methodology;
+    document.getElementById('navProjectName').textContent = project ? project.name : '—';
+  }
+  const state = PMHUB.getWizardState(projectId);
+  currentStep = state.currentStep || 0;
+  wizardData  = { ...(state.data || {}), methodology: state.data?.methodology || wizardData.methodology || '' };
+
+  renderStepper();
+  showStep(currentStep);
+}
+
+function renderStepper() {
+  const el = document.getElementById('stepper');
+  const steps = getSteps();
+  el.innerHTML = steps.map((s,i) => {
+    const cls = i < currentStep ? 'done' : i === currentStep ? 'active' : '';
+    return `
+      <div class="step-node">
+        <div class="step-pill ${cls}" onclick="jumpTo(${i})">
+          <div class="step-num">${i+1}</div>
+          <span class="step-icon">${s.icon}</span>
+          ${s.label}
+        </div>
+        ${i < steps.length-1 ? '<span class="step-arrow">›</span>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function showStep(idx) {
+  currentStep = idx;
+  const container = document.getElementById('stepsContainer');
+  const steps = getSteps();
+  const s = steps[idx];
+  const renderer = stepRenderers[s.id];
+  container.innerHTML = `<div class="step-content active" id="stepContent">${renderer()}</div>`;
+  renderStepper();
+  saveState();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function jumpTo(idx) {
+  if(idx <= currentStep) showStep(idx);
+}
+
+function nextStep() { if(currentStep < getSteps().length-1) showStep(currentStep+1); }
+function prevStep() { if(currentStep > 0) showStep(currentStep-1); }
+
+function saveState() {
+  PMHUB.saveWizardState(projectId, { currentStep, data: wizardData });
+}
+
+function finishWizard() {
+  if(projectId) {
+    const pid = parseInt(projectId, 10);
+    PMHUB.updateProject(pid, { phase: 'Planification', progress: 15 });
+    if(wizardData.planning) syncPlanningToGantt(pid, wizardData.planning);
+    if(wizardData.raid && (wizardData.raid.risks?.length || wizardData.raid.actions?.length || wizardData.raid.issues?.length || wizardData.raid.decisions?.length)) {
+      const existing = PMHUB.getRaids(pid);
+      ['risks','actions','issues','decisions'].forEach(type => {
+        if(Array.isArray(wizardData.raid[type])) existing[type] = [...(existing[type] || []), ...wizardData.raid[type]];
+      });
+      PMHUB.saveRaids(pid, existing);
+    }
+  }
+  showToast('🎉 Projet initialisé ! RACI, RAID et planning sont sauvegardés et synchronisés avec le Gantt.');
+  setTimeout(() => PMHUB.goTo('pm-hub.html'), 2000);
+}
+
+// ── STEP 1: CADRAGE ──
+function renderCadrage() {
+  const d = wizardData.cadrage || {};
+  const pname = project ? project.name : '';
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🎯 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Cadrage Projet</div>
+        <div class="wiz-card-desc">Définissez le périmètre, les objectifs SMART, les contraintes et les parties prenantes clés. C'est la fondation de tout le projet.</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Intitulé officiel du projet</label>
+          <input class="form-input" id="c_name" value="${d.name||pname}" placeholder="Nom complet du projet"/>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Contexte & Problématique <span class="hint">— Pourquoi ce projet maintenant ?</span></label>
+          <textarea class="form-textarea" id="c_context" placeholder="Décrivez le contexte business, les enjeux, la situation actuelle qui justifie ce projet...">${d.context||''}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Objectifs SMART <span class="hint">— Spécifiques, Mesurables, Atteignables, Réalistes, Temporels</span></label>
+          <textarea class="form-textarea" id="c_objectives" style="min-height:110px" placeholder="1. Déployer X en production avant [date]&#10;2. Réduire les délais de Y%&#10;3. Former Z utilisateurs">${d.objectives||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Périmètre inclus (IN SCOPE)</label>
+          <textarea class="form-textarea" id="c_in_scope" placeholder="Ce qui est inclus dans le projet...">${d.in_scope||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Périmètre exclu (OUT OF SCOPE)</label>
+          <textarea class="form-textarea" id="c_out_scope" placeholder="Ce qui est explicitement exclu...">${d.out_scope||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sponsor / Commanditaire</label>
+          <input class="form-input" id="c_sponsor" value="${d.sponsor||project?.sponsor||''}" placeholder="Nom + titre"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Budget estimé</label>
+          <input class="form-input" id="c_budget" value="${d.budget||project?.budget||''}" placeholder="Ex: 450 000 €"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Critères de succès</label>
+          <textarea class="form-textarea" id="c_success" placeholder="Comment saurez-vous que le projet est réussi ?">${d.success||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraintes majeures</label>
+          <textarea class="form-textarea" id="c_constraints" placeholder="Budget, délai, ressources, réglementation...">${d.constraints||''}</textarea>
+        </div>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">💡</span>
+        <div class="tip-text"><strong>PM Senior :</strong> Un cadrage solide = 80% du succès. Assurez-vous que sponsor et équipe signent ce périmètre avant de passer à la charte.</div>
+      </div>
+    </div>
+    ${renderStepNav(false, true)}
+  `;
+}
+
+// ── STEP 2: CHARTE ──
+function renderCharte() {
+  const d = wizardData.cadrage || {};
+  const p = project || {};
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">📋 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Charte Projet</div>
+        <div class="wiz-card-desc">Le Project Charter est le document officiel qui autorise formellement le projet et confère au PM le pouvoir d'utiliser les ressources.</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:28px;font-family:'DM Mono',monospace;font-size:11px;line-height:2;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--accent);margin-bottom:4px;">PROJECT CHARTER</div>
+          <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);">Document de Lancement Officiel</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;">
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Projet</div>
+            <input class="form-input" id="ch_name" value="${d.name||p.name||''}" placeholder="Nom du projet"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Référence</div>
+            <input class="form-input" id="ch_ref" value="${p.ref||''}" placeholder="PRJ-2026-XXX"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Date de début</div>
+            <input class="form-input" type="date" id="ch_start" value="${p.start||''}"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Date de fin prévue</div>
+            <input class="form-input" type="date" id="ch_end" value="${p.end||''}"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Chef de Projet</div>
+            <input class="form-input" id="ch_pm" value="Abdelhakim Nechniche" placeholder="Chef de Projet"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Sponsor</div>
+            <input class="form-input" id="ch_sponsor" value="${d.sponsor||p.sponsor||''}" placeholder="Sponsor"/>
+          </div>
+        </div>
+        <div style="margin-bottom:18px;">
+          <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">Énoncé de l'objectif principal</div>
+          <textarea class="form-textarea" id="ch_goal" placeholder="En une phrase : Ce projet a pour but de...">${wizardData.charte?.goal||d.objectives?.split('\\n')[0]||''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">Autorité & Budget alloués</div>
+            <input class="form-input" id="ch_budget" value="${d.budget||p.budget||''}" placeholder="Budget autorisé"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">Priorité stratégique</div>
+            <select class="form-select" id="ch_priority">
+              <option ${p.priority==='Critique'?'selected':''}>Critique</option>
+              <option ${p.priority==='Haute'?'selected':''}>Haute</option>
+              <option ${(!p.priority||p.priority==='Normale')?'selected':''}>Normale</option>
+              <option ${p.priority==='Basse'?'selected':''}>Basse</option>
+            </select>
+          </div>
+        </div>
+        <div style="padding-top:20px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;">
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Signataire — Sponsor</div>
+            <input class="form-input" id="ch_sign_sponsor" value="" placeholder="Signature"/>
+          </div>
+          <div>
+            <div style="color:var(--text-muted);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Signataire — Chef de Projet</div>
+            <input class="form-input" id="ch_sign_pm" value="A. Nechniche — PMP®" placeholder="Signature"/>
+          </div>
+        </div>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">📌</span>
+        <div class="tip-text"><strong>PMP® :</strong> La charte signée = projet officiellement lancé. Sans elle, vous n'avez pas d'autorité formelle. Faites-la valider avant de démarrer la planification.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+
+// ── STEP 3: WBS ──
+function renderWBS() {
+  const phases = [
+    { code:'1.0', label:'Initialisation', icon:'🎯', tasks:['1.1 Cadrage & Charte','1.2 Kick-off meeting','1.3 Mise en place équipe'] },
+    { code:'2.0', label:'Planification', icon:'📅', tasks:['2.1 WBS détaillé','2.2 Planning Gantt','2.3 Plan risques'] },
+    { code:'3.0', label:'Exécution', icon:'⚙️', tasks:['3.1 Livrables techniques','3.2 Tests & validation','3.3 Documentation'] },
+    { code:'4.0', label:'Contrôle & Suivi', icon:'📊', tasks:['4.1 Reporting hebdomadaire','4.2 Gestion des changements','4.3 Revue RAID'] },
+    { code:'5.0', label:'Clôture', icon:'✅', tasks:['5.1 Recette finale','5.2 Bilan projet','5.3 Archivage'] },
+  ];
+  const rows = phases.map(ph => `
+    <div class="wbs-level-1">
+      <div class="wbs-item phase">
+        <span class="wbs-item-icon">${ph.icon}</span>
+        <span class="wbs-item-label">${ph.label}</span>
+        <span class="wbs-item-code">${ph.code}</span>
+      </div>
+      ${ph.tasks.map(t => `
+        <div class="wbs-item task">
+          <span class="wbs-item-icon" style="font-size:9px;color:var(--accent);">▸</span>
+          <span class="wbs-item-label">${t}</span>
+        </div>
+      `).join('')}
+      <button class="add-btn" onclick="alert('Fonctionnalité : ajout de tâche personnalisée')">+ Ajouter une tâche</button>
+    </div>
+  `).join('');
+
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🌳 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">WBS — Work Breakdown Structure</div>
+        <div class="wiz-card-desc">Décomposition hiérarchique de tous les livrables et tâches du projet. Chaque élément = une ligne de responsabilité.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">Personnalisez la phase d'exécution principale</label>
+        <input class="form-input" id="wbs_exec" placeholder="Ex: Déploiement infrastructure IA, Configuration réseau, Développement ML..."/>
+      </div>
+      <div class="wbs-tree">${rows}</div>
+      <div class="smart-tip">
+        <span class="tip-icon">🌳</span>
+        <div class="tip-text"><strong>Règle des 8/80 :</strong> Chaque tâche doit être estimable entre 8h et 80h. Si c'est plus court, regroupez. Si c'est plus long, décomposez encore.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+
+// ── STEP 4: RACI ──
+function renderRACI() {
+  const resources = PMHUB.getResources();
+  const livrables = [
+    'Charte Projet', 'WBS / Planning', 'Architecture technique',
+    'Livrables techniques', 'Tests & Recette', 'Reporting comité',
+    'Documentation finale', 'Bilan de clôture'
+  ];
+  const saved = wizardData.raci || {};
+  const getCell = (li, ri) => {
+    const key = li + '_' + resources[ri].id;
+    return saved[key] !== undefined ? saved[key] : (li===0 && ri===0 ? 'R' : li===0 && ri===1 ? 'A' : li===1 && ri===0 ? 'R' : li===2 && ri===1 ? 'A' : ri===0 ? (li<4?'R':'C') : ri===1 ? 'A' : ri===2 ? 'C' : 'I');
+  };
+
+  const headers = resources.map(r => `<th style="text-align:center;">${r.id}<br><span style="font-weight:300;color:var(--text-muted)">${r.role.split(' ')[0]}</span></th>`).join('');
+  const rows = livrables.map((liv, li) => {
+    const cells = resources.map((r, ri) => {
+      const val = getCell(li, ri);
+      return `<td style="text-align:center;"><select class="raci-select" data-li="${li}" data-ri="${ri}" data-rid="${r.id}" onchange="updateRaciCell(this)">
+        ${['R','A','C','I','-'].map(v=>`<option ${v===val?'selected':''}>${v}</option>`).join('')}
+      </select></td>`;
+    }).join('');
+    return `<tr><td style="font-weight:600;">${liv}</td>${cells}</tr>`;
+  }).join('');
+
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">👥 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Matrice RACI</div>
+        <div class="wiz-card-desc"><strong>R</strong>esponsable · <strong>A</strong>ccountable (garant) · <strong>C</strong>onsulté · <strong>I</strong>nformé — Un seul A par livrable !</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="raci-table">
+          <thead><tr><th>Livrable</th>${headers}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="raci-badge raci-R">R — Réalise</span>
+        <span class="raci-badge raci-A">A — Garant (1 seul)</span>
+        <span class="raci-badge raci-C">C — Consulté</span>
+        <span class="raci-badge raci-I">I — Informé</span>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">⚠️</span>
+        <div class="tip-text"><strong>PRINCE2 :</strong> Vérifiez qu'il y a exactement <strong>un seul A</strong> par livrable. Si plusieurs personnes sont Accountable, personne ne l'est vraiment.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+function updateRaciCell(sel) {
+  if (!sel || !sel.dataset) return;
+  const li = parseInt(sel.dataset.li, 10);
+  const ri = parseInt(sel.dataset.ri, 10);
+  const rid = sel.dataset.rid;
+  const val = sel.value;
+  if (!wizardData.raci) wizardData.raci = {};
+  wizardData.raci[li + '_' + rid] = val;
+  saveState();
+}
+
+// ── STEP 5: RAID ──
+const RAID_TYPE_MAP = { 'Risque':'risks', 'Action':'actions', 'Issue':'issues', 'Décision':'decisions' };
+function getRaidDataForWizard() {
+  if (projectId) {
+    const d = PMHUB.getRaids(parseInt(projectId, 10));
+    return { risks: d.risks || [], actions: d.actions || [], issues: d.issues || [], decisions: d.decisions || [] };
+  }
+  return wizardData.raid || { risks: [], actions: [], issues: [], decisions: [] };
+}
+
+function renderRAID() {
+  const data = getRaidDataForWizard();
+  const flat = [
+    ...(data.risks || []).map(r => ({ ...r, typeKey:'risks', typeLabel:'Risque', impact: r.impact || '—', sev: (r.severity || 'medium').replace('critical','high') })),
+    ...(data.actions || []).map(a => ({ ...a, typeKey:'actions', typeLabel:'Action', impact:'—', sev: (a.severity || 'medium').replace('critical','high') })),
+    ...(data.issues || []).map(i => ({ ...i, typeKey:'issues', typeLabel:'Issue', impact:'—', sev: (i.severity || 'medium').replace('critical','high') })),
+    ...(data.decisions || []).map(d => ({ ...d, typeKey:'decisions', typeLabel:'Décision', impact:'—', sev: (d.severity || 'low') })),
+  ];
+  const rows = flat.length ? flat.map(r => `
+    <div class="raid-row" data-raid-id="${r.id}" data-raid-type="${r.typeKey}">
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:3px;">${(r.desc || r.label || '').substring(0, 80)}${(r.desc || r.label || '').length > 80 ? '…' : ''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Owner: ${r.owner || '—'} · ${(r.mitigation || '—').substring(0, 50)}</div>
+      </div>
+      <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);">${r.typeLabel}</span></div>
+      <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);">${r.proba || '—'}</span></div>
+      <div><span class="severity-badge sev-${r.sev}">${r.impact === '—' ? r.typeLabel : r.impact}</span></div>
+      <div><button type="button" onclick="showToast('Éditez le RAID depuis la page RAID du projet')" style="font-family:'DM Mono',monospace;font-size:9px;padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;">Voir</button></div>
+    </div>
+  `).join('') : `
+    <div style="padding:24px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;">Aucun élément RAID pour l’instant. Ajoutez des risques, actions, issues ou décisions ci‑dessous.</div>
+  `;
+
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">⚠️ Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">RAID Log Initial</div>
+        <div class="wiz-card-desc">Risques, Actions, Issues, Décisions — identifiés dès le démarrage. Données synchronisées avec la page RAID du projet.</div>
+      </div>
+      <div class="raid-header">
+        <span>Description</span><span>Type</span><span>Probabilité</span><span>Impact</span><span></span>
+      </div>
+      ${rows}
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="add-btn" onclick="addRaidItemWizard('Risque')">+ Ajouter un risque</button>
+        <button class="add-btn" onclick="addRaidItemWizard('Action')">+ Ajouter une action</button>
+        <button class="add-btn" onclick="addRaidItemWizard('Issue')">+ Ajouter une issue</button>
+        <button class="add-btn" onclick="addRaidItemWizard('Décision')">+ Ajouter une décision</button>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">🛡️</span>
+        <div class="tip-text"><strong>PM Senior :</strong> Identifiez les risques avant qu'ils deviennent des issues. Un risque bien géré coûte 10x moins qu'une crise à gérer en urgence.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+
+function addRaidItemWizard(typeLabel) {
+  const typeKey = RAID_TYPE_MAP[typeLabel] || 'risks';
+  const desc = prompt('Description courte pour ce ' + typeLabel.toLowerCase() + ' :');
+  if (desc == null || desc.trim() === '') return;
+  const resources = PMHUB.getResources();
+  const owner = resources[0] ? resources[0].id : 'AN';
+  const item = {
+    desc: desc.trim(),
+    proba: typeKey === 'risks' ? 'Moyen' : '—',
+    impact: typeKey === 'risks' ? 'Moyen' : '—',
+    severity: 'medium',
+    owner,
+    status: 'open',
+    due: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+    mitigation: '',
+  };
+  if (projectId) {
+    PMHUB.addRaidItem(parseInt(projectId, 10), typeKey, item);
+    showToast(typeLabel + ' ajouté. Rechargez l’étape pour voir la liste à jour.');
+    showStep(currentStep);
+  } else {
+    if (!wizardData.raid) wizardData.raid = { risks: [], actions: [], issues: [], decisions: [] };
+    item.id = Date.now();
+    item.createdAt = new Date().toISOString();
+    wizardData.raid[typeKey].push(item);
+    saveState();
+    showToast(typeLabel + ' ajouté (sauvegardé avec le wizard).');
+    showStep(currentStep);
+  }
+}
+
+// ── AGILE: Vision & Produit ──
+function renderVision() {
+  const d = wizardData.vision || wizardData.cadrage || {};
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🎯 Vision produit (Scrum)</div>
+        <div class="wiz-card-title">Vision & Objectifs utilisateur</div>
+        <div class="wiz-card-desc">Définissez la vision produit, les personas et les objectifs utilisateur. Base du Product Backlog Scrum.</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Vision produit (une phrase)</label>
+          <input class="form-input" id="v_vision" value="${d.vision||project?.name||''}" placeholder="Ex: Permettre aux équipes de livrer en continu avec visibilité totale"/>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Personas / Utilisateurs cibles</label>
+          <textarea class="form-textarea" id="v_personas" placeholder="Qui utilise le produit ?">${d.personas||''}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Objectifs utilisateur & valeur métier</label>
+          <textarea class="form-textarea" id="v_objectives" placeholder="En tant que... je veux... afin de...">${d.objectives||''}</textarea>
+        </div>
+      </div>
+      ${renderStepNav(true, true)}
+    </div>
+  `;
+}
+// ── AGILE: Product Backlog ──
+function renderBacklog() {
+  const items = wizardData.backlog || [{ story: 'En tant qu\'utilisateur je veux me connecter afin d\'accéder à mon espace', priority: 'Haute', value: 'M' }];
+  const rows = items.map((it, i) => `
+    <div class="milestone-row">
+      <div class="ms-dot normal"></div>
+      <div style="flex:1;"><input class="form-input" style="font-size:11px;" value="${(it.story||'').replace(/"/g,'&quot;')}" placeholder="User story"/></div>
+      <div><select class="form-select" style="width:100px;"><option ${it.priority==='Haute'?'selected':''}>Haute</option><option ${it.priority==='Moyenne'?'selected':''}>Moyenne</option><option ${it.priority==='Basse'?'selected':''}>Basse</option></select></div>
+      <div><select class="form-select" style="width:80px;"><option ${it.value==='M'?'selected':''}>M</option><option>S</option><option>L</option><option>XL</option></select></div>
+    </div>
+  `).join('');
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">📋 Product Backlog (Scrum)</div>
+        <div class="wiz-card-title">User stories priorisées</div>
+        <div class="wiz-card-desc">Liste des fonctionnalités par valeur métier. Priorité = ordre de livraison.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 100px 80px;gap:12px;margin-bottom:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">
+        <span>User story</span><span>Priorité</span><span>Taille</span>
+      </div>
+      ${rows}
+      <button class="add-btn" style="margin-top:12px;" onclick="showToast('Ajout story — à venir')">+ Ajouter une user story</button>
+      ${renderStepNav(true, true)}
+    </div>
+  `;
+}
+// ── AGILE: Sprints & Rituals ──
+function renderSprints() {
+  const d = wizardData.sprints || {};
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">📅 Sprints & Cérémonies (Scrum)</div>
+        <div class="wiz-card-title">Cadence et cérémonies Scrum</div>
+        <div class="wiz-card-desc">Durée des sprints, cérémonies : Sprint Planning, Daily Scrum, Sprint Review, Rétrospective.</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Durée d'un sprint</label>
+          <select class="form-select" id="spr_duration">
+            <option ${d.duration==='1'?'selected':''}>1 semaine</option>
+            <option ${(d.duration||'2')==='2'?'selected':''}>2 semaines</option>
+            <option ${d.duration==='3'?'selected':''}>3 semaines</option>
+            <option ${d.duration==='4'?'selected':''}>4 semaines</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Daily Standup</label>
+          <input class="form-input" id="spr_daily" value="${d.daily||'9h30 — 15 min'}" placeholder="Horaire"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sprint Planning</label>
+          <input class="form-input" id="spr_planning" value="${d.planning||'Début de sprint'}" placeholder="Quand"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sprint Review / Demo</label>
+          <input class="form-input" id="spr_review" value="${d.review||'Fin de sprint'}" placeholder="Quand"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rétrospective</label>
+          <input class="form-input" id="spr_retro" value="${d.retro||'Après review'}" placeholder="Quand"/>
+        </div>
+      </div>
+      ${renderStepNav(true, true)}
+    </div>
+  `;
+}
+// ── AGILE: Definition of Done ──
+function renderDefinitionOfDone() {
+  const items = wizardData.dod || ['Code revu', 'Tests passants', 'Documentation à jour', 'Déployable en dev'];
+  const rows = items.map((it, i) => `
+    <div class="wbs-item task">
+      <span class="wbs-item-icon" style="color:var(--accent);">✓</span>
+      <span class="wbs-item-label"><input class="form-input" style="border:none;background:transparent;padding:4px 0;" value="${typeof it==='string'?it:it.label||''}" placeholder="Critère DoD"/></span>
+    </div>
+  `).join('');
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">✅ Definition of Done (Scrum)</div>
+        <div class="wiz-card-title">Critères d'acceptation et de livrabilité</div>
+        <div class="wiz-card-desc">Tout incrément livré en fin de sprint doit respecter ces critères. Partagés par toute l'équipe Scrum.</div>
+      </div>
+      <div class="wbs-tree">${rows}</div>
+      <button class="add-btn" onclick="showToast('Ajout critère DoD — à venir')">+ Ajouter un critère</button>
+      ${renderStepNav(true, true)}
+    </div>
+  `;
+}
+// ── HYBRIDE: Backlog & WBS ──
+function renderBacklogHybrid() {
+  const d = wizardData.backlog_hybrid || {};
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🌳 Backlog & WBS (Hybride)</div>
+        <div class="wiz-card-title">Backlog priorisé + découpage par lots</div>
+        <div class="wiz-card-desc">Combine un backlog de thèmes/lots et un découpage type WBS pour les jalons.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">Lots / Thèmes principaux (ordre de livraison)</label>
+        <textarea class="form-textarea" id="bh_lots" placeholder="Lot 1: Fondations&#10;Lot 2: MVP&#10;Lot 3: Évolutions">${d.lots||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jalons de référence (dates cibles)</label>
+        <textarea class="form-textarea" id="bh_milestones" placeholder="Jalon 1: Fin Lot 1 — 01/06&#10;Jalon 2: MVP — 01/09">${d.milestones||''}</textarea>
+      </div>
+      ${renderStepNav(true, true)}
+    </div>
+  `;
+}
+
+// ── STEP 6: PLANNING ──
+const DEFAULT_MILESTONES = [
+  { date:'J+5',  label:'Kick-off officiel',               critical:true },
+  { date:'J+15', label:'Architecture validée',            critical:false },
+  { date:'J+30', label:'Phase 1 livrée (Initialisation)', critical:false },
+  { date:'J+60', label:'MVP en recette',                  critical:true },
+  { date:'J+90', label:'Go-Live Phase 1',                 critical:true },
+  { date:'J+120',label:'Formation utilisateurs',          critical:false },
+  { date:'J+150',label:'Clôture & bilan',                 critical:false },
+];
+function renderPlanning() {
+  const milestones = (wizardData.planning && wizardData.planning.milestones && wizardData.planning.milestones.length) ? wizardData.planning.milestones : DEFAULT_MILESTONES;
+  const rows = milestones.map(m => `
+    <div class="milestone-row">
+      <div class="ms-dot ${m.critical?'critical':'normal'}"></div>
+      <div>
+        <div style="font-size:12px;font-weight:${m.critical?'700':'400'};">${m.label}</div>
+        ${m.critical ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--danger);margin-top:2px;">JALON CRITIQUE</div>' : ''}
+      </div>
+      <div>
+        <input class="form-input pl-ms-date" style="width:120px;font-size:11px;" placeholder="${m.date}" value="${(m.date||'').toString()}"/>
+      </div>
+      <div>
+        <select class="form-select" style="font-size:11px;">
+          <option>À planifier</option>
+          <option>Confirmé</option>
+          <option>Atteint</option>
+          <option>Dépassé</option>
+        </select>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">📅 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Planning & Jalons</div>
+        <div class="wiz-card-desc">Définissez les jalons clés, le chemin critique et les dépendances. Ce planning sera synchronisé avec le Gantt.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;">
+        <div class="form-group">
+          <label class="form-label">Date de début confirmée</label>
+          <input class="form-input" type="date" id="pl_start" value="${project?.start||wizardData.planning?.start||''}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date de fin cible</label>
+          <input class="form-input" type="date" id="pl_end" value="${project?.end||wizardData.planning?.end||''}"/>
+        </div>
+        ${(wizardData.methodology||'')==='hybride' ? `
+        <div class="form-group">
+          <label class="form-label">Mode planning (Hybride)</label>
+          <select class="form-select" id="pl_method">
+            <option ${(wizardData.planning?.method||'').indexOf('Prédictif')>=0?'selected':''}>Prédictif (Waterfall)</option>
+            <option ${(wizardData.planning?.method||'').indexOf('Agile')>=0?'selected':''}>Agile (Scrum)</option>
+            <option ${(wizardData.planning?.method||'')==='Hybride'?'selected':''}>Hybride</option>
+            <option ${(wizardData.planning?.method||'')==='PRINCE2'?'selected':''}>PRINCE2</option>
+          </select>
+          <div class="form-label hint" style="margin-top:6px;">En mode Hybride vous choisissez ici la part Waterfall vs Agile du planning.</div>
+        </div>
+        ` : `
+        <div class="form-group" style="grid-column:span 1;">
+          <label class="form-label">Méthodologie</label>
+          <div style="padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft);">
+            ${(wizardData.methodology||'')==='agile' ? 'Scrum (Agile)' : 'Prédictif (Waterfall)'}
+          </div>
+          <div class="form-label hint" style="margin-top:6px;">Le choix Waterfall / Agile est fixé à l’étape Méthodologie. Seul un projet <strong>Hybride</strong> permet de mixer les deux ici.</div>
+        </div>
+        `}
+      </div>
+      <div style="margin-bottom:16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Jalons clés</div>
+      <div style="margin-bottom:8px;display:grid;grid-template-columns:auto 1fr 120px 140px;gap:12px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding-bottom:10px;border-bottom:1px solid var(--border);">
+        <span></span><span>Jalon</span><span>Timing</span><span>Statut</span>
+      </div>
+      ${rows}
+      <div class="smart-tip">
+        <span class="tip-icon">📅</span>
+        <div class="tip-text"><strong>Chemin critique :</strong> Les jalons rouges ne peuvent pas être dépassés sans impact sur la date de fin. Protégez-les en priorité avec des buffers dédiés.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+
+// ── STEP 7: GOUVERNANCE ──
+function renderGouvernance() {
+  const comites = [
+    { nom:'Comité de Pilotage (COPIL)', freq:'Mensuel', participants:'Sponsor, PM, Directions métier', objectif:'Décisions stratégiques, arbitrages budget/délai' },
+    { nom:'Comité Projet (COPROJ)',     freq:'Bimensuel', participants:'PM, Chefs d\'équipe, Experts', objectif:'Avancement, résolution des blocages opérationnels' },
+    { nom:'Point d\'équipe (Daily/Weekly)', freq:'Hebdomadaire', participants:'Équipe projet complète', objectif:'Avancement tâches, blocages, synchronisation' },
+    { nom:'Revue de Phase',            freq:'Par phase', participants:'PM, Sponsor, Parties prenantes', objectif:'Validation des livrables de phase avant passage au suivant' },
+  ];
+  const rows = comites.map(c => `
+    <tr>
+      <td style="font-weight:600;">${c.nom}</td>
+      <td><span class="freq-badge">${c.freq}</span></td>
+      <td style="color:var(--text-muted);">${c.participants}</td>
+      <td style="color:var(--text-soft);">${c.objectif}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">🏛️ Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Plan de Gouvernance</div>
+        <div class="wiz-card-desc">Définissez les instances de pilotage, les canaux de reporting, le processus d'escalade et les KPIs de suivi.</div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Instances de gouvernance</div>
+        <table class="gov-table">
+          <thead><tr><th>Instance</th><th>Fréquence</th><th>Participants</th><th>Objectif</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="form-grid" style="margin-bottom:20px;">
+        <div class="form-group">
+          <label class="form-label">Canal de reporting principal</label>
+          <select class="form-select" id="gov_reporting">
+            <option>Email hebdomadaire + dashboard Power BI</option>
+            <option>Rapport PDF mensuel</option>
+            <option>Dashboard temps réel (Jira / PM Hub)</option>
+            <option>Présentation COPIL mensuelle</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Processus d'escalade</label>
+          <select class="form-select" id="gov_escalade">
+            <option>PM → Sponsor → Direction (48h max)</option>
+            <option>PM → Manager → COPIL (72h)</option>
+            <option>Protocole personnalisé</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">KPIs de suivi (indicateurs)</label>
+          <textarea class="form-textarea" id="gov_kpis" placeholder="• Taux d'avancement vs planning&#10;• Consommation budget vs prévision&#10;• Nb risques ouverts&#10;• Satisfaction équipe (NPS interne)&#10;• Délais livrables vs jalons"></textarea>
+        </div>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">🏛️</span>
+        <div class="tip-text"><strong>Governance = visibilité.</strong> Sans reporting régulier, les problèmes s'accumulent en silence. Un COPIL mensuel avec un dashboard Power BI clair vaut mieux qu'une réunion de crise.</div>
+      </div>
+    </div>
+
+    <div class="wiz-card" style="background:rgba(99,210,180,0.04);border-color:rgba(99,210,180,0.2);">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;margin-bottom:8px;">Récapitulatif — Projet initialisé ✓</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Tous les livrables de lancement sont prêts. Voici ce qui a été généré :</div>
+      </div>
+      <div class="summary-grid">
+        ${getSteps().map((s,i) => `
+          <div class="summary-item">
+            <div class="summary-label">${s.icon} ${s.label}</div>
+            <div class="summary-value" style="font-size:12px;font-family:'DM Mono',monospace;color:${i<currentStep?'var(--accent)':'var(--text-muted)'};">${i<currentStep?'✓ Complété':'En attente'}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-prev" onclick="prevStep()">← Retour</button>
+      <div class="step-counter">${getSteps().length} / ${getSteps().length} — Finalisation</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button type="button" class="btn-prev" onclick="window.print()" style="margin:0;">🖨 Imprimer le récap</button>
+        <button class="btn-next btn-finish" onclick="finishWizard()">🚀 Lancer le projet →</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStepNav(hasPrev, hasNext) {
+  const steps = getSteps();
+  const isLast = currentStep === steps.length - 1;
+  return `
+    <div class="step-nav">
+      <div>
+        ${hasPrev ? `<button class="btn-prev" onclick="prevStep()">← Précédent</button>` : ''}
+        <a href="index.html" class="btn-cancel">Annuler</a>
+      </div>
+      <div class="step-counter">Étape ${currentStep+1} / ${steps.length}</div>
+      ${hasNext && !isLast ? `<button class="btn-next" onclick="saveAndNext()">Sauvegarder & Suivant →</button>` : ''}
+    </div>
+  `;
+}
+
+function saveAndNext() {
+  const step = getSteps()[currentStep];
+  // Save current step data
+  if(step.id === 'cadrage') {
+    wizardData.cadrage = {
+      name:        getValue('c_name'),
+      context:     getValue('c_context'),
+      objectives:  getValue('c_objectives'),
+      in_scope:    getValue('c_in_scope'),
+      out_scope:   getValue('c_out_scope'),
+      sponsor:     getValue('c_sponsor'),
+      budget:      getValue('c_budget'),
+      success:     getValue('c_success'),
+      constraints: getValue('c_constraints'),
+    };
+  } else if(step.id === 'charte') {
+    wizardData.charte = {
+      name:    getValue('ch_name'),
+      ref:     getValue('ch_ref'),
+      goal:    getValue('ch_goal'),
+      budget:  getValue('ch_budget'),
+    };
+    if(projectId) {
+      PMHUB.updateProject(parseInt(projectId), { name: wizardData.charte.name || project?.name, ref: wizardData.charte.ref });
+    }
+  } else if(step.id === 'raci') {
+    collectRaciFromDom();
+  } else if(step.id === 'raid') {
+    persistRaidFromWizard();
+  } else if(step.id === 'planning') {
+    const meth = wizardData.methodology || 'waterfall';
+    wizardData.planning = {
+      start: getValue('pl_start'),
+      end: getValue('pl_end'),
+      method: meth === 'hybride' ? getValue('pl_method') : (meth === 'agile' ? 'Agile (Scrum)' : 'Prédictif (Waterfall)'),
+      milestones: collectPlanningMilestonesFromDom(),
+    };
+    if(projectId) {
+      PMHUB.updateProject(parseInt(projectId), { start: wizardData.planning.start, end: wizardData.planning.end });
+      syncPlanningToGantt(parseInt(projectId), wizardData.planning);
+    }
+  }
+  saveState();
+  nextStep();
+}
+
+function collectRaciFromDom() {
+  document.querySelectorAll('.raci-select').forEach(sel => {
+    const li = sel.getAttribute('data-li');
+    const rid = sel.getAttribute('data-rid');
+    if (li != null && rid) {
+      if (!wizardData.raci) wizardData.raci = {};
+      wizardData.raci[li + '_' + rid] = sel.value;
+    }
+  });
+}
+
+function collectPlanningMilestonesFromDom() {
+  const out = [];
+  document.querySelectorAll('.milestone-row').forEach((row) => {
+    const labelDiv = row.querySelector('[style*="font-size:12px"]');
+    const dateInput = row.querySelector('.pl-ms-date') || row.querySelector('input.form-input');
+    const label = labelDiv ? labelDiv.textContent.trim() : '';
+    const date = dateInput ? dateInput.value.trim() : '';
+    out.push({ label, date, critical: row.querySelector('.ms-dot.critical') != null });
+  });
+  return out;
+}
+
+function syncPlanningToGantt(pid, planning) {
+  if (!planning || !pid) return;
+  let tasks = PMHUB.getGanttTasks(pid);
+  const start = planning.start || new Date().toISOString().split('T')[0];
+  const end = planning.end || start;
+  const toDate = (str) => {
+    if (!str) return start;
+    const m = str.match(/J\+(\d+)/);
+    if (m) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + parseInt(m[1], 10));
+      return d.toISOString().split('T')[0];
+    }
+    return str.length >= 10 ? str : start;
+  };
+  const maxId = (arr) => Math.max(0, ...(arr || []).map(t => t.id || 0));
+  if (!tasks || !Array.isArray(tasks)) tasks = [];
+  const existingNames = new Set(tasks.map(t => (t.name || '').trim()));
+  let nextId = maxId(tasks) + 1;
+  (planning.milestones || []).forEach((ms, i) => {
+    const name = (ms.label || ('Jalon ' + (i + 1))).trim();
+    if (existingNames.has(name)) return;
+    existingNames.add(name);
+    const d = toDate(ms.date);
+    tasks.push({
+      id: nextId++,
+      name,
+      type: 'milestone',
+      start: d,
+      end: d,
+      progress: 0,
+      color: ms.critical ? '#e07070' : '#e8c97a',
+      owner: 'CdP',
+      deps: [],
+    });
+  });
+  PMHUB.saveGanttTasks(pid, tasks);
+}
+
+function persistRaidFromWizard() {
+  if (!projectId) return;
+  const pid = parseInt(projectId, 10);
+  const raid = wizardData.raid;
+  if (raid && (raid.risks?.length || raid.actions?.length || raid.issues?.length || raid.decisions?.length)) {
+    const existing = PMHUB.getRaids(pid);
+    ['risks','actions','issues','decisions'].forEach(type => {
+      if (Array.isArray(raid[type])) existing[type] = [...(existing[type] || []), ...raid[type]];
+    });
+    PMHUB.saveRaids(pid, existing);
+  }
+}
+
+function getValue(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if(!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = `position:fixed;bottom:32px;right:32px;z-index:999;
+      background:#0c1118;border:1px solid rgba(99,210,180,0.35);border-radius:10px;
+      padding:14px 20px;font-family:'DM Mono',monospace;font-size:12px;color:#dde5ed;
+      display:flex;align-items:center;gap:10px;
+      transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.transform = 'translateY(0)';
+  t.style.opacity = '1';
+  setTimeout(()=>{ t.style.transform='translateY(80px)'; t.style.opacity='0'; }, 4000);
+}
+
+init();
+</script>
+</body>
+</html>

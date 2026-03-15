@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Analyse RAID IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="ph ph-row">
+      <div>
+        <div class="ph-tag">Analyse IA</div>
+        <div class="ph-h1">Analyse des <em>risques</em></div>
+        <div class="ph-sub">L'IA lit votre RAID et vous donne un diagnostic actionnable.</div>
+      </div>
+      <button class="btn-p" id="btnRaid" onclick="analyseRaid()">🔍 Analyser mon RAID</button>
+    </div>
+    <div class="tool-body" id="raidBody">
+      <div class="akpis" id="raidKpis"></div>
+      <div id="raidEmpty" style="text-align:center;padding:50px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Cliquez sur <strong style="color:var(--accent);">Analyser mon RAID</strong> pour obtenir le diagnostic.</div>
+      <div class="rcard" id="raidRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="raidLbl">Diagnostic IA — RAID</div>
+          <div class="rcard-acts">
+            <button class="btn-s" onclick="copyEl('raidBody2')">📋 Copier</button>
+            <button class="btn-s" onclick="analyseRaid()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="raidBody2"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+</body>
+</html>

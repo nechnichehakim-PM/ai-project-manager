@@ -13,10 +13,9 @@ dist
 npm-debug.log*
 *.log
 
-# Editor / OS
+# Editor
 .DS_Store
 .idea
 .vscode
 *.swp
 *.swo
-Thumbs.db

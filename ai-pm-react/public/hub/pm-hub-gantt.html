@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Gantt</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Syne',sans-serif;
+  overflow:hidden; display:flex; flex-direction:column;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(99,210,180,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,210,180,0.02) 1px,transparent 1px);
+  background-size:60px 60px; pointer-events:none; z-index:0;
+}
+
+/* ── NAV ── */
+nav {
+  position:relative; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 32px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,12,16,0.95);
+  backdrop-filter:blur(20px);
+  flex-shrink:0;
+}
+.nav-logo { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase; }
+.nav-links { display:flex; gap:24px; align-items:center; }
+.nav-links a { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); text-decoration:none; transition:color 0.2s; }
+.nav-links a:hover { color:var(--text); }
+.nav-links a.active { color:var(--accent); }
+
+/* ── PROJECT BAR ── */
+.project-bar {
+  display:flex; align-items:center; gap:16px;
+  padding:10px 32px;
+  border-bottom:1px solid var(--border);
+  background:rgba(13,17,23,0.95);
+  flex-shrink:0; flex-wrap:wrap;
+  position:relative; z-index:90;
+}
+.project-bar select {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:6px; padding:6px 12px;
+  color:var(--text); font-family:'DM Mono',monospace; font-size:11px;
+  outline:none; cursor:pointer; min-width:240px;
+  transition:border-color .2s;
+}
+.project-bar select:focus { border-color:var(--accent); }
+.project-info { display:flex; align-items:center; gap:12px; flex:1; }
+.project-badge {
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em;
+  padding:4px 10px; border-radius:20px; text-transform:uppercase;
+}
+.toolbar-actions { display:flex; gap:8px; margin-left:auto; }
+.tb-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--text-soft);
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em;
+  cursor:pointer; transition:all .2s; text-transform:uppercase;
+}
+.tb-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(99,210,180,.05); }
+.tb-btn.primary { background:var(--accent); color:#080c10; border-color:var(--accent); font-weight:600; }
+.tb-btn.primary:hover { background:#7fe0c8; }
+
+/* ── MAIN LAYOUT ── */
+.gantt-wrap {
+  display:flex; flex:1; overflow:hidden; position:relative; z-index:1;
+}
+
+/* ── TASK PANEL ── */
+.task-panel {
+  width:320px; flex-shrink:0;
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  background:rgba(13,17,23,0.6);
+  overflow:hidden;
+}
+.panel-header {
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+.panel-header-title {
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--text-muted);
+}
+.task-list { overflow-y:auto; flex:1; }
+.task-list::-webkit-scrollbar { width:3px; }
+.task-list::-webkit-scrollbar-thumb { background:var(--surface3); }
+
+.task-row {
+  display:flex; align-items:center; gap:0;
+  border-bottom:1px solid var(--border);
+  height:40px; cursor:grab; transition:background .15s;
+  position:relative;
+}
+.task-row:hover { background:rgba(99,210,180,.03); }
+.task-row.selected { background:rgba(99,210,180,.06); }
+.task-row.dragging { opacity:.5; }
+.task-row.critical .task-name { color:var(--critical); }
+.task-row.milestone .task-name { color:var(--accent2); font-style:italic; }
+
+.task-indent { width:8px; flex-shrink:0; }
+.task-expand {
+  width:20px; height:20px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; color:var(--text-muted); cursor:pointer;
+}
+.task-color-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin:0 8px 0 4px; }
+.task-name {
+  flex:1; font-family:'DM Mono',monospace; font-size:11px;
+  color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  padding-right:8px;
+}
+.task-name input {
+  background:transparent; border:none; outline:none;
+  color:var(--text); font-family:'DM Mono',monospace; font-size:11px;
+  width:100%;
+}
+.task-progress-pill {
+  font-family:'DM Mono',monospace; font-size:9px;
+  padding:2px 7px; border-radius:10px; margin-right:8px; flex-shrink:0;
+  background:rgba(99,210,180,.1); color:var(--accent);
+}
+.task-progress-pill.warn { background:rgba(232,201,122,.1); color:var(--accent2); }
+.task-progress-pill.crit { background:rgba(224,112,112,.1); color:var(--danger); }
+
+/* Group row */
+.task-row.group { background:var(--surface2); }
+.task-row.group .task-name { font-weight:700; color:var(--text); font-family:'Syne',sans-serif; font-size:11px; }
+
+/* ── GANTT CHART ── */
+.gantt-chart {
+  flex:1; overflow:auto; position:relative;
+}
+.gantt-chart::-webkit-scrollbar { width:6px; height:6px; }
+.gantt-chart::-webkit-scrollbar-track { background:var(--bg); }
+.gantt-chart::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:3px; }
+
+.gantt-inner { min-width:100%; position:relative; }
+
+/* Header timeline */
+.gantt-header {
+  position:sticky; top:0; z-index:20;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex; height:52px;
+}
+.gantt-header-months { display:flex; height:26px; border-bottom:1px solid var(--border); }
+.gantt-month {
+  display:flex; align-items:center; justify-content:center;
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text-muted);
+  border-right:1px solid var(--border);
+  flex-shrink:0;
+}
+.gantt-header-days { display:flex; height:26px; }
+.gantt-day {
+  display:flex; align-items:center; justify-content:center;
+  font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted);
+  border-right:1px solid rgba(255,255,255,.03);
+  flex-shrink:0;
+}
+.gantt-day.weekend { background:rgba(255,255,255,.015); }
+.gantt-day.today { background:rgba(99,210,180,.08); color:var(--accent); font-weight:600; }
+
+/* Gantt rows */
+.gantt-rows { position:relative; }
+.gantt-row {
+  height:40px; border-bottom:1px solid var(--border);
+  position:relative; display:flex; align-items:center;
+  transition:background .15s;
+}
+.gantt-row:hover { background:rgba(255,255,255,.015); }
+.gantt-row.group { background:rgba(255,255,255,.01); }
+
+/* Grid lines */
+.gantt-grid-line {
+  position:absolute; top:0; bottom:0; width:1px;
+  background:rgba(255,255,255,.03); pointer-events:none;
+}
+.gantt-grid-line.weekend { background:rgba(255,255,255,.015); width:1px; }
+.gantt-grid-line.today-line {
+  background:rgba(99,210,180,.3); width:2px; z-index:5;
+}
+
+/* Task bar */
+.gantt-bar {
+  position:absolute; height:22px; border-radius:4px;
+  display:flex; align-items:center; overflow:hidden;
+  cursor:grab; transition:filter .15s; z-index:10;
+  top:9px;
+}
+.gantt-bar:hover { filter:brightness(1.15); }
+.gantt-bar:active { cursor:grabbing; }
+.gantt-bar-progress {
+  position:absolute; left:0; top:0; bottom:0;
+  border-radius:4px; opacity:.35;
+}
+.gantt-bar-label {
+  position:relative; z-index:1;
+  font-family:'DM Mono',monospace; font-size:9px;
+  color:rgba(0,0,0,.8); padding:0 8px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-weight:500; max-width:100%;
+}
+.gantt-bar-handle {
+  position:absolute; top:0; bottom:0; width:6px;
+  cursor:ew-resize; z-index:15;
+}
+.gantt-bar-handle.left { left:0; border-radius:4px 0 0 4px; background:rgba(0,0,0,.15); }
+.gantt-bar-handle.right { right:0; border-radius:0 4px 4px 0; background:rgba(0,0,0,.15); }
+
+/* Milestone diamond */
+.gantt-milestone {
+  position:absolute; width:16px; height:16px;
+  background:var(--accent2);
+  transform:rotate(45deg); z-index:10;
+  cursor:pointer; top:12px;
+  transition:filter .15s;
+}
+.gantt-milestone:hover { filter:brightness(1.2); }
+
+/* Dependency arrow */
+.dep-svg { position:absolute; inset:0; pointer-events:none; z-index:8; overflow:visible; }
+
+/* Today line */
+.today-marker {
+  position:absolute; top:0; bottom:0; width:2px;
+  background:rgba(99,210,180,.4); z-index:15; pointer-events:none;
+}
+.today-marker::before {
+  content:'TODAY'; position:absolute; top:0;
+  font-family:'DM Mono',monospace; font-size:8px;
+  color:var(--accent); letter-spacing:.1em;
+  transform:translateX(-50%); white-space:nowrap;
+  background:var(--surface); padding:2px 4px; border-radius:2px;
+}
+
+/* ── LEGEND ── */
+.legend {
+  display:flex; align-items:center; gap:16px;
+  padding:8px 32px;
+  border-top:1px solid var(--border);
+  background:rgba(13,17,23,0.8);
+  flex-shrink:0; flex-wrap:wrap;
+}
+.legend-item {
+  display:flex; align-items:center; gap:6px;
+  font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted);
+}
+.legend-bar { width:24px; height:10px; border-radius:2px; }
+.legend-diamond { width:10px; height:10px; background:var(--accent2); transform:rotate(45deg); }
+.legend-critical { width:24px; height:10px; border-radius:2px; background:var(--critical); }
+
+/* ── TASK MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(4,8,12,.92); backdrop-filter:blur(12px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .3s; padding:20px;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; width:560px; max-width:100%; max-height:90vh;
+  overflow-y:auto; position:relative;
+  transform:translateY(16px); transition:transform .3s;
+}
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-strip { height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:16px 16px 0 0; }
+.modal-header { padding:24px 28px 0; display:flex; justify-content:space-between; align-items:flex-start; }
+.modal-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; }
+.modal-close { width:32px; height:32px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--text-muted); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.modal-close:hover { border-color:var(--danger); color:var(--danger); }
+.modal-body { padding:20px 28px 28px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group.full { grid-column:1/-1; }
+.form-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--text-muted); }
+.form-input,.form-select {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:6px; padding:9px 12px; color:var(--text);
+  font-family:'DM Mono',monospace; font-size:12px;
+  transition:border-color .2s; outline:none; width:100%;
+}
+.form-input:focus,.form-select:focus { border-color:var(--accent); }
+.form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+.btn-save { background:var(--accent); color:#080c10; padding:10px 22px; border-radius:6px; border:none; font-family:'Syne',sans-serif; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:all .2s; }
+.btn-save:hover { background:#7fe0c8; }
+.btn-delete { background:transparent; color:var(--danger); padding:10px 16px; border-radius:6px; border:1px solid rgba(224,112,112,.3); font-family:'Syne',sans-serif; font-size:12px; cursor:pointer; transition:all .2s; }
+.btn-delete:hover { background:rgba(224,112,112,.1); }
+.btn-cancel { background:transparent; color:var(--text-muted); padding:10px 16px; border-radius:6px; border:1px solid var(--border); font-family:'Syne',sans-serif; font-size:12px; cursor:pointer; }
+
+/* Toast */
+.toast { position:fixed; bottom:24px; right:24px; z-index:300; background:var(--surface2); border:1px solid rgba(99,210,180,.3); border-radius:10px; padding:12px 18px; font-family:'DM Mono',monospace; font-size:11px; transform:translateY(80px); opacity:0; transition:all .3s; pointer-events:none; }
+.toast.show { transform:translateY(0); opacity:1; }
+
+/* Progress slider */
+input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--surface3); outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--accent); cursor:pointer; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+@media print {
+  nav, .project-bar { display:none !important; }
+  .gantt-wrap { overflow:visible; }
+  body { overflow:auto; background:#fff; color:#111; }
+}
+</style>
+</head>
+<body>
+
+<nav style="position:fixed;top:0;left:0;right:0;z-index:200;">
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Gantt" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+
+<div class="layout" style="display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div style="display:flex;flex-direction:column;min-height:0;">
+<!-- PROJECT BAR -->
+<div class="project-bar">
+  <div class="project-info">
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase">Projet :</span>
+    <select id="projectSelector" onchange="switchProject(this.value)"></select>
+    <span id="projectStatusBadge" class="project-badge"></span>
+    <span id="projectDates" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)"></span>
+  </div>
+  <div class="toolbar-actions">
+    <button class="tb-btn" onclick="zoomOut()">⊖ Zoom</button>
+    <button class="tb-btn" onclick="scrollToToday()">📍 Aujourd'hui</button>
+    <button class="tb-btn" onclick="toggleCriticalPath()">🔴 Chemin critique</button>
+    <button class="tb-btn" onclick="exportPNG()">⬇ Export</button>
+    <button class="tb-btn primary" onclick="openAddTask()">+ Tâche</button>
+  </div>
+</div>
+
+<!-- GANTT WRAP -->
+<div class="gantt-wrap">
+
+  <!-- TASK PANEL -->
+  <div class="task-panel">
+    <div class="panel-header">
+      <span class="panel-header-title">Tâches</span>
+      <span id="taskCount" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent)">0 tâches</span>
+    </div>
+    <div class="task-list" id="taskList"></div>
+  </div>
+
+  <!-- GANTT CHART -->
+  <div class="gantt-chart" id="ganttChart">
+    <div class="gantt-inner" id="ganttInner">
+      <div class="gantt-header" id="ganttHeader"></div>
+      <div class="gantt-rows" id="ganttRows"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase">Légende :</span>
+  <div class="legend-item"><div class="legend-bar" style="background:#63d2b4"></div> Tâche normale</div>
+  <div class="legend-item"><div class="legend-critical"></div> Chemin critique</div>
+  <div class="legend-item"><div class="legend-diamond"></div> Jalon / Milestone</div>
+  <div class="legend-item"><div style="width:24px;height:2px;background:rgba(99,210,180,.4)"></div> Aujourd'hui</div>
+  <div class="legend-item"><div style="width:16px;height:10px;border-radius:2px;background:rgba(99,210,180,.35);border:1px dashed rgba(99,210,180,.4)"></div> Avancement</div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlay(event)">
+  <div class="modal">
+    <div class="modal-strip"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nouvelle tâche</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTaskId">
+      <div class="form-grid">
+        <div class="form-group full">
+          <div class="form-label">Nom de la tâche *</div>
+          <input class="form-input" id="taskName" placeholder="Ex: Analyse des besoins">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Type</div>
+          <select class="form-select" id="taskType">
+            <option value="task">📋 Tâche</option>
+            <option value="milestone">💎 Jalon / Milestone</option>
+            <option value="group">📁 Groupe / Phase</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Responsable</div>
+          <input class="form-input" id="taskOwner" placeholder="Nom ou initiales">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Date de début</div>
+          <input class="form-input" type="date" id="taskStart">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Date de fin</div>
+          <input class="form-input" type="date" id="taskEnd">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Dépend de (ID tâche)</div>
+          <input class="form-input" id="taskDep" placeholder="Ex: 1, 2">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Couleur</div>
+          <select class="form-select" id="taskColor">
+            <option value="#63d2b4">🟢 Vert (défaut)</option>
+            <option value="#7ab8e8">🔵 Bleu</option>
+            <option value="#e8c97a">🟡 Or</option>
+            <option value="#b07ae8">🟣 Violet</option>
+            <option value="#e07070">🔴 Rouge</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">Avancement : <span id="progressVal">0</span>%</div>
+          <input type="range" id="taskProgress" min="0" max="100" value="0"
+            oninput="document.getElementById('progressVal').textContent=this.value">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-delete" id="btnDelete" style="display:none" onclick="deleteCurrentTask()">🗑 Supprimer</button>
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-save" onclick="saveTask()">💾 Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const DAY_W       = 28;   // largeur d'un jour en px
+const ROW_H       = 40;   // hauteur d'une ligne
+const COLORS = ['#63d2b4','#7ab8e8','#e8c97a','#b07ae8','#e07070','#f0a060'];
+
+let activeProjectId = null;
+let tasks = [];
+let showCritical = false;
+let dayZoom = 1;
+let dragState = null;
+let editingTaskId = null;
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+async function init() {
+  await loadProjects();
+}
+
+async function loadProjects() {
+  const projects = await PMHUB.getProjects();
+  const sel = document.getElementById('projectSelector');
+  sel.innerHTML = '';
+  if (!projects.length) {
+    sel.innerHTML = '<option>Aucun projet — créez-en un sur l\'accueil</option>';
+    return;
+  }
+  const paramId = PMHUB.getParam('project');
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${p.ref} — ${p.name}`;
+    if (String(p.id) === String(paramId)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  activeProjectId = parseInt(sel.value);
+  await switchProject(activeProjectId);
+}
+
+async function switchProject(id) {
+  activeProjectId = parseInt(id);
+  const p = await PMHUB.getProjectById(id);
+  if (!p) return;
+
+  // Badge statut
+  const badge = document.getElementById('projectStatusBadge');
+  const colors = {active:'rgba(99,210,180,.1)',risk:'rgba(224,112,112,.1)',hold:'rgba(232,201,122,.1)',closed:'rgba(107,120,133,.1)'};
+  const textColors = {active:'#63d2b4',risk:'#e07070',hold:'#e8c97a',closed:'#6b7885'};
+  const labels = {active:'En cours',risk:'À risque',hold:'En attente',closed:'Clôturé'};
+  badge.textContent = labels[p.status]||p.status;
+  badge.style.background = colors[p.status]||'transparent';
+  badge.style.color = textColors[p.status]||'#fff';
+  badge.style.border = `1px solid ${textColors[p.status]||'#fff'}33`;
+
+  document.getElementById('projectDates').textContent =
+    p.start && p.end ? `${formatDate(p.start)} → ${formatDate(p.end)}` : '';
+
+  // Charge les tâches depuis localStorage (par projet)
+  loadTasks(id);
+  renderAll();
+  const ab=document.getElementById('aiFloatBtn');if(ab)ab.href='pm-hub-ai.html?from=Gantt'+(id?'&project='+id:'');
+}
+
+// ══════════════════════════════════════════════════════
+// TASKS STORAGE (localStorage per project)
+// ══════════════════════════════════════════════════════
+function loadTasks(projectId) {
+  try {
+    const loaded = PMHUB.getGanttTasks && PMHUB.getGanttTasks(projectId);
+    tasks = (loaded && Array.isArray(loaded) && loaded.length) ? loaded : getDefaultTasks(projectId);
+  } catch(e) { tasks = getDefaultTasks(projectId); }
+}
+
+function saveTasks() {
+  if (PMHUB.saveGanttTasks && activeProjectId) PMHUB.saveGanttTasks(activeProjectId, tasks);
+  else if (typeof localStorage !== 'undefined') localStorage.setItem(`pmhub_tasks_${activeProjectId}`, JSON.stringify(tasks));
+}
+
+function getDefaultTasks(projectId) {
+  const today = new Date();
+  const d = (offset, base=today) => {
+    const dt = new Date(base);
+    dt.setDate(dt.getDate() + offset);
+    return dt.toISOString().split('T')[0];
+  };
+  return [
+    { id:1, name:'INITIALISATION', type:'group', start:d(-30), end:d(-15), progress:100, color:'#63d2b4', owner:'CdP', deps:[] },
+    { id:2, name:'Project Charter', type:'task', start:d(-30), end:d(-24), progress:100, color:'#63d2b4', owner:'CdP', deps:[] },
+    { id:3, name:'Kick-off Meeting', type:'milestone', start:d(-23), end:d(-23), progress:100, color:'#e8c97a', owner:'CdP', deps:[2] },
+    { id:4, name:'PLANIFICATION', type:'group', start:d(-22), end:d(-8), progress:80, color:'#7ab8e8', owner:'CdP', deps:[] },
+    { id:5, name:'WBS & Planning détaillé', type:'task', start:d(-22), end:d(-16), progress:100, color:'#7ab8e8', owner:'CdP', deps:[3] },
+    { id:6, name:'RACI & Plan de comm.', type:'task', start:d(-18), end:d(-12), progress:90, color:'#7ab8e8', owner:'CdP', deps:[5] },
+    { id:7, name:'Analyse des risques', type:'task', start:d(-14), end:d(-8), progress:75, color:'#e07070', owner:'CdP', deps:[5] },
+    { id:8, name:'RÉALISATION', type:'group', start:d(-7), end:d(21), progress:40, color:'#b07ae8', owner:'Équipe', deps:[] },
+    { id:9, name:'Développement module A', type:'task', start:d(-7), end:d(7), progress:60, color:'#b07ae8', owner:'DEV', deps:[6] },
+    { id:10, name:'Développement module B', type:'task', start:d(0), end:d(14), progress:20, color:'#b07ae8', owner:'DEV', deps:[9] },
+    { id:11, name:'Recette utilisateurs', type:'task', start:d(15), end:d(21), progress:0, color:'#e8c97a', owner:'MOA', deps:[10] },
+    { id:12, name:'Go-Live 🚀', type:'milestone', start:d(22), end:d(22), progress:0, color:'#e8c97a', owner:'CdP', deps:[11] },
+    { id:13, name:'CLÔTURE', type:'group', start:d(23), end:d(30), progress:0, color:'#63d2b4', owner:'CdP', deps:[] },
+    { id:14, name:'Rapport de clôture', type:'task', start:d(23), end:d(28), progress:0, color:'#63d2b4', owner:'CdP', deps:[12] },
+    { id:15, name:'REX & Lessons Learned', type:'task', start:d(26), end:d(30), progress:0, color:'#63d2b4', owner:'Équipe', deps:[14] },
+  ];
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  if (!tasks.length) return;
+  computeCriticalPath();
+  renderTaskPanel();
+  renderGantt();
+  document.getElementById('taskCount').textContent = `${tasks.filter(t=>t.type!=='group').length} tâches`;
+}
+
+// ── TASK PANEL ──
+function renderTaskPanel() {
+  const list = document.getElementById('taskList');
+  list.innerHTML = '';
+  tasks.forEach((t, idx) => {
+    const row = document.createElement('div');
+    row.className = `task-row ${t.type} ${t.isCritical&&showCritical?'critical':''}`;
+    row.dataset.id = t.id;
+    row.draggable = true;
+
+    const indent = t.type === 'task' || t.type === 'milestone' ? 16 : 0;
+    const prog = t.progress || 0;
+    const pillClass = prog >= 80 ? '' : prog >= 40 ? 'warn' : 'crit';
+
+    row.innerHTML = `
+      <div class="task-indent" style="width:${indent}px"></div>
+      ${t.type==='group' ? '<div class="task-expand">▾</div>' : '<div style="width:20px"></div>'}
+      <div class="task-color-dot" style="background:${t.color||'#63d2b4'}"></div>
+      <div class="task-name">${t.type==='milestone'?'💎 ':t.type==='group'?'📁 ':''}${t.name}</div>
+      ${t.type!=='group'?`<div class="task-progress-pill ${pillClass}">${prog}%</div>`:''}
+    `;
+    row.onclick = () => openEditTask(t.id);
+    row.addEventListener('dragstart', e => { dragState = {id:t.id,idx}; row.classList.add('dragging'); });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => e.preventDefault());
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragState || dragState.id === t.id) return;
+      const fromIdx = tasks.findIndex(x=>x.id===dragState.id);
+      const toIdx   = tasks.findIndex(x=>x.id===t.id);
+      const [moved] = tasks.splice(fromIdx,1);
+      tasks.splice(toIdx,0,moved);
+      saveTasks(); renderAll();
+    });
+    list.appendChild(row);
+  });
+}
+
+// ── GANTT ──
+function renderGantt() {
+  const { minDate, maxDate, totalDays } = getDateRange();
+  const dayW = DAY_W * dayZoom;
+  const totalW = totalDays * dayW;
+
+  // Header
+  renderGanttHeader(minDate, totalDays, dayW, totalW);
+
+  // Rows + bars
+  const rowsEl = document.getElementById('ganttRows');
+  rowsEl.innerHTML = '';
+  rowsEl.style.width = totalW + 'px';
+  rowsEl.style.position = 'relative';
+
+  // Grid lines + today
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i=0; i<=totalDays; i++) {
+    const d = new Date(minDate); d.setDate(d.getDate()+i);
+    const line = document.createElement('div');
+    line.className = 'gantt-grid-line' + ([0,6].includes(d.getDay())?' weekend':'');
+    line.style.left = (i * dayW) + 'px';
+    rowsEl.appendChild(line);
+  }
+
+  // Today marker
+  const todayOffset = Math.round((today - minDate) / 86400000);
+  if (todayOffset >= 0 && todayOffset <= totalDays) {
+    const tm = document.createElement('div');
+    tm.className = 'today-marker';
+    tm.style.left = (todayOffset * dayW) + 'px';
+    rowsEl.appendChild(tm);
+  }
+
+  // SVG for dependency arrows
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.classList.add('dep-svg');
+  svg.style.width = totalW + 'px';
+  svg.style.height = (tasks.length * ROW_H) + 'px';
+  rowsEl.appendChild(svg);
+
+  // Rows
+  tasks.forEach((t, rowIdx) => {
+    const row = document.createElement('div');
+    row.className = `gantt-row ${t.type}`;
+    row.style.height = ROW_H + 'px';
+
+    const tStart = new Date(t.start); tStart.setHours(0,0,0,0);
+    const tEnd   = new Date(t.end);   tEnd.setHours(0,0,0,0);
+    const startOff = Math.round((tStart - minDate) / 86400000);
+    const dur      = Math.max(1, Math.round((tEnd - tStart) / 86400000) + 1);
+
+    if (t.type === 'milestone') {
+      const diamond = document.createElement('div');
+      diamond.className = 'gantt-milestone';
+      diamond.style.left = (startOff * dayW + dayW/2 - 8) + 'px';
+      diamond.style.background = t.color || '#e8c97a';
+      diamond.title = t.name;
+      diamond.onclick = () => openEditTask(t.id);
+      row.appendChild(diamond);
+    } else {
+      const bar = document.createElement('div');
+      bar.className = 'gantt-bar';
+      bar.style.left   = (startOff * dayW) + 'px';
+      bar.style.width  = (dur * dayW - 2) + 'px';
+      bar.style.background = (t.isCritical && showCritical) ? var_('--critical') : (t.color || '#63d2b4');
+
+      // Progress overlay
+      const prog = document.createElement('div');
+      prog.className = 'gantt-bar-progress';
+      prog.style.width = (t.progress||0) + '%';
+      prog.style.background = '#000';
+      bar.appendChild(prog);
+
+      const label = document.createElement('div');
+      label.className = 'gantt-bar-label';
+      label.textContent = t.name + (t.owner ? ' · ' + t.owner : '');
+      bar.appendChild(label);
+
+      // Handles
+      ['left','right'].forEach(side => {
+        const h = document.createElement('div');
+        h.className = `gantt-bar-handle ${side}`;
+        h.addEventListener('mousedown', e => startResize(e, t, side, minDate, dayW));
+        bar.appendChild(h);
+      });
+
+      bar.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('gantt-bar-handle')) return;
+        startDragBar(e, t, startOff, minDate, dayW);
+      });
+      bar.ondblclick = () => openEditTask(t.id);
+      row.appendChild(bar);
+    }
+    rowsEl.appendChild(row);
+
+    // Draw dependency arrows
+    (t.deps||[]).forEach(depId => {
+      const depIdx = tasks.findIndex(x=>x.id===depId);
+      if (depIdx<0) return;
+      const dep = tasks[depIdx];
+      const depEnd = new Date(dep.end); depEnd.setHours(0,0,0,0);
+      const depEndOff = Math.round((depEnd-minDate)/86400000)+1;
+      const x1 = depEndOff*dayW, y1 = depIdx*ROW_H + ROW_H/2;
+      const x2 = startOff*dayW, y2 = rowIdx*ROW_H + ROW_H/2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      const cx = (x1+x2)/2;
+      path.setAttribute('d',`M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
+      path.setAttribute('stroke', t.isCritical&&showCritical ? '#e07070' : 'rgba(99,210,180,0.3)');
+      path.setAttribute('stroke-width','1.5');
+      path.setAttribute('fill','none');
+      path.setAttribute('marker-end','url(#arrow)');
+      svg.appendChild(path);
+    });
+  });
+
+  // Arrow marker
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  marker.setAttribute('id','arrow'); marker.setAttribute('markerWidth','6');
+  marker.setAttribute('markerHeight','6'); marker.setAttribute('refX','3');
+  marker.setAttribute('refY','3'); marker.setAttribute('orient','auto');
+  const arrowPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+  arrowPath.setAttribute('d','M0,0 L0,6 L6,3 z');
+  arrowPath.setAttribute('fill','rgba(99,210,180,0.5)');
+  marker.appendChild(arrowPath); defs.appendChild(marker); svg.appendChild(defs);
+
+  // Sync scroll avec task panel
+  document.getElementById('ganttChart').addEventListener('scroll', syncScroll, {passive:true});
+  document.getElementById('taskList').addEventListener('scroll', syncScroll2, {passive:true});
+}
+
+function renderGanttHeader(minDate, totalDays, dayW, totalW) {
+  const header = document.getElementById('ganttHeader');
+  header.innerHTML = '';
+  header.style.width = totalW + 'px';
+
+  const monthsRow = document.createElement('div');
+  monthsRow.className = 'gantt-header-months';
+  const daysRow = document.createElement('div');
+  daysRow.className = 'gantt-header-days';
+
+  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let curMonth = -1, monthStart = 0, monthDays = 0;
+  for (let i=0; i<totalDays; i++) {
+    const d = new Date(minDate); d.setDate(d.getDate()+i);
+    const isToday = d.getTime()===today.getTime();
+    const isWeekend = [0,6].includes(d.getDay());
+
+    // Month grouping
+    if (d.getMonth() !== curMonth) {
+      if (curMonth !== -1) {
+        const mEl = document.createElement('div');
+        mEl.className = 'gantt-month';
+        mEl.style.width = (monthDays * dayW) + 'px';
+        mEl.textContent = months[curMonth] + ' ' + new Date(minDate.getFullYear(), curMonth, 1).getFullYear();
+        monthsRow.appendChild(mEl);
+      }
+      curMonth = d.getMonth(); monthStart = i; monthDays = 0;
+    }
+    monthDays++;
+
+    // Day
+    const dEl = document.createElement('div');
+    dEl.className = 'gantt-day' + (isWeekend?' weekend':'') + (isToday?' today':'');
+    dEl.style.width = dayW + 'px';
+    if (dayW >= 20) dEl.textContent = d.getDate();
+    daysRow.appendChild(dEl);
+  }
+  // Last month
+  const mEl = document.createElement('div');
+  mEl.className = 'gantt-month';
+  mEl.style.width = (monthDays * dayW) + 'px';
+  mEl.textContent = months[curMonth] + ' ' + new Date(minDate.getFullYear(), curMonth, 1).getFullYear();
+  monthsRow.appendChild(mEl);
+
+  header.appendChild(monthsRow);
+  header.appendChild(daysRow);
+}
+
+function var_(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ══════════════════════════════════════════════════════
+// DATES
+// ══════════════════════════════════════════════════════
+function getDateRange() {
+  const dates = tasks.flatMap(t => [new Date(t.start), new Date(t.end)]);
+  let min = new Date(Math.min(...dates)); min.setHours(0,0,0,0);
+  let max = new Date(Math.max(...dates)); max.setHours(0,0,0,0);
+  // Padding
+  min.setDate(min.getDate()-14);
+  max.setDate(max.getDate()+21);
+  const totalDays = Math.round((max-min)/86400000);
+  return { minDate:min, maxDate:max, totalDays };
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+// ══════════════════════════════════════════════════════
+// CRITICAL PATH
+// ══════════════════════════════════════════════════════
+function computeCriticalPath() {
+  tasks.forEach(t => t.isCritical = false);
+  // Simple : tâches sans successeurs ou sur le chemin le plus long
+  const taskMap = {};
+  tasks.forEach(t => taskMap[t.id] = t);
+
+  function duration(t) {
+    return Math.round((new Date(t.end)-new Date(t.start))/86400000)+1;
+  }
+
+  // Forward pass
+  tasks.forEach(t => {
+    t._ef = new Date(t.end); t._ef.setHours(0,0,0,0);
+  });
+
+  // Mark tasks that are on longest chain
+  const successors = {};
+  tasks.forEach(t => {
+    (t.deps||[]).forEach(depId => {
+      if (!successors[depId]) successors[depId] = [];
+      successors[depId].push(t.id);
+    });
+  });
+
+  const endTasks = tasks.filter(t => !successors[t.id] && t.type!=='group');
+  if (!endTasks.length) return;
+
+  const latestEnd = new Date(Math.max(...endTasks.map(t=>new Date(t.end))));
+
+  function markCritical(taskId) {
+    const t = taskMap[taskId];
+    if (!t) return;
+    t.isCritical = true;
+    (t.deps||[]).forEach(depId => {
+      const dep = taskMap[depId];
+      if (!dep) return;
+      if (new Date(dep.end) >= new Date(t.start) ||
+          Math.abs(new Date(dep.end)-new Date(t.start)) <= 2*86400000) {
+        markCritical(depId);
+      }
+    });
+  }
+
+  endTasks.filter(t => new Date(t.end).getTime()===latestEnd.getTime())
+    .forEach(t => markCritical(t.id));
+}
+
+// ══════════════════════════════════════════════════════
+// DRAG & RESIZE BARS
+// ══════════════════════════════════════════════════════
+function startDragBar(e, task, startOff, minDate, dayW) {
+  e.preventDefault();
+  const startX = e.clientX;
+  const origStart = new Date(task.start);
+  const origEnd   = new Date(task.end);
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    const daysDelta = Math.round(dx / dayW);
+    const ns = new Date(origStart); ns.setDate(ns.getDate()+daysDelta);
+    const ne = new Date(origEnd);   ne.setDate(ne.getDate()+daysDelta);
+    task.start = ns.toISOString().split('T')[0];
+    task.end   = ne.toISOString().split('T')[0];
+    saveTasks(); renderAll();
+  }
+  function onUp() {
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    showToast('📅 Tâche déplacée');
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function startResize(e, task, side, minDate, dayW) {
+  e.preventDefault(); e.stopPropagation();
+  const startX = e.clientX;
+  const origDate = side==='right' ? new Date(task.end) : new Date(task.start);
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    const daysDelta = Math.round(dx / dayW);
+    const nd = new Date(origDate); nd.setDate(nd.getDate()+daysDelta);
+    if (side==='right' && nd > new Date(task.start)) {
+      task.end = nd.toISOString().split('T')[0];
+    } else if (side==='left' && nd < new Date(task.end)) {
+      task.start = nd.toISOString().split('T')[0];
+    }
+    saveTasks(); renderAll();
+  }
+  function onUp() {
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+// ══════════════════════════════════════════════════════
+// SCROLL SYNC
+// ══════════════════════════════════════════════════════
+let syncing = false;
+function syncScroll(e) {
+  if (syncing) return; syncing=true;
+  document.getElementById('taskList').scrollTop = e.target.scrollTop;
+  syncing=false;
+}
+function syncScroll2(e) {
+  if (syncing) return; syncing=true;
+  document.getElementById('ganttChart').scrollTop = e.target.scrollTop;
+  syncing=false;
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL TASKS
+// ══════════════════════════════════════════════════════
+function openAddTask() {
+  editingTaskId = null;
+  document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
+  document.getElementById('editTaskId').value = '';
+  document.getElementById('taskName').value = '';
+  document.getElementById('taskType').value = 'task';
+  document.getElementById('taskOwner').value = '';
+  document.getElementById('taskDep').value = '';
+  document.getElementById('taskColor').value = '#63d2b4';
+  document.getElementById('taskProgress').value = 0;
+  document.getElementById('progressVal').textContent = '0';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('taskStart').value = today;
+  const end = new Date(); end.setDate(end.getDate()+7);
+  document.getElementById('taskEnd').value = end.toISOString().split('T')[0];
+  document.getElementById('btnDelete').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openEditTask(id) {
+  const t = tasks.find(x=>x.id===id);
+  if (!t) return;
+  editingTaskId = id;
+  document.getElementById('modalTitle').textContent = 'Modifier la tâche';
+  document.getElementById('editTaskId').value = id;
+  document.getElementById('taskName').value = t.name;
+  document.getElementById('taskType').value = t.type;
+  document.getElementById('taskOwner').value = t.owner||'';
+  document.getElementById('taskStart').value = t.start;
+  document.getElementById('taskEnd').value = t.end;
+  document.getElementById('taskDep').value = (t.deps||[]).join(', ');
+  document.getElementById('taskColor').value = t.color||'#63d2b4';
+  document.getElementById('taskProgress').value = t.progress||0;
+  document.getElementById('progressVal').textContent = t.progress||0;
+  document.getElementById('btnDelete').style.display = 'block';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveTask() {
+  const name = document.getElementById('taskName').value.trim();
+  if (!name) { document.getElementById('taskName').style.borderColor='var(--danger)'; return; }
+
+  const depsRaw = document.getElementById('taskDep').value;
+  const deps = depsRaw ? depsRaw.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)) : [];
+
+  const taskData = {
+    name,
+    type:     document.getElementById('taskType').value,
+    owner:    document.getElementById('taskOwner').value,
+    start:    document.getElementById('taskStart').value,
+    end:      document.getElementById('taskEnd').value,
+    color:    document.getElementById('taskColor').value,
+    progress: parseInt(document.getElementById('taskProgress').value),
+    deps,
+  };
+
+  if (editingTaskId) {
+    const idx = tasks.findIndex(t=>t.id===editingTaskId);
+    if (idx>-1) tasks[idx] = { ...tasks[idx], ...taskData };
+    showToast('✅ Tâche mise à jour');
+  } else {
+    const newId = Math.max(0,...tasks.map(t=>t.id))+1;
+    tasks.push({ id:newId, ...taskData });
+    showToast('✅ Tâche ajoutée');
+  }
+
+  saveTasks(); closeModal(); renderAll();
+}
+
+function deleteCurrentTask() {
+  if (!editingTaskId) return;
+  tasks = tasks.filter(t=>t.id!==editingTaskId);
+  // Remove deps pointing to this task
+  tasks.forEach(t => { t.deps = (t.deps||[]).filter(d=>d!==editingTaskId); });
+  saveTasks(); closeModal(); renderAll();
+  showToast('🗑 Tâche supprimée');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlay(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+// ══════════════════════════════════════════════════════
+// TOOLBAR ACTIONS
+// ══════════════════════════════════════════════════════
+function zoomOut() {
+  dayZoom = dayZoom === 1 ? 0.6 : dayZoom === 0.6 ? 0.35 : 1;
+  renderAll();
+  showToast(`Zoom : ${Math.round(dayZoom*100)}%`);
+}
+
+function scrollToToday() {
+  const { minDate } = getDateRange();
+  const dayW = DAY_W * dayZoom;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const offset = Math.round((today-minDate)/86400000) * dayW;
+  document.getElementById('ganttChart').scrollLeft = Math.max(0, offset - 200);
+}
+
+function toggleCriticalPath() {
+  showCritical = !showCritical;
+  renderAll();
+  showToast(showCritical ? '🔴 Chemin critique activé' : 'Chemin critique désactivé');
+}
+
+function exportPNG() {
+  try {
+    window.print();
+    showToast('Choisissez "Enregistrer en PDF" dans la fenêtre d\'impression');
+  } catch (e) {
+    showToast('Utilisez Ctrl+P puis "Enregistrer en PDF"');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════════
+init();
+</script>
+<div id="ai-suggestions-bar"></div>
+<script src="pmhub-ai-suggestions.js"></script>
+</body>
+</html>

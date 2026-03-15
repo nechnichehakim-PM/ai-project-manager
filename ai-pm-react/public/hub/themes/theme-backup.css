@@ -1,0 +1,40 @@
+/**
+ * PM Hub — Sauvegarde du thème d’origine (avant refonte « Directeur de projet »)
+ * Pour revenir à cet aspect : renommer ce fichier en pmhub-theme.css
+ * ou remplacer le contenu de pmhub-theme.css par celui de ce fichier.
+ */
+:root {
+  --bg: #060a0d;
+  --surface: #0c1118;
+  --surface2: #111820;
+  --surface3: #182030;
+  --border: rgba(255,255,255,0.06);
+  --border-active: rgba(99,210,180,0.35);
+  --accent: #63d2b4;
+  --accent2: #e8c97a;
+  --accent3: #7ab8e8;
+  --text: #dde5ed;
+  --text-muted: #5a6775;
+  --text-soft: #94a3b5;
+  --danger: #e07070;
+  --warning: #e8c97a;
+  --success: #63d2b4;
+  --critical: #e07070;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99,210,180,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,210,180,0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+  z-index: 0;
+}

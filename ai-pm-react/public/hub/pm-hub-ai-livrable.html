@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Génération livrables</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="ph">
+      <div class="ph-tag">Génération IA</div>
+      <div class="ph-h1">Génération de <em>livrables</em></div>
+      <div class="ph-sub">Décrivez votre projet — l'IA génère charte, WBS, RAID, RACI et jalons.</div>
+    </div>
+    <div class="tool-body">
+      <div class="opts three" id="livOpts">
+        <div class="opt selected" data-t="charte" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📋</div><div class="opt-name">Charte Projet</div><div class="opt-desc">Project Charter complet, objectifs SMART, gouvernance</div></div>
+        <div class="opt" data-t="wbs" onclick="selOpt(this,'livOpts')"><div class="opt-icon">🌳</div><div class="opt-name">WBS</div><div class="opt-desc">Work Breakdown Structure avec phases et livrables</div></div>
+        <div class="opt" data-t="raid-init" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚠️</div><div class="opt-name">RAID Initial</div><div class="opt-desc">Risques, actions, décisions pré-identifiés</div></div>
+        <div class="opt" data-t="raci" onclick="selOpt(this,'livOpts')"><div class="opt-icon">👥</div><div class="opt-name">Matrice RACI</div><div class="opt-desc">Responsabilités selon votre équipe réelle</div></div>
+        <div class="opt" data-t="jalons" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📅</div><div class="opt-name">Jalons & Planning</div><div class="opt-desc">Jalons critiques avec estimations</div></div>
+        <div class="opt" data-t="complet" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚡</div><div class="opt-name">Pack complet</div><div class="opt-desc">Tout en une génération (Charte+WBS+RAID+RACI)</div></div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">📝 Contexte du projet</div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Projet</label><select class="fsel" id="lProj"></select></div>
+          <div class="fg"><label class="flabel">Type de projet</label><select class="fsel" id="lType"><option>R&D / Innovation</option><option>Télécoms / Infrastructure</option><option>Data / Analytics</option><option>Transformation digitale</option><option>Déploiement réseau</option></select></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px;"><label class="flabel">Description (plus c'est précis, meilleur c'est)</label><textarea class="fta" id="lDesc" rows="3" placeholder="Ex: Déploiement d'un Data Center intelligent piloté par IA…"></textarea></div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Budget estimé</label><input class="finput" id="lBudget" placeholder="Ex: 450 000 €"/></div>
+          <div class="fg"><label class="flabel">Durée estimée</label><input class="finput" id="lDuree" placeholder="Ex: 10 mois"/></div>
+        </div>
+        <button class="btn-p" id="btnLiv" onclick="genLivrable()" style="margin-top:8px;">⚡ Générer →</button>
+      </div>
+      <div class="rcard" id="livRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="livLbl">Livrable généré</div>
+          <div class="rcard-acts">
+            <button class="btn-s" onclick="copyEl('livBody')">📋 Copier</button>
+            <button class="btn-s" onclick="genLivrable()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="livBody"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+</body>
+</html>

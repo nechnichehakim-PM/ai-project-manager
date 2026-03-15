@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Budget & EVM</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Budget" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">EVM</span>
+        <h1 class="hero-title">Budget & <span class="hero-title-accent">Earned Value</span></h1>
+        <p class="hero-sub">BAC, AC, PV, EV, CPI, SPI et prévisions.</p>
+      </div>
+    </div>
+    <div class="section-title-row"><h2 class="section-title">Projet</h2><select id="budgetProject" class="form-select" style="max-width:280px;"></select></div>
+    <div class="kpi-strip" id="evmKpis"></div>
+    <div class="section-title-row"><h2 class="section-title">Courbes PV / EV / AC</h2></div>
+    <div class="chart-card chart-card-lg"><div id="evmChart" class="chart-fill" style="height:300px;"></div></div>
+  </main>
+</div>
+<script>
+(function(){
+  var sel = document.getElementById('budgetProject');
+  var projs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
+  projs.forEach(function(p){
+    var o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.name || p.ref;
+    sel.appendChild(o);
+  });
+  function render(){
+    var pid = parseInt(sel.value, 10) || (projs[0] && projs[0].id);
+    var evm = PMHUB.getBudgetEVM(pid);
+    var p = PMHUB.getProjectById(pid);
+    var html = '';
+    [['BAC','Budget at Completion', evm.bac, true], ['AC','Actual Cost', evm.ac, true], ['PV','Planned Value', evm.pv, true], ['EV','Earned Value', evm.ev, true], ['CPI','Cost Perf. Index', evm.cpi, false], ['SPI','Schedule Perf. Index', evm.spi, false], ['EAC','Est. at Completion', evm.eac, true], ['CV','Cost Variance', evm.cv, true], ['SV','Schedule Variance', evm.sv, true]].forEach(function(x){
+      var v = x[2];
+      var disp = x[3] && typeof v === 'number' ? v.toLocaleString() : v;
+      html += '<div class="kpi-card blue"><div class="kpi-label">' + x[1] + '</div><div class="kpi-value blue">' + disp + '</div></div>';
+    });
+    document.getElementById('evmKpis').innerHTML = html;
+
+    if (typeof echarts !== 'undefined' && document.getElementById('evmChart')) {
+      var el = document.getElementById('evmChart');
+      if (!el._chart) el._chart = echarts.init(el);
+      var progress = (p && p.progress != null) ? p.progress : 35;
+      el._chart.setOption({
+        grid: { left: 56, right: 24, top: 24, bottom: 32 },
+        legend: { data: ['PV','EV','AC'], bottom: 0, textStyle: { color: 'var(--text-muted)' } },
+        xAxis: { type: 'category', data: ['M1','M2','M3','M4','M5','M6','M7','M8'], axisLabel: { color: 'var(--text-muted)' } },
+        yAxis: { type: 'value', axisLabel: { color: 'var(--text-muted)' }, splitLine: { lineStyle: { color: 'var(--glass-border)' } } },
+        series: [
+          { name: 'PV', type: 'line', data: [0, evm.bac*0.1, evm.bac*0.2, evm.bac*0.35, evm.bac*0.5, evm.bac*0.65, evm.bac*0.8, evm.bac], smooth: true, lineStyle: { color: '#9CA3AF' } },
+          { name: 'EV', type: 'line', data: [0, evm.bac*0.05, evm.bac*0.12, evm.ev*0.5, evm.ev, evm.ev, evm.ev, evm.ev], smooth: true, lineStyle: { color: 'var(--primary)' } },
+          { name: 'AC', type: 'line', data: [0, evm.ac*0.2, evm.ac*0.4, evm.ac*0.6, evm.ac, evm.ac, evm.ac, evm.ac], smooth: true, lineStyle: { color: 'var(--warning)' } }
+        ]
+      });
+    }
+  }
+  sel.onchange = render;
+  render();
+})();
+</script>
+</body>
+</html>

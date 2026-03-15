@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Ressources</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;}
+.sidebar{position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
+.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;}
+.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-item-icon{font-size:15px;width:18px;text-align:center;}
+.main{padding:40px 48px;position:relative;z-index:1;}
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
+.page-h1 em{font-style:italic;color:var(--accent3);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:40px;}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:40px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.g::before{background:var(--accent);}
+.kpi.b::before{background:var(--accent3);}
+.kpi.y::before{background:var(--accent2);}
+.kpi.r::before{background:var(--danger);}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;line-height:1;}
+.kpi.g .kpi-val{color:var(--accent);}
+.kpi.b .kpi-val{color:var(--accent3);}
+.kpi.y .kpi-val{color:var(--accent2);}
+.kpi.r .kpi-val{color:var(--danger);}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.section-title{font-size:17px;font-weight:700;}
+.add-btn{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:9px 18px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.add-btn:hover{background:#7fe0c8;}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:12px;transition:all .15s;}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent);}
+.btn-icon.del:hover{border-color:var(--danger);color:var(--danger);}
+
+/* CONFIRM */
+.confirm-overlay{position:fixed;inset:0;z-index:500;background:rgba(3,6,9,0.95);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.confirm-overlay.open{opacity:1;pointer-events:all;}
+.confirm-box{background:var(--surface);border:1px solid rgba(224,112,112,0.3);border-radius:14px;padding:40px;width:420px;max-width:95vw;text-align:center;position:relative;transform:translateY(16px);transition:transform .25s;}
+.confirm-overlay.open .confirm-box{transform:translateY(0);}
+.confirm-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--danger);border-radius:14px 14px 0 0;}
+.confirm-actions{display:flex;gap:10px;justify-content:center;margin-top:24px;}
+.btn-danger{background:var(--danger);color:#fff;padding:10px 22px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.btn-danger:hover{background:#f08080;}
+.btn-secondary{background:transparent;color:var(--text);padding:10px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+/* RESOURCE MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(3,6,9,0.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:44px;width:540px;max-width:96vw;position:relative;transform:translateY(20px);transition:transform .3s;max-height:90vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:14px 14px 0 0;}
+.modal-close{position:absolute;top:16px;right:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:13px;transition:all .15s;}
+.modal-close:hover{border-color:var(--danger);color:var(--danger);}
+.modal-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;margin-bottom:24px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+.form-input,.form-select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;transition:border-color .2s;outline:none;width:100%;}
+.form-input:focus,.form-select:focus{border-color:var(--accent);}
+.form-select{cursor:pointer;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+.btn-primary{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:11px 22px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.btn-primary:hover{background:#7fe0c8;}
+
+/* RESOURCE CARDS */
+.resources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:48px;}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:26px;transition:all .2s;}
+.res-card:hover{border-color:var(--border-a);transform:translateY(-1px);}
+.res-card-top{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+.res-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#060a0d;flex-shrink:0;}
+.res-name{font-size:14px;font-weight:700;margin-bottom:2px;}
+.res-role{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:0.1em;}
+.res-level{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;margin-top:5px;display:inline-block;}
+.level-senior{border-color:rgba(99,210,180,0.3);color:var(--accent);}
+.level-confirmed{border-color:rgba(122,184,232,0.3);color:var(--accent3);}
+.level-junior{border-color:rgba(232,201,122,0.3);color:var(--accent2);}
+
+.res-avail-bar{margin-bottom:14px;}
+.avail-header{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:6px;}
+.avail-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.avail-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+
+.res-skills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+.skill-tag{font-family:'DM Mono',monospace;font-size:9px;padding:3px 9px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-muted);}
+
+.res-projects{border-top:1px solid var(--border);padding-top:14px;}
+.res-proj-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.res-proj-chip{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;background:rgba(99,210,180,0.06);border:1px solid rgba(99,210,180,0.15);border-radius:4px;padding:4px 10px;margin:2px;color:var(--accent);}
+
+/* ALLOCATION TABLE */
+.alloc-table{width:100%;border-collapse:collapse;margin-bottom:48px;}
+.alloc-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.alloc-table td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;}
+.alloc-table tr:hover td{background:rgba(255,255,255,0.015);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">PM Hub / Ressources</div>
+  <div class="nav-links">
+    <a href="pm-hub.html">Dashboard</a>
+    <a href="pm-hub-gantt.html">Planning</a>
+    <a href="pm-hub-kanban.html">Kanban</a>
+    <a href="pm-hub-raid.html">RAID</a>
+    <a href="pm-hub-resources.html" class="active">Ressources</a>
+    <a href="pm-hub-report.html">Reporting</a>
+    <a href="pm-hub-templates.html">Templates</a>
+    <a href="pm-hub-ai.html">🤖 IA</a>
+    <a href="pm-hub-settings.html">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Ressources" class="ai-float-btn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item active" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📋</span> Templates</a>
+  </aside>
+  <main class="main">
+    <div class="page-tag">Gestion des ressources humaines</div>
+    <h1 class="page-h1">Équipe & <em>Ressources</em></h1>
+    <p class="page-sub">Disponibilité, compétences et allocation par projet.</p>
+
+    <div class="kpi-strip">
+      <div class="kpi g"><div class="kpi-label">Membres équipe</div><div class="kpi-val" id="kTotal">4</div></div>
+      <div class="kpi b"><div class="kpi-label">Dispo. moyenne</div><div class="kpi-val" id="kAvail">72%</div></div>
+      <div class="kpi y"><div class="kpi-label">Projets actifs</div><div class="kpi-val" id="kProj">1</div></div>
+      <div class="kpi r"><div class="kpi-label">Surcharge</div><div class="kpi-val" id="kOver">0</div></div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Membres de l'équipe</div>
+      <button class="add-btn" onclick="openAddRes()">＋ Ajouter</button>
+    </div>
+    <div class="resources-grid" id="resourcesGrid"></div>
+
+    <div class="section-header">
+      <div class="section-title">Matrice d'allocation</div>
+    </div>
+    <table class="alloc-table" id="allocTable">
+      <thead><tr id="allocHeader"></tr></thead>
+      <tbody id="allocBody"></tbody>
+    </table>
+  </main>
+</div>
+<script>
+function getAvailColor(pct) {
+  if(pct>=70) return "var(--success)";
+  if(pct>=40) return "var(--warning)";
+  return "var(--danger)";
+}
+function getLevelClass(level) {
+  if(level==="Senior") return "level-senior";
+  if(level==="Confirmé") return "level-confirmed";
+  return "level-junior";
+}
+
+let _editingResId = null;
+let _deleteResId = null;
+
+function openAddRes() {
+  _editingResId = null;
+  document.getElementById("resModalTitle").textContent = "Nouveau Membre";
+  ["resName","resRole","resSkills"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("resId").value = "";
+  document.getElementById("resId").disabled = false;
+  document.getElementById("resLevel").value = "Senior";
+  document.getElementById("resAvail").value = "80";
+  document.getElementById("resModalOverlay").classList.add("open");
+}
+
+function openEditRes(id) {
+  const res = PMHUB.getResources().find(r => r.id === id);
+  if(!res) return;
+  _editingResId = id;
+  document.getElementById("resModalTitle").textContent = "Modifier le membre";
+  document.getElementById("resId").value = res.id;
+  document.getElementById("resId").disabled = true;
+  document.getElementById("resName").value = res.name;
+  document.getElementById("resRole").value = res.role;
+  document.getElementById("resLevel").value = res.level;
+  document.getElementById("resAvail").value = res.availability;
+  document.getElementById("resSkills").value = (res.skills||[]).join(", ");
+  document.getElementById("resModalOverlay").classList.add("open");
+}
+
+function saveRes() {
+  const name = document.getElementById("resName").value.trim();
+  if(!name) { document.getElementById("resName").style.borderColor="var(--danger)"; return; }
+  const resources = PMHUB.getResources();
+  const id = _editingResId || (document.getElementById("resId").value.trim().toUpperCase() || name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase());
+  const newRes = {
+    id,
+    name,
+    role:         document.getElementById("resRole").value,
+    level:        document.getElementById("resLevel").value,
+    availability: parseInt(document.getElementById("resAvail").value) || 80,
+    skills:       document.getElementById("resSkills").value.split(",").map(s=>s.trim()).filter(Boolean),
+    color:        _editingResId ? resources.find(r=>r.id===_editingResId)?.color : ["#63d2b4","#e8c97a","#7ab8e8","#e07070","#b07ae8"][resources.length % 5],
+  };
+  if(_editingResId) {
+    const idx = resources.findIndex(r => r.id === _editingResId);
+    if(idx !== -1) resources[idx] = newRes;
+  } else {
+    resources.push(newRes);
+  }
+  PMHUB.saveResources(resources);
+  closeResModal();
+  renderResources();
+  showToast(_editingResId ? "✅ Membre mis à jour." : "✅ Membre ajouté.");
+}
+
+function confirmDeleteRes(id, name) {
+  _deleteResId = id;
+  document.getElementById("confirmResName").textContent = name;
+  document.getElementById("confirmResOverlay").classList.add("open");
+}
+function closeConfirmRes() {
+  _deleteResId = null;
+  document.getElementById("confirmResOverlay").classList.remove("open");
+}
+function executeDeleteRes() {
+  if(!_deleteResId) return;
+  const resources = PMHUB.getResources().filter(r => r.id !== _deleteResId);
+  PMHUB.saveResources(resources);
+  closeConfirmRes();
+  renderResources();
+  showToast("🗑️ Membre supprimé.");
+}
+
+function closeResModal() {
+  document.getElementById("resId").disabled = false;
+  document.getElementById("resModalOverlay").classList.remove("open");
+}
+
+function showToast(msg) {
+  let t = document.getElementById("pmhub-toast");
+  if(!t) {
+    t = document.createElement("div");
+    t.id = "pmhub-toast";
+    t.style.cssText = "position:fixed;bottom:32px;right:32px;z-index:999;background:#0c1118;border:1px solid rgba(99,210,180,0.35);border-radius:10px;padding:14px 20px;font-family:'DM Mono',monospace;font-size:12px;color:#dde5ed;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.transform = "translateY(0)"; t.style.opacity = "1";
+  setTimeout(()=>{ t.style.transform="translateY(80px)"; t.style.opacity="0"; }, 3000);
+}
+
+function renderResources() {
+  const resources = PMHUB.getResources();
+  const projects = PMHUB.getProjects().filter(p=>p.status==="active");
+  const grid = document.getElementById("resourcesGrid");
+  if(!resources.length) {
+    grid.innerHTML = "<div style='text-align:center;padding:60px;font-family:DM Mono,monospace;color:var(--text-muted);'>Aucun membre. Cliquez sur Ajouter.</div>";
+  } else {
+    grid.innerHTML = resources.map(r => {
+      const myProjs = projects.filter(p => p.team && p.team.includes(r.id));
+      return "<div class="res-card"><div class="res-card-top"><div class="res-avatar" style="background:"+r.color+"33;color:"+r.color+";border:2px solid "+r.color+"44;">"+r.id+"</div><div style="flex:1;"><div class="res-name">"+r.name+"</div><div class="res-role">"+r.role+"</div><span class="res-level "+getLevelClass(r.level)+"">"+r.level+"</span></div><div style="display:flex;gap:5px;align-items:flex-start;flex-shrink:0;"><button class="btn-icon" onclick="openEditRes(\'" + r.id + "\')">✏️</button><button class="btn-icon del" onclick="confirmDeleteRes(\'" + r.id + "\',\'" + r.name.replace(/'/g, "\'") + "\')">🗑️</button></div></div><div class="res-avail-bar"><div class="avail-header"><span>Disponibilité</span><span style="color:"+getAvailColor(r.availability)+"">"+r.availability+"%</span></div><div class="avail-bar"><div class="avail-fill" style="width:"+r.availability+"%;background:"+getAvailColor(r.availability)+";"></div></div></div><div class="res-skills">"+((r.skills||[]).map(s=>"<span class="skill-tag">"+s+"</span>").join(""))+"</div>" + (myProjs.length ? "<div class="res-projects"><div class="res-proj-label">Projets assignés</div>" + myProjs.map(p=>"<span class="res-proj-chip">"+(p.icon||"📁")+" "+p.name.slice(0,24)+"</span>").join("") + "</div>" : "") + "</div>";
+    }).join("");
+  }
+
+  const avgAvail = resources.length ? Math.round(resources.reduce((s,r)=>s+(r.availability||0),0)/resources.length) : 0;
+  const overloaded = resources.filter(r=>r.availability<30).length;
+  document.getElementById("kTotal").textContent = resources.length;
+  document.getElementById("kAvail").textContent = avgAvail+"%";
+  document.getElementById("kProj").textContent = projects.length;
+  document.getElementById("kOver").textContent = overloaded;
+
+  const activeProjects = PMHUB.getProjects().filter(p=>p.status==="active");
+  const thead = document.getElementById("allocHeader");
+  const tbody = document.getElementById("allocBody");
+  thead.innerHTML = "<th>Ressource</th>" + activeProjects.map(p=>"<th>"+p.name.slice(0,20)+"</th>").join("") + "<th>Charge totale</th>";
+  tbody.innerHTML = resources.map(r => {
+    const cells = activeProjects.map(p => {
+      const inTeam = p.team && p.team.includes(r.id);
+      const pct = inTeam ? Math.round(100/Math.max(1,(p.team||[]).length)) : 0;
+      return "<td style="text-align:center;">" + (inTeam ? "<span style="background:rgba(99,210,180,0.1);color:var(--accent);border:1px solid rgba(99,210,180,0.2);padding:3px 10px;border-radius:3px;font-size:10px;">"+pct+"%</span>" : "<span style="color:var(--text-muted);">—</span>") + "</td>";
+    }).join("");
+    const totalAlloc = activeProjects.filter(p=>p.team&&p.team.includes(r.id)).length * 25;
+    return "<tr><td><span style="background:"+r.color+"22;color:"+r.color+";padding:3px 9px;border-radius:3px;font-size:10px;">"+r.id+"</span> "+r.name.split(" ")[0]+" "+(r.name.split(" ")[1]||"")+"</td>"+cells+"<td style="text-align:center;color:"+(totalAlloc>100?"var(--danger)":"var(--success)")+";">"+(totalAlloc||0)+"%</td></tr>";
+  }).join("");
+}
+
+renderResources();
+</script>
+
+<!-- MODAL RESSOURCE -->
+<div class="modal-overlay" id="resModalOverlay" onclick="if(event.target===this)closeResModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeResModal()">✕</button>
+    <div class="modal-tag">Ressource</div>
+    <div class="modal-title" id="resModalTitle">Nouveau Membre</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Identifiant (2 lettres) *</label>
+        <input class="form-input" id="resId" placeholder="Ex: AN" maxlength="3"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Niveau</label>
+        <select class="form-select" id="resLevel">
+          <option>Senior</option><option>Confirmé</option><option>Junior</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Nom complet *</label>
+        <input class="form-input" id="resName" placeholder="Prénom Nom"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Rôle / Poste</label>
+        <input class="form-input" id="resRole" placeholder="Ex: Data Engineer"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Disponibilité (%)</label>
+        <input class="form-input" id="resAvail" type="number" min="0" max="100" value="80"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Compétences (virgule séparées)</label>
+        <input class="form-input" id="resSkills" placeholder="Python, SQL, Jira"/>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeResModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveRes()">Enregistrer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmResOverlay" onclick="if(event.target===this)closeConfirmRes()">
+  <div class="confirm-box">
+    <div style="font-size:34px;margin-bottom:14px;">🗑️</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;margin-bottom:8px;">Supprimer ce membre ?</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.7;margin-bottom:0;">
+      <span id="confirmResName" style="color:var(--text);"></span><br>sera retiré de l'équipe. Action irréversible.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeConfirmRes()">Annuler</button>
+      <button class="btn-danger" onclick="executeDeleteRes()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

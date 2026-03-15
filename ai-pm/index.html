@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Project Manager — Premium Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">◇</div>
+        <span class="sidebar-logo-text">AI Project Manager</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Main</div>
+          <a href="#" class="sidebar-item active" data-view="dashboard">
+            <span class="sidebar-item-icon">▣</span>
+            Dashboard
+          </a>
+          <a href="#" class="sidebar-item" data-view="projects">
+            <span class="sidebar-item-icon">▤</span>
+            Projects
+          </a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Planning</div>
+          <a href="#" class="sidebar-item" data-view="wbs">
+            <span class="sidebar-item-icon">▦</span>
+            WBS Builder
+          </a>
+          <a href="#" class="sidebar-item" data-view="planning">
+            <span class="sidebar-item-icon">▧</span>
+            Planning
+          </a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Monitor</div>
+          <a href="#" class="sidebar-item" data-view="risks">
+            <span class="sidebar-item-icon">⚠</span>
+            Risks
+          </a>
+          <a href="#" class="sidebar-item" data-view="budget">
+            <span class="sidebar-item-icon">◈</span>
+            Budget
+          </a>
+          <a href="#" class="sidebar-item" data-view="resources">
+            <span class="sidebar-item-icon">◉</span>
+            Resources
+          </a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Insights</div>
+          <a href="#" class="sidebar-item" data-view="reports">
+            <span class="sidebar-item-icon">▥</span>
+            Reports
+          </a>
+          <a href="#" class="sidebar-item ai-item" data-view="ai-assistant">
+            <span class="sidebar-item-icon">◆</span>
+            AI Assistant
+          </a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-label">Config</div>
+          <a href="#" class="sidebar-item" data-view="settings">
+            <span class="sidebar-item-icon">⚙</span>
+            Settings
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main-wrap">
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-project">
+          <select>
+            <option>Smart Data Center 2026</option>
+            <option>Orange PMPR — BLIM</option>
+            <option>Power BI R&D</option>
+          </select>
+        </div>
+        <div class="topbar-search">
+          <input type="text" placeholder="Search projects, tasks, risks...">
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="topbar-btn" title="Notifications">🔔</button>
+          <button type="button" class="topbar-btn ai-btn" id="openAiPanel" title="AI Assistant">◆</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <!-- VIEW: DASHBOARD -->
+        <section class="view active" id="view-dashboard">
+          <div class="page-header">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Overview of your project health and key metrics</p>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="glass-card">
+              <div class="stat-value primary">78%</div>
+              <div class="stat-label">Project progress</div>
+              <div class="progress-bar" style="margin-top:12px;">
+                <div class="progress-bar-fill" style="width:78%;background:var(--primary);"></div>
+              </div>
+              <div class="stat-trend">↑ 12% this sprint</div>
+            </div>
+            <div class="glass-card">
+              <div class="stat-value ai">62%</div>
+              <div class="stat-label">Budget consumed</div>
+              <div class="progress-bar" style="margin-top:12px;">
+                <div class="progress-bar-fill" style="width:62%;background:var(--ai);"></div>
+              </div>
+              <div class="stat-trend">On track</div>
+            </div>
+            <div class="glass-card">
+              <div class="stat-value warning">5</div>
+              <div class="stat-label">Open risks</div>
+              <div class="stat-trend">2 high impact</div>
+            </div>
+            <div class="glass-card">
+              <div class="stat-value">94%</div>
+              <div class="stat-label">Tasks completed</div>
+              <div class="progress-bar" style="margin-top:12px;">
+                <div class="progress-bar-fill" style="width:94%;background:var(--ai);"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Health Score -->
+          <div class="health-section">
+            <div class="glass-card health-gauge-wrap">
+              <div class="health-gauge">
+                <svg viewBox="0 0 100 100" width="180" height="180">
+                  <defs>
+                    <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#FF4D6D"/>
+                      <stop offset="50%" style="stop-color:#FFB020"/>
+                      <stop offset="100%" style="stop-color:#00E5A8"/>
+                    </linearGradient>
+                  </defs>
+                  <circle class="health-gauge-bg" cx="50" cy="50" r="42"/>
+                  <circle class="health-gauge-fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="47"/>
+                </svg>
+                <div class="health-gauge-value">82</div>
+              </div>
+              <div class="stat-label">Project health score</div>
+            </div>
+            <div class="glass-card" style="display:flex;flex-direction:column;justify-content:center;">
+              <div class="health-scores">
+                <div class="health-score-item">
+                  <span class="health-score-label">Planning</span>
+                  <div class="health-score-bar"><div class="health-score-fill planning" style="width:88%;"></div></div>
+                </div>
+                <div class="health-score-item">
+                  <span class="health-score-label">Budget</span>
+                  <div class="health-score-bar"><div class="health-score-fill budget" style="width:85%;"></div></div>
+                </div>
+                <div class="health-score-item">
+                  <span class="health-score-label">Risk</span>
+                  <div class="health-score-bar"><div class="health-score-fill risk" style="width:72%;"></div></div>
+                </div>
+                <div class="health-score-item">
+                  <span class="health-score-label">Resource</span>
+                  <div class="health-score-bar"><div class="health-score-fill resource" style="width:90%;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Recommendations -->
+          <div class="ai-panel">
+            <div class="ai-panel-header">
+              <div class="icon">◆</div>
+              <span class="ai-panel-title">AI recommendations</span>
+            </div>
+            <div class="ai-recommendation-list">
+              <div class="ai-recommendation-item">
+                <span class="dot"></span>
+                <div>
+                  <div class="text">Consider adding a buffer to Phase 3 — historical variance suggests +2 weeks.</div>
+                  <div class="meta">Planning · High confidence</div>
+                </div>
+              </div>
+              <div class="ai-recommendation-item">
+                <span class="dot"></span>
+                <div>
+                  <div class="text">Risk R-002 (scope creep) probability increased. Recommend convening change board.</div>
+                  <div class="meta">Risks · Medium confidence</div>
+                </div>
+              </div>
+              <div class="ai-recommendation-item">
+                <span class="dot"></span>
+                <div>
+                  <div class="text">Team workload imbalance: KB at 95%. Suggest redistributing 2 tasks from Infrastructure lot.</div>
+                  <div class="meta">Resources · High confidence</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary row: Team workload + Task completion -->
+          <div class="dashboard-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="glass-card">
+              <div class="card-header">
+                <span class="card-title">Team workload</span>
+                <span class="card-badge">This week</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.85rem;"><span>AN</span><span>78%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:78%;background:var(--primary);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.85rem;"><span>ML</span><span>62%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:62%;background:var(--ai);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.85rem;"><span>KB</span><span>95%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:95%;background:var(--warning);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.85rem;"><span>SC</span><span>70%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:70%;background:var(--primary);"></div></div></div>
+              </div>
+            </div>
+            <div class="glass-card">
+              <div class="card-header">
+                <span class="card-title">Task completion by phase</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.8rem;color:var(--text-muted);"><span>Initialization</span><span>100%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:100%;background:var(--ai);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.8rem;color:var(--text-muted);"><span>Planning</span><span>100%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:100%;background:var(--ai);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.8rem;color:var(--text-muted);"><span>Execution</span><span>68%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:68%;background:var(--primary);"></div></div></div>
+                <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.8rem;color:var(--text-muted);"><span>Closure</span><span>0%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:0%;background:var(--text-soft);"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: WBS BUILDER -->
+        <section class="view" id="view-wbs">
+          <div class="page-header">
+            <h1 class="page-title">WBS Builder</h1>
+            <p class="page-subtitle">Hierarchical task structure — drag to reorder</p>
+          </div>
+          <div class="wbs-tree">
+            <div class="wbs-section-header">1. Initialization</div>
+            <div class="wbs-node expanded">
+              <span class="wbs-toggle">›</span>
+              <span class="wbs-number">1.0</span>
+              <span class="wbs-label">Project kick-off</span>
+            </div>
+            <div class="wbs-children">
+              <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">1.1</span><span class="wbs-label">Charter & stakeholders</span></div>
+              <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">1.2</span><span class="wbs-label">Kick-off meeting</span></div>
+            </div>
+            <div class="wbs-section-header">2. Planning</div>
+            <div class="wbs-node expanded">
+              <span class="wbs-toggle">›</span>
+              <span class="wbs-number">2.0</span>
+              <span class="wbs-label">Planning phase</span>
+            </div>
+            <div class="wbs-children">
+              <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">2.1</span><span class="wbs-label">WBS & schedule</span></div>
+              <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">2.2</span><span class="wbs-label">Risk plan</span></div>
+              <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">2.3</span><span class="wbs-label">Resource allocation</span></div>
+            </div>
+            <div class="wbs-section-header">3. Execution</div>
+            <div class="wbs-node"><span class="wbs-toggle">›</span><span class="wbs-number">3.0</span><span class="wbs-label">Delivery & build</span></div>
+            <div class="wbs-section-header">4. Monitoring</div>
+            <div class="wbs-node"><span class="wbs-toggle">›</span><span class="wbs-number">4.0</span><span class="wbs-label">Control & reporting</span></div>
+            <div class="wbs-section-header">5. Closure</div>
+            <div class="wbs-node"><span class="wbs-toggle"></span><span class="wbs-number">5.0</span><span class="wbs-label">Handover & lessons learned</span></div>
+          </div>
+        </section>
+
+        <!-- VIEW: PLANNING (Gantt) -->
+        <section class="view" id="view-planning">
+          <div class="page-header">
+            <h1 class="page-title">Planning</h1>
+            <p class="page-subtitle">Gantt timeline — dependencies & critical path</p>
+          </div>
+          <div class="gantt-preview">
+            <div class="gantt-timeline">
+              <span class="gantt-timeline-cell">Jan</span><span class="gantt-timeline-cell">Feb</span><span class="gantt-timeline-cell">Mar</span><span class="gantt-timeline-cell">Apr</span><span class="gantt-timeline-cell">May</span><span class="gantt-timeline-cell">Jun</span>
+            </div>
+            <div class="gantt-row">
+              <span class="gantt-row-label">1.0 Kick-off</span>
+              <div class="gantt-row-bars" style="position:relative;height:28px;">
+                <div class="gantt-bar normal" style="left:0%;width:8%;"></div>
+              </div>
+            </div>
+            <div class="gantt-row">
+              <span class="gantt-row-label">2.0 Planning</span>
+              <div class="gantt-row-bars" style="position:relative;height:28px;">
+                <div class="gantt-bar normal" style="left:8%;width:15%;"></div>
+              </div>
+            </div>
+            <div class="gantt-row">
+              <span class="gantt-row-label">3.0 Execution</span>
+              <div class="gantt-row-bars" style="position:relative;height:28px;">
+                <div class="gantt-bar critical" style="left:23%;width:45%;"></div>
+              </div>
+            </div>
+            <div class="gantt-row">
+              <span class="gantt-row-label">MVP Milestone</span>
+              <div class="gantt-row-bars" style="position:relative;height:28px;">
+                <div class="gantt-bar milestone" style="left:55%;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: RISKS -->
+        <section class="view" id="view-risks">
+          <div class="page-header">
+            <h1 class="page-title">Risk register</h1>
+            <p class="page-subtitle">Probability vs impact matrix & mitigation</p>
+          </div>
+          <div class="risk-heatmap-wrap">
+            <div class="risk-matrix">
+              <div class="risk-cell axis" style="grid-column:1;grid-row:1;"></div>
+              <div class="risk-cell axis" style="grid-column:2;grid-row:1;">Low</div>
+              <div class="risk-cell axis" style="grid-column:3;grid-row:1;">Med</div>
+              <div class="risk-cell axis" style="grid-column:4;grid-row:1;">High</div>
+              <div class="risk-cell axis" style="grid-column:5;grid-row:1;">Crit</div>
+              <div class="risk-cell axis" style="grid-column:1;grid-row:2;">High</div>
+              <div class="risk-cell low" style="grid-column:2;grid-row:2;">1</div>
+              <div class="risk-cell med" style="grid-column:3;grid-row:2;">1</div>
+              <div class="risk-cell high" style="grid-column:4;grid-row:2;">1</div>
+              <div class="risk-cell high" style="grid-column:5;grid-row:2;">1</div>
+              <div class="risk-cell axis" style="grid-column:1;grid-row:3;">Med</div>
+              <div class="risk-cell low" style="grid-column:2;grid-row:3;">2</div>
+              <div class="risk-cell med" style="grid-column:3;grid-row:3;"></div>
+              <div class="risk-cell med" style="grid-column:4;grid-row:3;"></div>
+              <div class="risk-cell high" style="grid-column:5;grid-row:3;"></div>
+              <div class="risk-cell axis" style="grid-column:1;grid-row:4;">Low</div>
+              <div class="risk-cell low" style="grid-column:2;grid-row:4;"></div>
+              <div class="risk-cell low" style="grid-column:3;grid-row:4;"></div>
+              <div class="risk-cell med" style="grid-column:4;grid-row:4;"></div>
+              <div class="risk-cell med" style="grid-column:5;grid-row:4;"></div>
+              <div class="risk-cell axis" style="grid-column:1;grid-row:5;">Prob</div>
+              <div class="risk-cell axis" style="grid-column:2;grid-row:5;"></div>
+              <div class="risk-cell axis" style="grid-column:3;grid-row:5;"></div>
+              <div class="risk-cell axis" style="grid-column:4;grid-row:5;"></div>
+              <div class="risk-cell axis" style="grid-column:5;grid-row:5;">Impact</div>
+            </div>
+            <div class="risk-cards">
+              <div class="risk-card">
+                <div class="risk-card-desc">Retard fournisseur infrastructure serveurs</div>
+                <div class="risk-card-meta"><span class="risk-badge prob">Prob: High</span><span class="risk-badge impact">Impact: High</span></div>
+                <div class="risk-card-owner">Owner: AN · Mitigation: Backup suppliers</div>
+              </div>
+              <div class="risk-card">
+                <div class="risk-card-desc">Scope creep in deployment phase</div>
+                <div class="risk-card-meta"><span class="risk-badge prob">Prob: Med</span><span class="risk-badge impact">Impact: Critical</span></div>
+                <div class="risk-card-owner">Owner: AN · Change board</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: BUDGET -->
+        <section class="view" id="view-budget">
+          <div class="page-header">
+            <h1 class="page-title">Budget tracking</h1>
+            <p class="page-subtitle">Allocated, consumed & forecast</p>
+          </div>
+          <div class="budget-section">
+            <div class="budget-card">
+              <div class="budget-card-title">Allocated</div>
+              <div class="budget-card-value">€ 450 000</div>
+              <div class="budget-bar"><div class="budget-bar-fill allocated" style="width:100%;"></div></div>
+            </div>
+            <div class="budget-card">
+              <div class="budget-card-title">Consumed</div>
+              <div class="budget-card-value">€ 279 000</div>
+              <div class="budget-bar"><div class="budget-bar-fill consumed" style="width:62%;"></div></div>
+            </div>
+            <div class="budget-card">
+              <div class="budget-card-title">Forecast at completion</div>
+              <div class="budget-card-value">€ 438 000</div>
+              <div class="budget-bar"><div class="budget-bar-fill forecast" style="width:97%;"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: PROJECTS (placeholder) -->
+        <section class="view" id="view-projects">
+          <div class="page-header">
+            <h1 class="page-title">Projects</h1>
+            <p class="page-subtitle">Create and manage projects</p>
+          </div>
+          <div class="glass-card">
+            <div class="card-header"><span class="card-title">Project creation wizard</span><span class="card-badge">New</span></div>
+            <p style="color:var(--text-muted);margin-bottom:20px;">Start a new project with AI-assisted setup: structure, WBS, and initial risks.</p>
+            <button type="button" class="btn-primary btn-ai">◆ Start with AI</button>
+          </div>
+        </section>
+
+        <!-- VIEW: RESOURCES, REPORTS, AI ASSISTANT, SETTINGS (placeholders) -->
+        <section class="view" id="view-resources">
+          <div class="page-header"><h1 class="page-title">Resources</h1><p class="page-subtitle">Team allocation & workload</p></div>
+          <div class="glass-card"><p style="color:var(--text-muted);">Resource allocation view — coming soon.</p></div>
+        </section>
+        <section class="view" id="view-reports">
+          <div class="page-header"><h1 class="page-title">Reports</h1><p class="page-subtitle">Analytics & exports</p></div>
+          <div class="glass-card"><p style="color:var(--text-muted);">Reports & analytics — coming soon.</p></div>
+        </section>
+        <section class="view" id="view-ai-assistant">
+          <div class="page-header"><h1 class="page-title">AI Assistant</h1><p class="page-subtitle">Generate WBS, analyze risks, suggest planning</p></div>
+          <div class="ai-panel" style="margin-bottom:0;">
+            <div class="ai-panel-header"><div class="icon">◆</div><span class="ai-panel-title">Capabilities</span></div>
+            <p style="color:var(--text-muted);margin-bottom:16px;">Open the floating panel (◆ in top bar) to generate WBS, analyze risks, suggest planning adjustments, generate meeting summaries and reports.</p>
+            <button type="button" class="btn-primary btn-ai" id="openAiPanel2">Open AI panel</button>
+          </div>
+        </section>
+        <section class="view" id="view-settings">
+          <div class="page-header"><h1 class="page-title">Settings</h1><p class="page-subtitle">Preferences & API</p></div>
+          <div class="glass-card"><p style="color:var(--text-muted);">Settings — coming soon.</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING AI ASSISTANT PANEL -->
+  <div class="ai-assistant-panel" id="aiPanel">
+    <div class="ai-assistant-header">
+      <div class="ai-assistant-title">
+        <div class="icon">◆</div>
+        AI Assistant
+      </div>
+      <button type="button" class="ai-assistant-close" id="closeAiPanel">×</button>
+    </div>
+    <div class="ai-assistant-capabilities">
+      <div class="ai-capability-item"><span class="icon">▦</span><span class="label">Generate WBS</span></div>
+      <div class="ai-capability-item"><span class="icon">⚠</span><span class="label">Analyze project risks</span></div>
+      <div class="ai-capability-item"><span class="icon">▧</span><span class="label">Suggest planning adjustments</span></div>
+      <div class="ai-capability-item"><span class="icon">▥</span><span class="label">Generate meeting summaries</span></div>
+      <div class="ai-capability-item"><span class="icon">◈</span><span class="label">Generate project reports</span></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

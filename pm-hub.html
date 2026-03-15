@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Abdelhakim Nechniche</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(212,175,100,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,175,100,0.02) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none; z-index: 0;
+}
+.orb { position:fixed; border-radius:50%; filter:blur(130px); pointer-events:none; z-index:0; }
+.orb-1 { width:700px; height:700px; background:rgba(212,175,100,0.03); top:-250px; right:-150px; }
+.orb-2 { width:500px; height:500px; background:rgba(139,157,195,0.025); bottom:50px; left:-150px; }
+
+/* ── NAV ── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 48px;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,10,13,0.88);
+  backdrop-filter:blur(24px);
+}
+.nav-logo {
+  display:flex; align-items:center; gap:12px;
+  font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:0.22em; color:var(--accent); text-transform:uppercase;
+}
+.nav-logo-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.nav-links { display:flex; gap:6px; align-items:center; }
+.nav-links a {
+  font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--text-muted); text-decoration:none;
+  padding:8px 14px; border-radius:5px;
+  transition:all 0.2s;
+}
+.nav-links a:hover { color:var(--text); background:rgba(255,255,255,0.04); }
+.nav-links a.active { color:var(--accent); background:rgba(99,210,180,0.07); }
+.nav-cta {
+  background:var(--accent) !important;
+  color:#060a0d !important; font-weight:700 !important;
+  padding:8px 18px !important;
+}
+.nav-cta:hover { opacity:0.88; background:var(--accent) !important; }
+
+/* ── LAYOUT ── */
+.layout { display:grid; grid-template-columns:260px 1fr; min-height:100vh; padding-top:65px; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position:sticky; top:65px; height:calc(100vh - 65px);
+  overflow-y:auto; border-right:1px solid var(--border);
+  padding:28px 0; background:rgba(12,17,24,0.7);
+  display:flex; flex-direction:column;
+}
+.sidebar::-webkit-scrollbar { width:2px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--surface3); }
+
+.sb-profile {
+  padding:0 20px 28px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:16px;
+}
+.sb-avatar {
+  width:48px; height:48px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Cormorant Garamond',serif; font-size:20px;
+  font-weight:600; color:#060a0d; margin-bottom:12px;
+}
+.sb-name { font-size:13px; font-weight:700; margin-bottom:2px; }
+.sb-role {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:0.14em; color:var(--accent); text-transform:uppercase;
+  margin-bottom:10px; line-height:1.5;
+}
+.sb-badges { display:flex; flex-wrap:wrap; gap:5px; }
+.sb-badge {
+  font-family:'DM Mono',monospace; font-size:9px;
+  padding:3px 8px; border-radius:3px; letter-spacing:0.08em;
+  border:1px solid var(--border); color:var(--text-muted);
+}
+.sb-badge.g { border-color:rgba(99,210,180,0.3); color:var(--accent); }
+.sb-badge.y { border-color:rgba(232,201,122,0.3); color:var(--accent2); }
+
+.sb-section-label {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--text-muted); padding:0 20px 8px;
+  margin-top:8px;
+}
+.sb-item {
+  display:flex; align-items:center; gap:11px;
+  padding:10px 20px; cursor:pointer;
+  transition:all 0.18s; border-left:2px solid transparent;
+  font-size:12px; font-weight:600; color:var(--text-soft);
+  text-decoration:none; letter-spacing:0.02em;
+}
+.sb-item:hover { background:rgba(99,210,180,0.04); color:var(--text); border-left-color:rgba(99,210,180,0.2); }
+.sb-item.active { background:rgba(99,210,180,0.07); color:var(--accent); border-left-color:var(--accent); }
+.sb-item-icon { font-size:15px; width:18px; text-align:center; flex-shrink:0; }
+.sb-badge-count {
+  margin-left:auto; font-family:'DM Mono',monospace; font-size:9px;
+  padding:2px 7px; border-radius:10px;
+  background:rgba(99,210,180,0.1); color:var(--accent);
+}
+.sb-badge-count.red { background:rgba(224,112,112,0.12); color:var(--danger); }
+
+.sb-footer {
+  margin-top:auto; padding:20px; border-top:1px solid var(--border);
+}
+.sb-status {
+  display:flex; align-items:center; gap:8px;
+  font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted);
+}
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+
+/* ── MAIN ── */
+.main { padding:40px 48px; overflow-x:hidden; position:relative; z-index:1; }
+
+/* ── HERO COMPACT ── */
+.hero-bar {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:40px; gap:32px;
+}
+.hero-left {}
+.hero-tag {
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:0.2em; color:var(--accent); text-transform:uppercase;
+  display:flex; align-items:center; gap:8px; margin-bottom:14px;
+  animation: fadeUp 0.6s ease both;
+}
+.hero-tag::before { content:''; width:24px; height:1px; background:var(--accent); }
+.hero-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(38px,4vw,62px); font-weight:300;
+  line-height:1.05; letter-spacing:-0.02em; margin-bottom:16px;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+.hero-title em { font-style:italic; color:var(--accent); }
+.hero-sub {
+  font-family:'DM Mono',monospace; font-size:12px;
+  line-height:1.8; color:var(--text-muted); max-width:480px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:16px; margin-bottom:40px;
+  animation: fadeUp 0.6s 0.25s ease both;
+}
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:22px 24px;
+  position:relative; overflow:hidden; cursor:default;
+  transition:all 0.2s;
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-1px); }
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.kpi-card.green::before { background:var(--accent); }
+.kpi-card.yellow::before { background:var(--accent2); }
+.kpi-card.red::before { background:var(--danger); }
+.kpi-card.blue::before { background:var(--accent3); }
+
+.kpi-label {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:0.18em; text-transform:uppercase; color:var(--text-muted);
+  margin-bottom:10px;
+}
+.kpi-value {
+  font-family:'Cormorant Garamond',serif; font-size:42px;
+  font-weight:600; line-height:1;
+}
+.kpi-value.green { color:var(--accent); }
+.kpi-value.yellow { color:var(--accent2); }
+.kpi-value.red { color:var(--danger); }
+.kpi-value.blue { color:var(--accent3); }
+.kpi-sub {
+  font-family:'DM Mono',monospace; font-size:10px;
+  color:var(--text-muted); margin-top:6px;
+}
+
+/* ── SECTION ── */
+.section-title-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--border);
+}
+.section-title { font-size:18px; font-weight:700; }
+.section-meta { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:0.1em; }
+
+/* ── TOOLBAR ── */
+.toolbar { display:flex; align-items:center; gap:10px; margin-bottom:22px; flex-wrap:wrap; }
+.search-box {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:9px 14px; flex:1; max-width:280px;
+}
+.search-box input {
+  background:none; border:none; outline:none;
+  color:var(--text); font-family:'DM Mono',monospace; font-size:12px; width:100%;
+}
+.search-box input::placeholder { color:var(--text-muted); }
+.filter-btn {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:0.12em; text-transform:uppercase;
+  padding:8px 14px; border-radius:5px; border:1px solid var(--border);
+  background:transparent; color:var(--text-muted); cursor:pointer; transition:all 0.2s;
+}
+.filter-btn.active, .filter-btn:hover {
+  border-color:var(--accent); color:var(--accent); background:rgba(99,210,180,0.05);
+}
+
+/* ── PROJECT GRID ── */
+.projects-grid {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr));
+  gap:18px; margin-bottom:60px;
+}
+.project-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:26px; cursor:pointer;
+  transition:all 0.25s; position:relative; overflow:hidden;
+}
+.project-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+.project-card::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+  transform:scaleX(0); transform-origin:left; transition:transform 0.3s;
+}
+.project-card:hover::after { transform:scaleX(1); }
+.project-card.status-active::after { background:var(--success); }
+.project-card.status-hold::after { background:var(--warning); }
+.project-card.status-closed::after { background:var(--text-muted); }
+.project-card.status-risk::after { background:var(--danger); }
+
+.card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.card-icon { width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; background:var(--surface2); }
+.card-status {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:0.14em; text-transform:uppercase;
+  padding:4px 10px; border-radius:20px;
+}
+.status-active  { background:rgba(99,210,180,0.09); color:var(--success); border:1px solid rgba(99,210,180,0.2); }
+.status-hold    { background:rgba(232,201,122,0.09); color:var(--warning); border:1px solid rgba(232,201,122,0.2); }
+.status-closed  { background:rgba(107,120,133,0.09); color:var(--text-muted); border:1px solid rgba(107,120,133,0.2); }
+.status-risk    { background:rgba(224,112,112,0.09); color:var(--danger); border:1px solid rgba(224,112,112,0.2); }
+
+.card-ref  { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.1em; margin-bottom:5px; }
+.card-title { font-size:15px; font-weight:700; margin-bottom:7px; line-height:1.3; }
+.card-desc  { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-muted); line-height:1.6; font-weight:300; margin-bottom:18px; }
+
+.card-progress { margin-bottom:14px; }
+.progress-header { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); margin-bottom:7px; }
+.progress-bar { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:2px; background:var(--accent); transition:width 1s ease; }
+.progress-fill.warn { background:var(--warning); }
+.progress-fill.danger { background:var(--danger); }
+.progress-fill.muted { background:var(--text-muted); }
+
+.card-footer { display:flex; align-items:center; justify-content:space-between; padding-top:14px; border-top:1px solid var(--border); gap:10px; }
+.card-meta { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); }
+.card-meta span { color:var(--text-soft); }
+.card-actions { display:flex; gap:6px; align-items:center; }
+
+.card-btn {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.08em;
+  padding:5px 11px; border:1px solid rgba(99,210,180,0.25);
+  border-radius:4px; background:transparent; color:var(--accent);
+  cursor:pointer; transition:all 0.18s; text-decoration:none;
+}
+.card-btn:hover { background:rgba(99,210,180,0.08); }
+.card-btn.orange { border-color:rgba(232,201,122,0.25); color:var(--accent2); }
+.card-btn.orange:hover { background:rgba(232,201,122,0.08); }
+.card-btn.red { border-color:rgba(224,112,112,0.2); color:var(--danger); }
+.card-btn.red:hover { background:rgba(224,112,112,0.08); }
+
+/* CONFIRM DELETE MODAL */
+.confirm-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(3,6,9,0.95); backdrop-filter:blur(14px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .25s;
+}
+.confirm-overlay.open { opacity:1; pointer-events:all; }
+.confirm-box {
+  background:var(--surface); border:1px solid rgba(224,112,112,0.3);
+  border-radius:14px; padding:40px; width:440px; max-width:95vw;
+  text-align:center; position:relative;
+  transform:translateY(16px); transition:transform .25s;
+}
+.confirm-overlay.open .confirm-box { transform:translateY(0); }
+.confirm-box::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--danger); border-radius:14px 14px 0 0;
+}
+.confirm-icon { font-size:36px; margin-bottom:16px; }
+.confirm-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; margin-bottom:8px; }
+.confirm-desc { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-muted); line-height:1.7; margin-bottom:28px; }
+.confirm-name { color:var(--text); font-weight:500; }
+.confirm-actions { display:flex; gap:10px; justify-content:center; }
+.btn-danger {
+  background:var(--danger); color:#fff; padding:11px 24px; border-radius:5px;
+  font-family:'Syne',sans-serif; font-size:12px; font-weight:700;
+  letter-spacing:0.08em; text-transform:uppercase; border:none; cursor:pointer; transition:all .2s;
+}
+.btn-danger:hover { background:#f08080; }
+
+.card-team { display:flex; }
+.team-dot {
+  width:24px; height:24px; border-radius:50%;
+  border:2px solid var(--surface); display:flex;
+  align-items:center; justify-content:center;
+  font-size:9px; font-weight:700; margin-left:-7px;
+}
+.team-dot:first-child { margin-left:0; }
+
+/* Carte Nouveau Projet */
+.new-card {
+  background:transparent; border:1px dashed rgba(99,210,180,0.18);
+  border-radius:12px; padding:26px; cursor:pointer;
+  transition:all 0.25s; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; min-height:220px; gap:14px;
+}
+.new-card:hover { border-color:var(--accent); background:rgba(99,210,180,0.03); }
+.new-card-icon {
+  width:52px; height:52px; border-radius:50%;
+  border:1px solid rgba(99,210,180,0.28);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:var(--accent); transition:all 0.2s;
+}
+.new-card:hover .new-card-icon { background:rgba(99,210,180,0.1); }
+.new-card-label { font-size:13px; font-weight:700; color:var(--accent); letter-spacing:0.04em; }
+.new-card-sub { font-family:'DM Mono',monospace; font-size:10px; color:var(--text-muted); text-align:center; line-height:1.6; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:400;
+  background:rgba(3,6,9,0.92); backdrop-filter:blur(12px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity 0.3s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:48px; width:640px;
+  max-width:96vw; position:relative;
+  transform:translateY(20px); transition:transform 0.3s;
+  max-height:90vh; overflow-y:auto;
+}
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:16px 16px 0 0;
+}
+.modal-close {
+  position:absolute; top:18px; right:18px;
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--border); border-radius:5px;
+  background:transparent; color:var(--text-muted); cursor:pointer; font-size:14px;
+  transition:all 0.18s;
+}
+.modal-close:hover { border-color:var(--danger); color:var(--danger); }
+.modal-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; }
+.modal-title { font-family:'Cormorant Garamond',serif; font-size:38px; font-weight:300; margin-bottom:28px; line-height:1.1; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.form-group { display:flex; flex-direction:column; gap:7px; }
+.form-group.full { grid-column:1/-1; }
+.form-label { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--text-muted); }
+.form-input, .form-select, .form-textarea {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:6px; padding:11px 14px; color:var(--text);
+  font-family:'DM Mono',monospace; font-size:12px; transition:border-color 0.2s; outline:none; width:100%;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--accent); }
+.form-select { cursor:pointer; }
+.form-textarea { resize:vertical; min-height:80px; }
+.form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:28px; padding-top:22px; border-top:1px solid var(--border); }
+
+.btn-primary {
+  display:flex; align-items:center; gap:8px;
+  background:var(--accent); color:#060a0d;
+  padding:12px 24px; border-radius:5px;
+  font-family:'Syne',sans-serif; font-size:12px; font-weight:700;
+  letter-spacing:0.08em; text-transform:uppercase; border:none; cursor:pointer; transition:all 0.2s;
+}
+.btn-primary:hover { background:#7fe0c8; transform:translateY(-1px); }
+.btn-secondary {
+  display:flex; align-items:center; gap:8px;
+  background:transparent; color:var(--text);
+  padding:12px 22px; border-radius:5px;
+  font-family:'Syne',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:0.08em; text-transform:uppercase;
+  border:1px solid var(--border); cursor:pointer; transition:all 0.2s;
+}
+.btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── WIZARD PROMPT ── */
+.wizard-prompt {
+  background:linear-gradient(135deg,rgba(99,210,180,0.07),rgba(232,201,122,0.04));
+  border:1px solid rgba(99,210,180,0.2); border-radius:12px;
+  padding:28px; margin-bottom:40px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:24px; animation: fadeUp 0.6s 0.35s ease both;
+}
+.wiz-left {}
+.wiz-tag { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase; margin-bottom:8px; }
+.wiz-title { font-size:16px; font-weight:700; margin-bottom:5px; }
+.wiz-desc { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-muted); line-height:1.6; }
+.wiz-steps { display:flex; gap:6px; flex-shrink:0; }
+.wiz-step-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:rgba(99,210,180,0.2); border:1px solid rgba(99,210,180,0.3);
+}
+.wiz-step-dot.done { background:var(--accent); border-color:var(--accent); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px);
+  padding:12px 22px; border-radius:8px;
+  background:var(--surface2); border:1px solid var(--border-active);
+  color:var(--text); font-family:'DM Mono',monospace; font-size:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.4);
+  opacity:0; pointer-events:none; z-index:600;
+  transition:transform 0.3s ease, opacity 0.3s ease;
+}
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:3px; }
+
+/* ── FLOATING AI ── */
+.ai-float-btn{
+  position:fixed;bottom:28px;right:28px;z-index:350;
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#4cbda0);
+  color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;
+  text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);
+  border:1px solid rgba(99,210,180,0.4);transition:transform .2s,box-shadow .2s;
+}
+.ai-float-btn:hover{transform:scale(1.08);box-shadow:0 12px 36px rgba(99,210,180,0.45);}
+.ai-float-btn::after{content:attr(title);position:absolute;right:100%;margin-right:12px;white-space:nowrap;
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);background:var(--surface);padding:6px 12px;border-radius:6px;
+  border:1px solid var(--border);opacity:0;pointer-events:none;transition:opacity .2s;}
+.ai-float-btn:hover::after{opacity:1;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px) {
+  .layout { grid-template-columns:1fr; }
+  .sidebar { display:none; }
+  nav { padding:14px 20px; }
+  .main { padding:24px 20px; }
+  .kpi-strip { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    PM Hub / v2.0
+  </div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="active">Dashboard</a>
+    <a href="pm-hub-gantt.html">Planning</a>
+    <a href="pm-hub-kanban.html">Kanban</a>
+    <a href="pm-hub-raid.html">RAID</a>
+    <a href="pm-hub-resources.html">Ressources</a>
+    <a href="pm-hub-report.html">Reporting</a>
+    <a href="pm-hub-templates.html">Templates</a>
+    <a href="pm-hub-settings.html" style="color:var(--text-muted);">⚙</a>
+    <a href="#" class="nav-cta" onclick="openModal()">+ Nouveau projet</a>
+  </div>
+</nav>
+
+<a href="pm-hub-ai.html?from=Dashboard" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA — Référez-vous à l'IA partout">🤖</a>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-profile">
+      <div class="sb-avatar" id="sbAvatar">AN</div>
+      <div class="sb-name" id="sbName">Abdelhakim Nechniche</div>
+      <div class="sb-role" id="sbRole">PM Telecom & IT · PMP® · PRINCE2 7th</div>
+      <div class="sb-badges">
+        <span class="sb-badge g">PMP®</span>
+        <span class="sb-badge y">PRINCE2 7th</span>
+        <span class="sb-badge">Scrum</span>
+        <span class="sb-badge" style="border-color:rgba(122,184,232,0.3);color:var(--accent3);">PMOCP 🔄</span>
+      </div>
+    </div>
+
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-item active" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item" href="pm-hub-kanban.html"><span class="sb-item-icon">📋</span> Kanban</a>
+    <a class="sb-item" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log <span class="sb-badge-count red" id="sbRaidCount">3</span></a>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-transverse.html"><span class="sb-item-icon">🎯</span> Pilotage</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📋</span> Templates</a>
+    <a class="sb-item" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Paramètres</a>
+
+    <div class="sb-section-label" style="margin-top:16px;">Projets actifs</div>
+    <div id="sbProjects"></div>
+
+    <div class="sb-footer">
+      <div class="sb-status">
+        <div class="status-dot"></div>
+        Disponible · Orvault, FR
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO BAR -->
+    <div class="hero-bar">
+      <div class="hero-left">
+        <div class="hero-tag">Project Management Operating System</div>
+        <h1 class="hero-title">Pilotez.<br>Anticipez.<br><em>Livrez.</em></h1>
+        <p class="hero-sub">Centralisation de tous vos projets, templates, risques et reporting — structuré comme un Senior PM.</p>
+      </div>
+    </div>
+
+    <!-- WIZARD PROMPT -->
+    <div class="wizard-prompt" id="wizardPrompt">
+      <div class="wiz-left">
+        <div class="wiz-tag">🧭 Séquençage Projet</div>
+        <div class="wiz-title">Nouveau projet ? Lancez le PM Wizard</div>
+        <div class="wiz-desc">Guidé étape par étape : Cadrage → Charte → WBS → RACI → RAID → Planning → Gouvernance</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex-shrink:0;">
+        <div class="wiz-steps" id="wizSteps"></div>
+        <button class="btn-primary" onclick="launchWizard()">Lancer le wizard →</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-strip">
+      <div class="kpi-card green">
+        <div class="kpi-label">Projets actifs</div>
+        <div class="kpi-value green" id="kpiActive">—</div>
+        <div class="kpi-sub" id="kpiActiveSub">En cours</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Avancement moyen</div>
+        <div class="kpi-value yellow" id="kpiProgress">—</div>
+        <div class="kpi-sub">Progression globale</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Points RAID ouverts</div>
+        <div class="kpi-value red" id="kpiRaid">3</div>
+        <div class="kpi-sub">Risques & actions</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Portefeuille total</div>
+        <div class="kpi-value blue" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiTotalSub">projets</div>
+      </div>
+    </div>
+
+    <!-- PROJETS -->
+    <div class="section-title-row">
+      <div class="section-title">Portefeuille Projets</div>
+      <div class="section-meta" id="totalLabel">— projets</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <span style="color:var(--text-muted);font-size:13px;">🔍</span>
+        <input type="text" placeholder="Rechercher..." oninput="filterProjects(this.value)"/>
+      </div>
+      <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+      <button class="filter-btn" onclick="setFilter('active',this)">En cours</button>
+      <button class="filter-btn" onclick="setFilter('hold',this)">En attente</button>
+      <button class="filter-btn" onclick="setFilter('risk',this)">À risque</button>
+      <button class="filter-btn" onclick="setFilter('closed',this)">Clôturés</button>
+    </div>
+
+    <div class="projects-grid" id="projectsGrid"></div>
+
+  </main>
+</div>
+
+<!-- MODAL NOUVEAU PROJET -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-tag">Initialisation</div>
+    <h2 class="modal-title">Nouveau Projet</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Nom du projet *</label>
+        <input type="text" class="form-input" id="newName" placeholder="Ex: Déploiement 5G Private Network"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Référence</label>
+        <input type="text" class="form-input" id="newRef" placeholder="PRJ-2026-XXX"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="newType">
+          <option value="">Sélectionner...</option>
+          <option>Télécoms / Réseau</option>
+          <option>IT / Digital</option>
+          <option>Infrastructure</option>
+          <option>R&D / Innovation</option>
+          <option>Data / Analytics</option>
+          <option>Transformation</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de début</label>
+        <input type="date" class="form-input" id="newStart"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de fin prévue</label>
+        <input type="date" class="form-input" id="newEnd"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget (€)</label>
+        <input type="text" class="form-input" id="newBudget" placeholder="Ex: 250 000"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <select class="form-select" id="newPriority">
+          <option>Critique</option>
+          <option>Haute</option>
+          <option selected>Normale</option>
+          <option>Basse</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client / Commanditaire</label>
+        <input type="text" class="form-input" id="newClient" placeholder="Ex: Orange France"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description / Objectifs</label>
+        <textarea class="form-textarea" id="newDesc" placeholder="Décrivez les objectifs principaux du projet..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="createAndWizard()">Créer + lancer le wizard →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#63d2b4','#e8c97a','#7ab8e8','#e07070','#b07ae8'];
+const ICONS  = ['🚀','💡','🏗️','🔧','📊','🌐','⚙️','📱','🧠','📡'];
+let currentFilter = 'all';
+let searchQuery = '';
+
+function statusLabel(s) {
+  return { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' }[s] || s;
+}
+function formatDate(d) {
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return `${day} ${M[parseInt(m)-1]} ${y}`;
+}
+function progressClass(p, status) {
+  if(status==='risk') return 'danger';
+  if(status==='closed') return 'muted';
+  if(p<40) return 'warn';
+  return '';
+}
+
+function renderProjects(list) {
+  const grid = document.getElementById('projectsGrid');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const tplCount = PMHUB.countSavedTemplates(p.id);
+    const card = document.createElement('div');
+    card.className = `project-card status-${p.status}`;
+    card.style.cursor = 'pointer';
+    card.onclick = function(ev) {
+      if (!ev.target.closest('.card-actions')) PMHUB.goTo('pm-hub-project.html', { project: p.id });
+    };
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-icon">${p.icon||'📁'}</div>
+        <div class="card-status status-${p.status}">${statusLabel(p.status)}</div>
+      </div>
+      <div class="card-ref">${p.ref} · ${p.type} ${p.methodology ? ' · ' + (PMHUB.getMethodology(p.methodology).shortLabel || p.methodology) : ''}</div>
+      <div class="card-title">${p.name} <span style="font-size:11px;font-weight:400;color:var(--text-muted);opacity:0.7;">→</span></div>
+      <div class="card-desc">${p.desc}</div>
+      <div class="card-progress">
+        <div class="progress-header">
+          <span>Avancement</span>
+          <span style="color:${p.status==='risk'?'var(--danger)':p.status==='closed'?'var(--text-muted)':'var(--accent)'}">${p.progress||0}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${progressClass(p.progress,p.status)}" style="width:${p.progress||0}%"></div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-meta">
+          ${p.client ? `Client : <span>${p.client}</span><br>` : ''}
+          Fin : <span>${formatDate(p.end)}</span>
+          ${tplCount ? ` · <span style="color:var(--accent)">${tplCount} tpl</span>` : ''}
+        </div>
+        <div class="card-actions">
+          ${p.status==='active' ? `<button class="card-btn orange" onclick="goWizard(${p.id},event)">Wizard</button>` : ''}
+          <button class="card-btn" onclick="goTemplates(${p.id},event)">Templates →</button>
+          <button class="card-btn red" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  // Nouvelle carte
+  const nc = document.createElement('div');
+  nc.className = 'new-card';
+  nc.onclick = openModal;
+  nc.innerHTML = `
+    <div class="new-card-icon">＋</div>
+    <div class="new-card-label">Nouveau projet</div>
+    <div class="new-card-sub">Créer et initialiser<br>via le PM Wizard</div>
+  `;
+  grid.appendChild(nc);
+}
+
+function goTemplates(id, e) { e.stopPropagation(); PMHUB.goTo('pm-hub-templates.html',{project:id}); }
+function goWizard(id, e)    { e.stopPropagation(); PMHUB.goTo('pm-hub-wizard.html',{project:id}); }
+function launchWizard()     { PMHUB.goTo('pm-hub-wizard.html'); }
+
+// ── DELETE PROJECT ──
+let _deleteId = null;
+function confirmDelete(id, name, e) {
+  e.stopPropagation();
+  _deleteId = id;
+  document.getElementById('confirmName').textContent = name;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  _deleteId = null;
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+function executeDelete() {
+  if(_deleteId === null) return;
+  PMHUB.deleteProject(_deleteId);
+  closeConfirm();
+  applyFilters();
+  showToast('Projet supprimé.');
+}
+
+function showToast(msg) {
+  let el = document.getElementById('toastEl');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toastEl';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._toastT);
+  el._toastT = setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+function applyFilters() {
+  let list = PMHUB.getProjects();
+  if(currentFilter!=='all') list = list.filter(p=>p.status===currentFilter);
+  if(searchQuery) list = list.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  renderProjects(list);
+
+  const all = PMHUB.getProjects();
+  const stats = PMHUB.getStats();
+  document.getElementById('kpiActive').textContent   = stats.active;
+  document.getElementById('kpiProgress').textContent = stats.avgProgress+'%';
+  document.getElementById('kpiTotal').textContent    = stats.total;
+  document.getElementById('totalLabel').textContent  = `${all.length} projet${all.length>1?'s':''}`;
+
+  // Sidebar projects
+  const sbp = document.getElementById('sbProjects');
+  sbp.innerHTML = '';
+  all.filter(p=>p.status==='active').forEach(p => {
+    const el = document.createElement('a');
+    el.className = 'sb-item';
+    el.href = `pm-hub-wizard.html?project=${p.id}`;
+    el.innerHTML = `<span class="sb-item-icon">${p.icon||'📁'}</span>${p.name.length>22?p.name.slice(0,21)+'…':p.name}`;
+    sbp.appendChild(el);
+  });
+
+  // Wizard steps dots
+  const ws = document.getElementById('wizSteps');
+  if(ws) {
+    ws.innerHTML = PMHUB.WIZARD_STEPS.map((_,i)=>`<div class="wiz-step-dot${i<2?' done':''}"></div>`).join('');
+  }
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function filterProjects(q) { searchQuery = q; applyFilters(); }
+
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function createAndWizard() {
+  const name = document.getElementById('newName').value.trim();
+  if(!name) { document.getElementById('newName').style.borderColor='var(--danger)'; return; }
+  const all = PMHUB.getProjects();
+  const year = new Date().getFullYear();
+  const project = {
+    id: Date.now(),
+    ref:    document.getElementById('newRef').value || `PRJ-${year}-${String(all.length+1).padStart(3,'0')}`,
+    name,
+    desc:   document.getElementById('newDesc').value || 'Description à compléter.',
+    status: 'active', progress: 0,
+    type:   document.getElementById('newType').value || 'Autre',
+    start:  document.getElementById('newStart').value || new Date().toISOString().split('T')[0],
+    end:    document.getElementById('newEnd').value || '',
+    budget: document.getElementById('newBudget').value || '—',
+    client: document.getElementById('newClient').value || '',
+    priority: document.getElementById('newPriority').value,
+    team: ['AN'], icon: ICONS[Math.floor(Math.random()*ICONS.length)],
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    createdAt: new Date().toISOString()
+  };
+  PMHUB.addProject(project);
+  closeModal();
+  // Redirige vers le wizard
+  PMHUB.goTo('pm-hub-wizard.html', { project: project.id });
+}
+
+PMHUB.onChange(applyFilters);
+applyFilters();
+</script>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Supprimer ce projet ?</div>
+    <div class="confirm-desc">
+      Vous allez supprimer définitivement<br>
+      <span class="confirm-name" id="confirmName"></span><br>
+      Cette action est irréversible. Tous les templates liés seront supprimés.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-danger" onclick="executeDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

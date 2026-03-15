@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Pilotage transverse</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;}
+.sidebar{position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
+.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;transition:all .18s;}
+.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-item-icon{font-size:15px;width:18px;text-align:center;}
+.main{padding:40px 48px;position:relative;z-index:1;}
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;line-height:1.05;margin-bottom:8px;}
+.page-h1 em{font-style:italic;color:var(--accent);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:28px;}
+.project-bar{display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.project-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:240px;cursor:pointer;}
+.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.tab{padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-size:12px;font-weight:600;color:var(--text-muted);transition:all .2s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px;}
+.card-title{font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.table-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.tbl td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;}
+.tbl input,.tbl select,.tbl textarea{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px 10px;color:var(--text);font-size:11px;width:100%;}
+.add-btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#060a0d;padding:8px 16px;border-radius:5px;font-size:11px;font-weight:700;border:none;cursor:pointer;margin-top:12px;}
+.add-btn:hover{background:#7fe0c8;}
+.btn-print{background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:8px 16px;border-radius:5px;font-size:11px;cursor:pointer;margin-left:8px;}
+.btn-print:hover{border-color:var(--accent);color:var(--accent);}
+.power-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.power-cell{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11px;}
+.power-cell h4{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.kpi-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:20px;}
+.kpi-box .val{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;}
+.kpi-box .lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--text-muted);margin-top:6px;}
+.kpi-box.alert .val{color:var(--danger);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;color:var(--text);font-size:12px;}
+@media print{nav,.sidebar,.tabs,.project-bar,.add-btn,.btn-print{display:none!important;}
+.layout{display:block!important;padding-top:0!important;}
+.main{padding:0!important;}body{background:#fff;color:#111;}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-profile">
+      <div class="sb-avatar">AN</div>
+      <div class="sb-name">Abdelhakim Nechniche</div>
+      <div class="sb-role">PM Telecom & IT · PMP® · PRINCE2 7th</div>
+    </div>
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-group" data-group="dashboard" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Vue d'ensemble</a>
+    <a class="sb-group" data-group="planning" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning & exécution</a>
+    <a class="sb-group" data-group="governance" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> Suivi & gouvernance</a>
+    <a class="sb-group" data-group="resources" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources & bibliothèque</a>
+    <a class="sb-group" data-group="config" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Configuration</a>
+    <a class="sb-group" data-group="ai" href="pm-hub-ai.html"><span class="sb-item-icon">🤖</span> Centre IA</a>
+    <div class="sb-section-label sb-section-projects">Projets actifs</div>
+    <div id="sbProjects"></div>
+    <div class="sb-footer"><div class="sb-status"><div class="status-dot"></div>Disponible</div></div>
+  </aside>
+  <main class="main">
+    <div class="page-tag">Fonctionnalités transverses</div>
+    <h1 class="page-h1">Pilotage <em>transverse</em></h1>
+    <p class="page-sub">Parties prenantes, communication, budget, livrables, one-pager et REX — communs à toutes les méthodologies.</p>
+    <div class="project-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase">Projet :</span>
+      <select id="projectSelect" onchange="switchProject(this.value)"></select>
+    </div>
+    <div id="noProject" style="display:none;padding:40px;text-align:center;color:var(--text-muted);">Sélectionnez un projet ci-dessus ou <a href="pm-hub.html" style="color:var(--accent);">créez-en un</a>.</div>
+    <div id="tabsBar" style="display:none;">
+      <div class="tabs">
+        <div class="tab active" data-tab="stakeholders">👥 Parties prenantes</div>
+        <div class="tab" data-tab="communication">📢 Communication</div>
+        <div class="tab" data-tab="budget">💰 Budget</div>
+        <div class="tab" data-tab="deliverables">📎 Livrables</div>
+        <div class="tab" data-tab="onepager">📄 One-pager</div>
+        <div class="tab" data-tab="retro">💡 REX / Rétro</div>
+      </div>
+      <div id="tabContent"></div>
+    </div>
+  </main>
+</div>
+<script>
+let currentProjectId = null;
+function init() {
+  const projects = PMHUB.getProjects();
+  const sel = document.getElementById('projectSelect');
+  sel.innerHTML = '<option value="">— Choisir un projet —</option>' + projects.map(p => `<option value="${p.id}">${p.ref} — ${p.name}</option>`).join('');
+  const param = PMHUB.getParam('project');
+  if (param) { sel.value = param; switchProject(param); }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+}
+function switchProject(id) {
+  currentProjectId = id ? parseInt(id, 10) : null;
+  document.getElementById('noProject').style.display = currentProjectId ? 'none' : 'block';
+  document.getElementById('tabsBar').style.display = currentProjectId ? 'block' : 'none';
+  const link = document.getElementById('navProjLink');
+  if (link && currentProjectId) link.href = 'pm-hub-project.html?project=' + currentProjectId;
+  if (currentProjectId) renderTab('stakeholders');
+}
+function setTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+  renderTab(tabId);
+}
+function renderTab(tabId) {
+  const pid = currentProjectId;
+  if (!pid) return;
+  const container = document.getElementById('tabContent');
+  if (tabId === 'stakeholders') {
+    const list = PMHUB.getStakeholders(pid) || [];
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Registre des parties prenantes</div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>Nom / Rôle</th><th>Pouvoir</th><th>Intérêt</th><th>Stratégie</th><th></th></tr></thead>
+            <tbody>
+              ${list.map((s,i) => `<tr>
+                <td><input type="text" value="${(s.name||'').replace(/"/g,'&quot;')}" onchange="updateStakeholder(${i},'name',this.value)"/></td>
+                <td><select onchange="updateStakeholder(${i},'power',this.value)"><option value="Haut" ${s.power==='Haut'?'selected':''}>Haut</option><option value="Moyen" ${s.power==='Moyen'?'selected':''}>Moyen</option><option value="Faible" ${s.power==='Faible'?'selected':''}>Faible</option></select></td>
+                <td><select onchange="updateStakeholder(${i},'interest',this.value)"><option value="Haut" ${s.interest==='Haut'?'selected':''}>Haut</option><option value="Moyen" ${s.interest==='Moyen'?'selected':''}>Moyen</option><option value="Faible" ${s.interest==='Faible'?'selected':''}>Faible</option></select></td>
+                <td><input type="text" value="${(s.strategy||'').replace(/"/g,'&quot;')}" onchange="updateStakeholder(${i},'strategy',this.value)" placeholder="Gérer de près / Informer…"/></td>
+                <td><button type="button" class="btn-print" onclick="deleteStakeholder(${i})">🗑</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="add-btn" onclick="addStakeholder()">+ Ajouter</button>
+        <div class="power-grid" style="margin-top:24px;">
+          <div class="power-cell"><h4>Matrice Pouvoir / Intérêt</h4> Haut pouvoir + Haut intérêt = Gérer de près. Haut pouvoir + Faible intérêt = Satisfaire. Faible pouvoir + Haut intérêt = Informer.</div>
+          <div class="power-cell"><h4>Légende</h4> Adaptez la stratégie de communication selon la position de chaque partie prenante dans la matrice.</div>
+        </div>
+      </div>`;
+  } else if (tabId === 'communication') {
+    const data = PMHUB.getCommunicationPlan(pid) || { plan: [], history: [] };
+    const plan = data.plan || [];
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Plan de communication</div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>Qui</th><th>Quoi</th><th>Quand</th><th>Canal</th><th></th></tr></thead>
+            <tbody>
+              ${plan.map((p,i) => `<tr>
+                <td><input type="text" value="${(p.who||'').replace(/"/g,'&quot;')}" onchange="updateCommPlan(${i},'who',this.value)"/></td>
+                <td><input type="text" value="${(p.what||'').replace(/"/g,'&quot;')}" onchange="updateCommPlan(${i},'what',this.value)"/></td>
+                <td><input type="text" value="${(p.when||'').replace(/"/g,'&quot;')}" onchange="updateCommPlan(${i},'when',this.value)" placeholder="Hebdo / Mensuel"/></td>
+                <td><input type="text" value="${(p.channel||'').replace(/"/g,'&quot;')}" onchange="updateCommPlan(${i},'channel',this.value)" placeholder="Email / Réunion"/></td>
+                <td><button type="button" class="btn-print" onclick="deleteCommPlan(${i})">🗑</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="add-btn" onclick="addCommPlan()">+ Ajouter une entrée</button>
+        <div class="card-title" style="margin-top:28px;">Historique des envois (optionnel)</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Notez ici les envois effectués pour traçabilité.</p>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>Date</th><th>Contenu / Destinataire</th></tr></thead>
+            <tbody>
+              ${(data.history||[]).slice(0,20).map(h => `<tr><td>${h.date||'—'}</td><td>${(h.desc||'').replace(/</g,'&lt;')}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--text-muted);">Aucun enregistrement.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+        <button class="add-btn" onclick="addCommHistory()">+ Enregistrer un envoi</button>
+      </div>`;
+  } else if (tabId === 'budget') {
+    const b = PMHUB.getBudget(pid) || {};
+    const planned = Number(b.planned) || 0;
+    const committed = Number(b.committed) || 0;
+    const consumed = Number(b.consumed) || 0;
+    const curr = b.currency || '€';
+    const alert = planned > 0 && consumed > planned;
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Budget projet</div>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="val">${planned.toLocaleString('fr-FR')} ${curr}</div><div class="lbl">Prévu</div></div>
+          <div class="kpi-box"><div class="val">${committed.toLocaleString('fr-FR')} ${curr}</div><div class="lbl">Engagé</div></div>
+          <div class="kpi-box ${alert?'alert':''}"><div class="val">${consumed.toLocaleString('fr-FR')} ${curr}</div><div class="lbl">Consommé ${alert?'— Dépassement !':''}</div></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Prévu</label><input type="number" class="form-input" id="b_planned" value="${planned}" placeholder="0"/></div>
+          <div class="form-group"><label class="form-label">Engagé</label><input type="number" class="form-input" id="b_committed" value="${committed}" placeholder="0"/></div>
+          <div class="form-group"><label class="form-label">Consommé</label><input type="number" class="form-input" id="b_consumed" value="${consumed}" placeholder="0"/></div>
+          <div class="form-group"><label class="form-label">Devise</label><input type="text" class="form-input" id="b_currency" value="${curr}"/></div>
+        </div>
+        <button class="add-btn" onclick="saveBudget()">💾 Enregistrer</button>
+      </div>`;
+  } else if (tabId === 'deliverables') {
+    const list = PMHUB.getDeliverables(pid) || [];
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Livrables / Documentation</div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>Nom du livrable</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+              ${list.map((d,i) => `<tr>
+                <td><input type="text" value="${(d.name||'').replace(/"/g,'&quot;')}" onchange="updateDeliverable(${i},'name',this.value)"/></td>
+                <td><select onchange="updateDeliverable(${i},'status',this.value)"><option value="draft" ${d.status==='draft'?'selected':''}>Brouillon</option><option value="review" ${d.status==='review'?'selected':''}>En revue</option><option value="validated" ${d.status==='validated'?'selected':''}>Validé</option></select></td>
+                <td><input type="date" value="${d.date||''}" onchange="updateDeliverable(${i},'date',this.value)"/></td>
+                <td><button type="button" class="btn-print" onclick="deleteDeliverable(${i})">🗑</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="add-btn" onclick="addDeliverable()">+ Ajouter un livrable</button>
+      </div>`;
+  } else if (tabId === 'onepager') {
+    const reports = PMHUB.getOnePagerReports(pid) || [];
+    const last = reports[reports.length - 1];
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Rapport one-pager (avancement)</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Résumé, jalons, risques, décisions et prochaines étapes — une page pour le COPIL.</p>
+        <div class="form-grid">
+          <div class="form-group full"><label class="form-label">Résumé / Contexte</label><textarea class="form-input" id="op_summary" rows="2">${last ? (last.summary||'') : ''}</textarea></div>
+          <div class="form-group full"><label class="form-label">Jalons clés (atteints / à venir)</label><textarea class="form-input" id="op_milestones" rows="2">${last ? (last.milestones||'') : ''}</textarea></div>
+          <div class="form-group full"><label class="form-label">Risques / Points d'attention</label><textarea class="form-input" id="op_risks" rows="2">${last ? (last.risks||'') : ''}</textarea></div>
+          <div class="form-group full"><label class="form-label">Décisions prises / demandées</label><textarea class="form-input" id="op_decisions" rows="2">${last ? (last.decisions||'') : ''}</textarea></div>
+          <div class="form-group full"><label class="form-label">Prochaines étapes</label><textarea class="form-input" id="op_next" rows="2">${last ? (last.next||'') : ''}</textarea></div>
+        </div>
+        <button class="add-btn" onclick="saveOnePager()">💾 Enregistrer ce one-pager</button>
+        <button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+      </div>`;
+  } else if (tabId === 'retro') {
+    const list = PMHUB.getRetros(pid) || [];
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-title">Rétrospective / REX (Lessons Learned)</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">Ce qui a bien marché · À améliorer · Actions — réutilisable en fin de phase ou de sprint.</p>
+        ${list.map((r,i) => `
+        <div class="card" style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong>${r.title || 'Sans titre'} — ${r.date || ''}</strong>
+            <button type="button" class="btn-print" onclick="deleteRetro(${i})">🗑</button>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Ce qui a bien marché</label><textarea rows="2" onchange="updateRetro(${i},'good',this.value)">${(r.good||'').replace(/</g,'&lt;')}</textarea></div>
+            <div class="form-group"><label class="form-label">À améliorer</label><textarea rows="2" onchange="updateRetro(${i},'improve',this.value)">${(r.improve||'').replace(/</g,'&lt;')}</textarea></div>
+            <div class="form-group full"><label class="form-label">Actions</label><textarea rows="2" onchange="updateRetro(${i},'actions',this.value)">${(r.actions||'').replace(/</g,'&lt;')}</textarea></div>
+          </div>
+        </div>`).join('')}
+        <button class="add-btn" onclick="addRetro()">+ Nouvelle rétrospective / REX</button>
+      </div>`;
+  }
+}
+function updateStakeholder(i, field, value) {
+  const list = PMHUB.getStakeholders(currentProjectId);
+  if (!list[i]) return;
+  list[i][field] = value;
+  PMHUB.saveStakeholders(currentProjectId, list);
+}
+function addStakeholder() {
+  const list = PMHUB.getStakeholders(currentProjectId) || [];
+  list.push({ name: '', power: 'Moyen', interest: 'Moyen', strategy: '' });
+  PMHUB.saveStakeholders(currentProjectId, list);
+  renderTab('stakeholders');
+}
+function deleteStakeholder(i) {
+  const list = PMHUB.getStakeholders(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveStakeholders(currentProjectId, list);
+  renderTab('stakeholders');
+}
+function updateCommPlan(i, field, value) {
+  const data = PMHUB.getCommunicationPlan(currentProjectId) || { plan: [], history: [] };
+  if (!data.plan[i]) return;
+  data.plan[i][field] = value;
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+}
+function addCommPlan() {
+  const data = PMHUB.getCommunicationPlan(currentProjectId) || { plan: [], history: [] };
+  data.plan = data.plan || [];
+  data.plan.push({ who: '', what: '', when: '', channel: '' });
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+}
+function deleteCommPlan(i) {
+  const data = PMHUB.getCommunicationPlan(currentProjectId) || { plan: [], history: [] };
+  data.plan.splice(i, 1);
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+}
+function addCommHistory() {
+  const d = prompt('Date (ex: 2026-03-14) :') || new Date().toISOString().split('T')[0];
+  const desc = prompt('Contenu / Destinataire :') || '';
+  const data = PMHUB.getCommunicationPlan(currentProjectId) || { plan: [], history: [] };
+  data.history = data.history || [];
+  data.history.unshift({ date: d, desc });
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+}
+function saveBudget() {
+  const b = PMHUB.getBudget(currentProjectId) || {};
+  b.planned = Number(document.getElementById('b_planned')?.value) || 0;
+  b.committed = Number(document.getElementById('b_committed')?.value) || 0;
+  b.consumed = Number(document.getElementById('b_consumed')?.value) || 0;
+  b.currency = (document.getElementById('b_currency')?.value || '€').trim();
+  b.entries = b.entries || [];
+  PMHUB.saveBudget(currentProjectId, b);
+  renderTab('budget');
+}
+function updateDeliverable(i, field, value) {
+  const list = PMHUB.getDeliverables(currentProjectId) || [];
+  if (!list[i]) return;
+  list[i][field] = value;
+  PMHUB.saveDeliverables(currentProjectId, list);
+}
+function addDeliverable() {
+  const list = PMHUB.getDeliverables(currentProjectId) || [];
+  list.push({ name: '', status: 'draft', date: '' });
+  PMHUB.saveDeliverables(currentProjectId, list);
+  renderTab('deliverables');
+}
+function deleteDeliverable(i) {
+  const list = PMHUB.getDeliverables(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveDeliverables(currentProjectId, list);
+  renderTab('deliverables');
+}
+function saveOnePager() {
+  const reports = PMHUB.getOnePagerReports(currentProjectId) || [];
+  reports.push({
+    date: new Date().toISOString().split('T')[0],
+    summary: document.getElementById('op_summary')?.value || '',
+    milestones: document.getElementById('op_milestones')?.value || '',
+    risks: document.getElementById('op_risks')?.value || '',
+    decisions: document.getElementById('op_decisions')?.value || '',
+    next: document.getElementById('op_next')?.value || '',
+  });
+  PMHUB.saveOnePagerReports(currentProjectId, reports);
+  renderTab('onepager');
+}
+function updateRetro(i, field, value) {
+  const list = PMHUB.getRetros(currentProjectId) || [];
+  if (!list[i]) return;
+  list[i][field] = value;
+  PMHUB.saveRetros(currentProjectId, list);
+}
+function addRetro() {
+  const list = PMHUB.getRetros(currentProjectId) || [];
+  list.push({ title: 'Nouvelle rétro', date: new Date().toISOString().split('T')[0], good: '', improve: '', actions: '' });
+  PMHUB.saveRetros(currentProjectId, list);
+  renderTab('retro');
+}
+function deleteRetro(i) {
+  const list = PMHUB.getRetros(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveRetros(currentProjectId, list);
+  renderTab('retro');
+}
+init();
+</script>
+<div id="ai-suggestions-bar"></div>
+<script src="pmhub-ai-suggestions.js"></script>
+</body>
+</html>

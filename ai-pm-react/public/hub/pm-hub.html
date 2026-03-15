@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — AI Project Management Platform</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAV : logo | rubrique du groupe en haut | actions -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / v2.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="#" class="nav-cta" onclick="openModal(); return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+
+<a href="pm-hub-ai.html?from=Dashboard" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA — Référez-vous à l'IA partout">🤖</a>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR : rendu dynamique par pmhub-sidebar.js -->
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO BAR -->
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">AI Assisted Project Governance</span>
+        <h1 class="hero-title">PM Hub<br><span class="hero-title-accent">AI Project Command Center</span></h1>
+        <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
+        <ul class="hero-benefits">
+          <li>Pilotage centralisé</li>
+          <li>Gouvernance renforcée</li>
+          <li>Assistance IA à la décision</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- WIZARD PROMPT -->
+    <div class="wizard-prompt" id="wizardPrompt">
+      <div class="wiz-left">
+        <div class="wiz-tag">Lancement assisté par l'IA</div>
+        <div class="wiz-title">Démarrez un nouveau projet en mode guidé</div>
+        <div class="wiz-desc">Cadrage intelligent, Charte projet, WBS, RACI, RAID, Planning et Gouvernance — structuré étape par étape comme un Senior PM.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex-shrink:0;">
+        <div class="wiz-steps" id="wizSteps"></div>
+        <button class="btn-primary wiz-cta" onclick="launchWizard()">Démarrer le wizard →</button>
+      </div>
+    </div>
+
+    <!-- KPIs (ordre et visibilité personnalisables) -->
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="kpi-card green" data-kpi="active" id="kpiCardActive">
+        <div class="kpi-label">Projets actifs</div>
+        <div class="kpi-value green" id="kpiActive">—</div>
+        <div class="kpi-sub" id="kpiActiveSub">En cours</div>
+      </div>
+      <div class="kpi-card yellow" data-kpi="progress" id="kpiCardProgress">
+        <div class="kpi-label">Avancement moyen</div>
+        <div class="kpi-value yellow" id="kpiProgress">—</div>
+        <div class="kpi-sub">Progression globale</div>
+      </div>
+      <div class="kpi-card red" data-kpi="raid" id="kpiCardRaid">
+        <div class="kpi-label">Risques critiques</div>
+        <div class="kpi-value red" id="kpiRaid">—</div>
+        <div class="kpi-sub">Risques & actions</div>
+      </div>
+      <div class="kpi-card blue" data-kpi="total" id="kpiCardTotal">
+        <div class="kpi-label">Portefeuille total</div>
+        <div class="kpi-value blue" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiTotalSub">projets</div>
+      </div>
+    </div>
+
+    <!-- PROJETS -->
+    <div class="section-title-row">
+      <div class="section-title">Vos projets</div>
+      <div class="section-meta" id="totalLabel">— projets</div>
+      <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">Personnaliser</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <span style="color:var(--text-muted);font-size:13px;">🔍</span>
+        <input type="text" placeholder="Rechercher..." oninput="filterProjects(this.value)"/>
+      </div>
+      <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+      <button class="filter-btn" onclick="setFilter('active',this)">En cours</button>
+      <button class="filter-btn" onclick="setFilter('hold',this)">En attente</button>
+      <button class="filter-btn" onclick="setFilter('risk',this)">À risque</button>
+      <button class="filter-btn" onclick="setFilter('closed',this)">Clôturés</button>
+    </div>
+
+    <!-- Project Health Dashboard (premier projet actif) -->
+    <section class="health-dashboard" id="healthDashboard">
+      <div class="section-title-row">
+        <h2 class="section-title">Santé projet</h2>
+        <span class="section-meta" id="healthProjectName">—</span>
+      </div>
+      <div class="health-cards">
+        <div class="health-kpi health-score"><div class="health-kpi-label">Project Health Score</div><div class="health-kpi-val" id="healthScore">—</div><div class="health-gauge" id="healthGauge"></div></div>
+        <div class="health-kpi"><div class="health-kpi-label">Budget consommé</div><div class="health-kpi-val" id="healthBudget">—</div></div>
+        <div class="health-kpi"><div class="health-kpi-label">Avancement</div><div class="health-kpi-val" id="healthProgress">—</div></div>
+        <div class="health-kpi"><div class="health-kpi-label">Risques ouverts</div><div class="health-kpi-val" id="healthRisks">—</div></div>
+        <div class="health-kpi"><div class="health-kpi-label">Issues</div><div class="health-kpi-val" id="healthIssues">—</div></div>
+        <div class="health-kpi"><div class="health-kpi-label">Prochaine échéance</div><div class="health-kpi-val health-kpi-small" id="healthDeadline">—</div></div>
+      </div>
+      <div class="health-charts">
+        <div class="chart-card"><div class="chart-card-title">RAG · Statut</div><div class="rag-indicator" id="ragIndicator"><span class="rag-dot rag-green"></span> Vert</div></div>
+        <div class="chart-card chart-card-wide"><div class="chart-card-title">Tendance avancement</div><div class="chart-wrap" id="healthTrendChart"></div></div>
+      </div>
+    </section>
+
+    <div class="projects-grid" id="projectsGrid"></div>
+
+  </main>
+</div>
+
+<!-- MODAL NOUVEAU PROJET -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-tag">Initialisation</div>
+    <h2 class="modal-title">Nouveau Projet</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Nom du projet *</label>
+        <input type="text" class="form-input" id="newName" placeholder="Ex: Déploiement 5G Private Network"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Référence</label>
+        <input type="text" class="form-input" id="newRef" placeholder="PRJ-2026-XXX"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="newType">
+          <option value="">Sélectionner...</option>
+          <option>Télécoms / Réseau</option>
+          <option>IT / Digital</option>
+          <option>Infrastructure</option>
+          <option>R&D / Innovation</option>
+          <option>Data / Analytics</option>
+          <option>Transformation</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de début</label>
+        <input type="date" class="form-input" id="newStart"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de fin prévue</label>
+        <input type="date" class="form-input" id="newEnd"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget (€)</label>
+        <input type="text" class="form-input" id="newBudget" placeholder="Ex: 250 000"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <select class="form-select" id="newPriority">
+          <option>Critique</option>
+          <option>Haute</option>
+          <option selected>Normale</option>
+          <option>Basse</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client / Commanditaire</label>
+        <input type="text" class="form-input" id="newClient" placeholder="Ex: Orange France"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description / Objectifs</label>
+        <textarea class="form-textarea" id="newDesc" placeholder="Décrivez les objectifs principaux du projet..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="createAndWizard()">Créer + lancer le wizard →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#63d2b4','#e8c97a','#7ab8e8','#e07070','#b07ae8'];
+const ICONS  = ['🚀','💡','🏗️','🔧','📊','🌐','⚙️','📱','🧠','📡'];
+let currentFilter = 'all';
+let searchQuery = '';
+
+function statusLabel(s) {
+  return { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' }[s] || s;
+}
+function formatDate(d) {
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return `${day} ${M[parseInt(m)-1]} ${y}`;
+}
+function progressClass(p, status) {
+  if(status==='risk') return 'danger';
+  if(status==='closed') return 'muted';
+  if(p<40) return 'warn';
+  return '';
+}
+
+function renderProjects(list) {
+  const grid = document.getElementById('projectsGrid');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const tplCount = PMHUB.countSavedTemplates(p.id);
+    const projectDashboardUrl = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+    const card = document.createElement('div');
+    card.className = `project-card status-${p.status}`;
+    card.style.cursor = 'pointer';
+    card.onclick = function(ev) {
+      if (!ev.target.closest('.card-actions')) window.location.href = projectDashboardUrl;
+    };
+    card.innerHTML = `
+        <div class="card-top">
+          <div class="card-icon">${p.icon||'📁'}</div>
+          <div class="card-status status-${p.status}">${statusLabel(p.status)}</div>
+        </div>
+        <div class="card-ref">${p.ref} · ${p.type} ${p.methodology ? ' · ' + (PMHUB.getMethodology(p.methodology).shortLabel || p.methodology) : ''}</div>
+        <div class="card-title">${p.name} <span style="font-size:11px;font-weight:400;color:var(--text-muted);opacity:0.7;">→</span></div>
+        <div class="card-desc">${p.desc}</div>
+        <div class="card-progress">
+          <div class="progress-header">
+            <span>Avancement</span>
+            <span style="color:${p.status==='risk'?'var(--danger)':p.status==='closed'?'var(--text-muted)':'var(--accent)'}">${p.progress||0}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${progressClass(p.progress,p.status)}" style="width:${p.progress||0}%"></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="card-meta">
+            ${p.client ? `Client : <span>${p.client}</span><br>` : ''}
+            Fin : <span>${formatDate(p.end)}</span>
+            ${tplCount ? ` · <span style="color:var(--accent)">${tplCount} tpl</span>` : ''}
+          </div>
+          <div class="card-actions" onclick="event.stopPropagation();">
+            <a href="${projectDashboardUrl}" class="card-btn-primary">Voir le dashboard</a>
+            ${p.status==='active' ? `<button type="button" class="card-btn orange" onclick="goWizard(${p.id},event)">Wizard</button>` : ''}
+            <button type="button" class="card-btn" onclick="goTemplates(${p.id},event)">Templates</button>
+            <button type="button" class="card-btn red" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
+          </div>
+        </div>
+    `;
+    grid.appendChild(card);
+  });
+  // Nouvelle carte
+  const nc = document.createElement('div');
+  nc.className = 'new-card';
+  nc.onclick = openModal;
+  nc.innerHTML = `
+    <div class="new-card-icon">＋</div>
+    <div class="new-card-label">Nouveau projet</div>
+    <div class="new-card-sub">Créer et initialiser<br>via le PM Wizard</div>
+  `;
+  grid.appendChild(nc);
+}
+
+function goTemplates(id, e) { e.stopPropagation(); PMHUB.goTo('pm-hub-templates.html',{project:id}); }
+function goWizard(id, e)    { e.stopPropagation(); PMHUB.goTo('pm-hub-wizard.html',{project:id}); }
+function launchWizard()     { PMHUB.goTo('pm-hub-wizard.html'); }
+
+// ── DELETE PROJECT ──
+let _deleteId = null;
+function confirmDelete(id, name, e) {
+  e.stopPropagation();
+  _deleteId = id;
+  document.getElementById('confirmName').textContent = name;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  _deleteId = null;
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+function executeDelete() {
+  if(_deleteId === null) return;
+  PMHUB.deleteProject(_deleteId);
+  closeConfirm();
+  applyFilters();
+  showToast('Projet supprimé.');
+}
+
+function showToast(msg) {
+  let el = document.getElementById('toastEl');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toastEl';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._toastT);
+  el._toastT = setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+function applyFilters() {
+  let list = PMHUB.getProjects();
+  if(currentFilter!=='all') list = list.filter(p=>p.status===currentFilter);
+  if(searchQuery) list = list.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  renderProjects(list);
+
+  const all = PMHUB.getProjects();
+  const stats = PMHUB.getStats();
+  var raidCount = 0;
+  try { all.forEach(function(p) { var r = PMHUB.getRaids(p.id); raidCount += (r.risks||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.actions||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.issues||[]).length; }); } catch(e) {}
+  var useDemo = all.length === 0;
+  document.getElementById('kpiActive').textContent   = useDemo ? '12' : stats.active;
+  document.getElementById('kpiProgress').textContent = useDemo ? '78%' : (stats.avgProgress + '%');
+  document.getElementById('kpiRaid').textContent     = useDemo ? '4' : (raidCount || '0');
+  document.getElementById('kpiTotal').textContent    = useDemo ? '14' : stats.total;
+  document.getElementById('totalLabel').textContent  = useDemo ? '14 projets' : (all.length + ' projet' + (all.length > 1 ? 's' : ''));
+  var sbRaid = document.getElementById('sbRaidCount');
+  if (sbRaid) sbRaid.textContent = useDemo ? '4' : (raidCount || '0');
+
+  // Sidebar projects : rendu par pmhub-sidebar.js
+
+  // Wizard steps dots
+  const ws = document.getElementById('wizSteps');
+  if(ws) {
+    ws.innerHTML = PMHUB.WIZARD_STEPS.map((_,i)=>`<div class="wiz-step-dot${i<2?' done':''}"></div>`).join('');
+  }
+
+  renderHealthDashboard();
+}
+
+function renderHealthDashboard() {
+  var el = document.getElementById('healthDashboard');
+  if (!el) return;
+  var projectId = PMHUB.getParam('project');
+  var active = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
+  var p = projectId ? PMHUB.getProjectById(parseInt(projectId,10)) : active[0];
+  if (!p) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var health = PMHUB.getProjectHealth(p.id);
+  var evm = PMHUB.getBudgetEVM(p.id);
+  document.getElementById('healthProjectName').textContent = p.name;
+  document.getElementById('healthScore').textContent = health.score + '/100';
+  document.getElementById('healthBudget').textContent = (evm.bac ? Math.round(evm.ac / evm.bac * 100) + '%' : '—');
+  document.getElementById('healthProgress').textContent = (p.progress != null ? p.progress + '%' : '—');
+  document.getElementById('healthRisks').textContent = health.openRisks;
+  document.getElementById('healthIssues').textContent = health.openIssues;
+  document.getElementById('healthDeadline').textContent = health.nextDeadline ? new Date(health.nextDeadline).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
+  var ragEl = document.getElementById('ragIndicator');
+  if (ragEl) {
+    ragEl.className = 'rag-indicator';
+    ragEl.innerHTML = '<span class="rag-dot rag-' + (health.rag === 'green' ? 'green' : health.rag === 'red' ? 'red' : 'amber') + '"></span> ' + (health.rag === 'green' ? 'Vert' : health.rag === 'red' ? 'Rouge' : 'Orange');
+  }
+  if (typeof echarts !== 'undefined') {
+    var gaugeEl = document.getElementById('healthGauge');
+    var gaugeColor = health.rag === 'green' ? '#22C55E' : health.rag === 'red' ? '#EF4444' : '#F59E0B';
+    if (gaugeEl) {
+      if (!gaugeEl._chart) gaugeEl._chart = echarts.init(gaugeEl);
+      gaugeEl._chart.setOption({
+        series: [{ type: 'gauge', startAngle: 200, endAngle: -20, min: 0, max: 100, splitNumber: 5, radius: '90%', center: ['50%','75%'], itemStyle: { color: gaugeColor }, progress: { show: true, width: 8, value: health.score }, axisLine: { lineStyle: { width: 8, color: [[1, 'rgba(255,255,255,0.08)']] } }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false }, pointer: { show: false }, detail: { show: false } }]
+      }, true);
+    }
+    var trendEl = document.getElementById('healthTrendChart');
+    if (trendEl && !trendEl._chart) {
+      trendEl._chart = echarts.init(trendEl);
+    }
+    if (trendEl && trendEl._chart) {
+      var weeks = ['S1','S2','S3','S4','S5','S6'];
+      var vals = [0, 8, 18, 25, 30, (p.progress || 0)];
+      trendEl._chart.setOption({
+        grid: { left: 40, right: 20, top: 20, bottom: 28 },
+        xAxis: { type: 'category', data: weeks, axisLine: { lineStyle: { color: 'var(--glass-border)' } }, axisLabel: { color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' } },
+        yAxis: { type: 'value', min: 0, max: 100, axisLine: { show: false }, splitLine: { lineStyle: { color: 'var(--glass-border)' } }, axisLabel: { color: 'var(--text-muted)' } },
+        series: [{ type: 'line', data: vals, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: 'var(--primary)', width: 2 }, itemStyle: { color: 'var(--primary)' }, areaStyle: { color: 'rgba(99,102,241,0.15)' } }]
+      });
+    }
+  }
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function filterProjects(q) { searchQuery = q; applyFilters(); }
+
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function createAndWizard() {
+  const name = document.getElementById('newName').value.trim();
+  if(!name) { document.getElementById('newName').style.borderColor='var(--danger)'; return; }
+  const all = PMHUB.getProjects();
+  const year = new Date().getFullYear();
+  const project = {
+    id: Date.now(),
+    ref:    document.getElementById('newRef').value || `PRJ-${year}-${String(all.length+1).padStart(3,'0')}`,
+    name,
+    desc:   document.getElementById('newDesc').value || 'Description à compléter.',
+    status: 'active', progress: 0,
+    type:   document.getElementById('newType').value || 'Autre',
+    start:  document.getElementById('newStart').value || new Date().toISOString().split('T')[0],
+    end:    document.getElementById('newEnd').value || '',
+    budget: document.getElementById('newBudget').value || '—',
+    client: document.getElementById('newClient').value || '',
+    priority: document.getElementById('newPriority').value,
+    team: ['AN'], icon: ICONS[Math.floor(Math.random()*ICONS.length)],
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    createdAt: new Date().toISOString()
+  };
+  PMHUB.addProject(project);
+  closeModal();
+  // Redirige vers le wizard
+  PMHUB.goTo('pm-hub-wizard.html', { project: project.id });
+}
+
+// ── DASHBOARD PERSONNALISABLE ──
+const DASHBOARD_PREFS_KEY = 'pmhub_dashboard_prefs';
+const DEFAULT_DASHBOARD_PREFS = { kpiOrder: ['active','progress','raid','total'], showWizard: true };
+
+function getDashboardPrefs() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_PREFS_KEY);
+    if (!raw) return DEFAULT_DASHBOARD_PREFS;
+    const p = JSON.parse(raw);
+    return { ...DEFAULT_DASHBOARD_PREFS, ...p, kpiOrder: p.kpiOrder || DEFAULT_DASHBOARD_PREFS.kpiOrder };
+  } catch (e) { return DEFAULT_DASHBOARD_PREFS; }
+}
+function saveDashboardPrefs(prefs) {
+  try { localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+}
+
+function applyDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const strip = document.getElementById('kpiStrip');
+  const wizardEl = document.getElementById('wizardPrompt');
+  if (wizardEl) wizardEl.style.display = prefs.showWizard !== false ? '' : 'none';
+
+  if (!strip) return;
+  const cards = {};
+  strip.querySelectorAll('[data-kpi]').forEach(function(el) { cards[el.getAttribute('data-kpi')] = el; });
+  prefs.kpiOrder.forEach(function(k) {
+    if (cards[k]) strip.appendChild(cards[k]);
+  });
+}
+
+function openDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const modal = document.getElementById('dashboardPrefsOverlay');
+  if (!modal) return;
+  ['active','progress','raid','total'].forEach(function(k) {
+    const cb = document.getElementById('prefKpi_' + k);
+    if (cb) cb.checked = prefs.kpiOrder.indexOf(k) !== -1;
+  });
+  const orderActive = document.getElementById('prefKpiOrder');
+  if (orderActive) orderActive.value = prefs.kpiOrder.join(',');
+  const cbWiz = document.getElementById('prefShowWizard');
+  if (cbWiz) cbWiz.checked = prefs.showWizard !== false;
+  modal.classList.add('open');
+}
+function closeDashboardPrefs() {
+  document.getElementById('dashboardPrefsOverlay').classList.remove('open');
+}
+function saveDashboardPrefsAndClose() {
+  const orderVal = (document.getElementById('prefKpiOrder') || {}).value || 'active,progress,raid,total';
+  const kpiOrder = orderVal.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return ['active','progress','raid','total'].indexOf(s) !== -1; });
+  if (kpiOrder.length === 0) kpiOrder.push('active','progress','raid','total');
+  const showWizard = (document.getElementById('prefShowWizard') || {}).checked !== false;
+  saveDashboardPrefs({ kpiOrder: kpiOrder, showWizard: showWizard });
+  applyDashboardPrefs();
+  closeDashboardPrefs();
+  showToast('Préférences enregistrées.');
+}
+
+PMHUB.onChange(applyFilters);
+applyFilters();
+applyDashboardPrefs();
+</script>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Supprimer ce projet ?</div>
+    <div class="confirm-desc">
+      Vous allez supprimer définitivement<br>
+      <span class="confirm-name" id="confirmName"></span><br>
+      Cette action est irréversible. Tous les templates liés seront supprimés.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-danger" onclick="executeDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PERSONNALISATION DASHBOARD -->
+<div class="modal-overlay" id="dashboardPrefsOverlay" onclick="if(event.target===this)closeDashboardPrefs()">
+  <div class="modal modal-dashboard-prefs">
+    <button class="modal-close" onclick="closeDashboardPrefs()">✕</button>
+    <div class="modal-tag">Préférences</div>
+    <h2 class="modal-title">Personnaliser le dashboard</h2>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label class="form-label">Ordre des KPIs (séparés par des virgules)</label>
+      <input type="text" class="form-input" id="prefKpiOrder" placeholder="active, progress, raid, total" value="active,progress,raid,total"/>
+      <span style="font-size:11px;color:var(--text-muted);">Mots possibles : active, progress, raid, total</span>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="prefShowWizard" checked/>
+        <span>Afficher le bloc « Nouveau projet — Lancez le wizard »</span>
+      </label>
+    </div>
+    <div class="confirm-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="closeDashboardPrefs()">Annuler</button>
+      <button class="btn-primary" onclick="saveDashboardPrefsAndClose()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="ai-suggestions-bar"></div>
+<script src="pmhub-ai-suggestions.js"></script>
+<script src="pmhub-notifications.js"></script>
+</body>
+</html>

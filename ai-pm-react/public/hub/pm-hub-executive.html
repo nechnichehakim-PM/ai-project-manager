@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Vue COMEX</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=COMEX" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">Direction</span>
+        <h1 class="hero-title">Vue <span class="hero-title-accent">COMEX</span></h1>
+        <p class="hero-sub">Synthèse portefeuille, risques majeurs et décisions.</p>
+      </div>
+    </div>
+    <div class="exec-tiles">
+      <div class="exec-tile"><div class="exec-tile-label">État portefeuille</div><div class="exec-tile-value" id="execState">—</div><div class="exec-tile-sub" id="execStateSub">—</div></div>
+      <div class="exec-tile"><div class="exec-tile-label">Budget global</div><div class="exec-tile-value" id="execBudget">—</div></div>
+      <div class="exec-tile"><div class="exec-tile-label">Projets actifs</div><div class="exec-tile-value" id="execActive">—</div></div>
+      <div class="exec-tile exec-tile-alert"><div class="exec-tile-label">Risques critiques</div><div class="exec-tile-value" id="execRisks">—</div></div>
+    </div>
+    <div class="section-title-row"><h2 class="section-title">Top 5 projets sensibles</h2></div>
+    <div class="exec-list" id="execProjects"></div>
+    <div class="section-title-row"><h2 class="section-title">Décisions attendues</h2></div>
+    <div class="exec-list" id="execDecisions"></div>
+    <div class="ai-insight-card">
+      <span class="ai-insight-icon">🤖</span>
+      <div><div class="ai-insight-title">Synthèse IA</div><div class="ai-insight-text">Générez un briefing hebdomadaire ou un rapport COMEX depuis le <a href="pm-hub-ai.html">Centre IA</a>.</div></div>
+    </div>
+  </main>
+</div>
+<script>
+(function(){
+  var k = PMHUB.getPortfolioKpis();
+  document.getElementById('execState').textContent = k.criticalCount > 0 ? 'Attention' : (k.atRiskCount > 0 ? 'Vigilance' : 'Stable');
+  document.getElementById('execStateSub').textContent = k.activeProjects + ' projets · ' + k.avgProgress + '% moyen';
+  document.getElementById('execBudget').textContent = (k.totalBudget || 0) + ' €';
+  document.getElementById('execActive').textContent = k.activeProjects;
+  var raidCount = 0;
+  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
+    var r = PMHUB.getRaids(p.id);
+    raidCount += (r.risks || []).filter(function(x){ return x.severity === 'critical'; }).length;
+  });
+  document.getElementById('execRisks').textContent = raidCount;
+
+  var projs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).slice(0, 5);
+  document.getElementById('execProjects').innerHTML = projs.length ? projs.map(function(p){
+    var h = PMHUB.getProjectHealth(p.id);
+    return '<div class="exec-row"><span class="exec-row-name">' + (p.name || p.ref) + '</span><span class="exec-row-rag rag-' + h.rag + '">' + (h.rag === 'green' ? 'Vert' : h.rag === 'red' ? 'Rouge' : 'Orange') + '</span><span class="exec-row-pct">' + (p.progress || 0) + '%</span></div>';
+  }).join('') : '<p class="exec-empty">Aucun projet actif</p>';
+
+  var decisions = [];
+  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
+    var r = PMHUB.getRaids(p.id);
+    (r.decisions || []).filter(function(d){ return d.status !== 'closed'; }).forEach(function(d){
+      decisions.push({ project: p.name, desc: d.desc });
+    });
+  });
+  document.getElementById('execDecisions').innerHTML = decisions.length ? decisions.slice(0, 5).map(function(d){
+    return '<div class="exec-row"><span class="exec-row-name">' + d.project + '</span><span class="exec-row-desc">' + (d.desc || '—') + '</span></div>';
+  }).join('') : '<p class="exec-empty">Aucune décision en attente</p>';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Base de connaissance</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Knowledge" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">PMO</span>
+        <h1 class="hero-title">Base de <span class="hero-title-accent">connaissance</span></h1>
+        <p class="hero-sub">Lessons learned, bonnes pratiques et projets similaires.</p>
+      </div>
+    </div>
+    <div class="section-title-row"><h2 class="section-title">Lessons learned</h2></div>
+    <div class="knowledge-cards">
+      <div class="chart-card"><div class="chart-card-title">Projets clôturés</div><p class="knowledge-text">Consultez les REX et leçons apprises des projets clôturés (Orange PMPR, Power BI R&D, FTTA Bouygues) depuis la fiche projet ou le Centre IA.</p></div>
+      <div class="chart-card"><div class="chart-card-title">Risques récurrents</div><p class="knowledge-text">L’IA peut suggérer des risques récurrents par type de projet (R&D, Télécoms, Data). Utilisez le module RAID du Centre IA.</p></div>
+    </div>
+    <div class="ai-insight-card">
+      <span class="ai-insight-icon">🤖</span>
+      <div><div class="ai-insight-title">Recherche IA</div><div class="ai-insight-text">Retrouvez des projets similaires et des leçons applicables via l’<a href="pm-hub-ai.html">Assistant IA</a>.</div></div>
+    </div>
+  </main>
+</div>
+<style>.knowledge-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px;}.knowledge-text{font-size:13px;color:var(--text-muted);line-height:1.7;margin:0;}</style>
+</body>
+</html>

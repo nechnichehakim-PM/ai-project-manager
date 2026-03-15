@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Dashboard Portefeuille</title>
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Portefeuille" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">PMO</span>
+        <h1 class="hero-title">Dashboard <span class="hero-title-accent">Portefeuille</span></h1>
+        <p class="hero-sub">Vue consolidée des projets, budget global, santé et capacité.</p>
+      </div>
+    </div>
+    <div class="section-title-row"><h2 class="section-title">KPI Portefeuille</h2></div>
+    <div class="kpi-strip" id="portfolioKpis"></div>
+    <div class="section-title-row"><h2 class="section-title">Visualisations</h2></div>
+    <div class="dashboard-charts">
+      <div class="chart-card"><div class="chart-card-title">Santé des projets</div><div id="portfolioDonut" class="chart-fill"></div></div>
+      <div class="chart-card chart-card-lg"><div class="chart-card-title">Budget par projet</div><div id="portfolioBar" class="chart-fill"></div></div>
+    </div>
+    <div class="ai-insight-card">
+      <span class="ai-insight-icon">🤖</span>
+      <div><div class="ai-insight-title">Insight IA</div><div class="ai-insight-text" id="portfolioAiText">Recommandation : prioriser le projet AI Data Center (risques critiques). Consulter le Centre IA pour une analyse détaillée.</div></div>
+    </div>
+  </main>
+</div>
+<script>
+(function(){
+  var k = PMHUB.getPortfolioKpis();
+  var html = '';
+  [
+    [k.activeProjects, 'Projets actifs', 'blue'],
+    [k.healthyCount, 'En bonne santé', 'green'],
+    [k.atRiskCount, 'À risque', 'yellow'],
+    [k.criticalCount, 'Critiques', 'red'],
+    [k.totalBudget + ' €', 'Budget total', 'blue'],
+    [k.consumedBudget + ' €', 'Consommé', 'blue'],
+    [k.capacityUsedPercent + '%', 'Capacité utilisée', 'blue']
+  ].forEach(function(a){
+    html += '<div class="kpi-card ' + (a[2]==='green'?'green':a[2]==='yellow'?'yellow':a[2]==='red'?'red':'blue') + '"><div class="kpi-label">' + a[1] + '</div><div class="kpi-value ' + a[2] + '">' + a[0] + '</div></div>';
+  });
+  document.getElementById('portfolioKpis').innerHTML = html;
+
+  if (typeof echarts === 'undefined') return;
+  var donutEl = document.getElementById('portfolioDonut');
+  if (donutEl) {
+    donutEl.style.height = '220px';
+    var ch = echarts.init(donutEl);
+    ch.setOption({
+      color: ['#22C55E','#F59E0B','#EF4444'],
+      series: [{ type: 'pie', radius: ['50%','75%'], center: ['50%','50%'], avoidLabelOverlap: false, label: { show: true, color: 'var(--text)' }, data: [
+        { value: k.healthyCount, name: 'En bonne santé' },
+        { value: k.atRiskCount, name: 'À risque' },
+        { value: k.criticalCount, name: 'Critiques' }
+      ] }]
+    });
+  }
+  var barEl = document.getElementById('portfolioBar');
+  if (barEl) {
+    barEl.style.height = '260px';
+    var projs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
+    var names = projs.map(function(p){ return (p.name || p.ref).slice(0, 18); });
+    var budgets = projs.map(function(p){ return Number(String(p.budget||0).replace(/\s/g,'').replace(/[^\d.]/g,'')) || 0; });
+    var ch2 = echarts.init(barEl);
+    ch2.setOption({
+      grid: { left: 60, right: 24, top: 24, bottom: 80 },
+      xAxis: { type: 'category', data: names.length ? names : ['—'], axisLabel: { color: 'var(--text-muted)', rotate: 25 } },
+      yAxis: { type: 'value', name: 'Budget (k€)', axisLabel: { color: 'var(--text-muted)' }, splitLine: { lineStyle: { color: 'var(--glass-border)' } } },
+      series: [{ type: 'bar', data: budgets.length ? budgets : [0], itemStyle: { color: 'var(--primary)' } }]
+    });
+  }
+})();
+</script>
+</body>
+</html>

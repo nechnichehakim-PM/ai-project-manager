@@ -1,0 +1,12 @@
+{
+  "name": "pm-hub",
+  "private": true,
+  "version": "2.0.0",
+  "description": "PM Hub — Site unique (design AI Project Manager)",
+  "scripts": {
+    "build": "node scripts/build-hub.js",
+    "preview": "npx serve dist -p 3000",
+    "dev": "npx serve public/hub -p 3000",
+    "start": "node scripts/build-hub.js && npx serve dist -p 3000"
+  }
+}

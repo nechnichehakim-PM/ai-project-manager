@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Rédacteur PM</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script src="pmhub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+    <div class="ph">
+      <div class="ph-tag">Rédaction automatique</div>
+      <div class="ph-h1"><em>Rédacteur</em> PM</div>
+      <div class="ph-sub">Emails, comptes-rendus, notes d'escalade, rapports — générés en quelques secondes.</div>
+    </div>
+    <div class="tool-body">
+      <div class="opts" id="redacOpts">
+        <div class="opt selected" data-t="email-copil" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📧</div><div class="opt-name">Email COPIL</div><div class="opt-desc">CR comité de pilotage, points clés et décisions</div></div>
+        <div class="opt" data-t="statut" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📊</div><div class="opt-name">Rapport de statut</div><div class="opt-desc">Avancement, indicateurs RAG, risques, prochaines étapes</div></div>
+        <div class="opt" data-t="escalade" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚨</div><div class="opt-name">Note d'escalade</div><div class="opt-desc">Alerte direction, problème critique, demande de décision</div></div>
+        <div class="opt" data-t="cr-reunion" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📝</div><div class="opt-name">Compte-rendu réunion</div><div class="opt-desc">CR structuré, participants, décisions, actions</div></div>
+        <div class="opt" data-t="kick-off" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚀</div><div class="opt-name">Email de kick-off</div><div class="opt-desc">Lancement officiel, objectifs, équipe, planning</div></div>
+        <div class="opt" data-t="cloture" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🏁</div><div class="opt-name">Note de clôture</div><div class="opt-desc">Bilan final, REX, leçons apprises</div></div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">⚙️ Paramètres</div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Projet</label><select class="fsel" id="rProj"></select></div>
+          <div class="fg"><label class="flabel">Destinataire</label><input class="finput" id="rDest" placeholder="Direction, Sponsor, Équipe…"/></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px;"><label class="flabel">Points clés à inclure (optionnel)</label><textarea class="fta" id="rPts" placeholder="Ex: retard 2 semaines, budget à 40%, risque critique…"></textarea></div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Ton</label><select class="fsel" id="rTon"><option>professionnel</option><option>formel</option><option>synthétique</option><option>positif</option></select></div>
+          <div class="fg"><label class="flabel">Langue</label><select class="fsel" id="rLang"><option>français</option><option>anglais</option></select></div>
+        </div>
+        <button class="btn-p" id="btnRedac" onclick="genRedac()" style="margin-top:8px;">✍️ Générer →</button>
+      </div>
+      <div class="rcard" id="redacRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="redacLbl">Document généré</div>
+          <div class="rcard-acts">
+            <button class="btn-s" onclick="copyEl('redacBody')">📋 Copier</button>
+            <button class="btn-s" onclick="genRedac()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="redacBody"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+</body>
+</html>

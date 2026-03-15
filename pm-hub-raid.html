@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — RAID Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;}
+.sidebar{position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
+.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;}
+.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-item-icon{font-size:15px;width:18px;text-align:center;}
+
+.main{padding:40px 48px;position:relative;z-index:1;}
+
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
+.page-h1 em{font-style:italic;color:var(--danger);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:40px;}
+
+/* PROJECT SELECTOR */
+.project-selector{display:flex;align-items:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
+.proj-sel-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+.proj-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:7px 16px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
+.proj-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,0.06);}
+.proj-chip:hover{border-color:rgba(99,210,180,0.3);color:var(--text);}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.red::before{background:var(--danger);}
+.kpi.yellow::before{background:var(--accent2);}
+.kpi.blue::before{background:var(--accent3);}
+.kpi.green::before{background:var(--accent);}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;line-height:1;}
+.kpi.red .kpi-val{color:var(--danger);}
+.kpi.yellow .kpi-val{color:var(--accent2);}
+.kpi.blue .kpi-val{color:var(--accent3);}
+.kpi.green .kpi-val{color:var(--accent);}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .2s;margin-bottom:-1px;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-count{display:inline-block;background:rgba(224,112,112,0.15);color:var(--danger);font-size:8px;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;}
+.tab-count.y{background:rgba(232,201,122,0.12);color:var(--accent2);}
+.tab-count.b{background:rgba(122,184,232,0.12);color:var(--accent3);}
+.tab-count.g{background:rgba(99,210,180,0.1);color:var(--accent);}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.add-btn{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:9px 18px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;margin-left:auto;}
+.add-btn:hover{background:#7fe0c8;}
+
+/* TABLE */
+.raid-table{width:100%;border-collapse:collapse;}
+.raid-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
+.raid-table td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
+.raid-table tr:hover td{background:rgba(255,255,255,0.015);}
+.raid-table tr.closed td{opacity:0.45;}
+
+.title-cell{font-weight:600;font-family:'Syne',sans-serif;font-size:12px;color:var(--text);margin-bottom:3px;}
+.owner-cell{font-size:9px;color:var(--text-muted);margin-top:4px;}
+
+.sev-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:9px;letter-spacing:0.06em;border:1px solid;}
+.sev-critical{background:rgba(224,112,112,0.1);color:var(--danger);border-color:rgba(224,112,112,0.25);}
+.sev-high{background:rgba(224,112,112,0.07);color:#f09090;border-color:rgba(224,112,112,0.15);}
+.sev-medium{background:rgba(232,201,122,0.1);color:var(--warning);border-color:rgba(232,201,122,0.25);}
+.sev-low{background:rgba(99,210,180,0.07);color:var(--success);border-color:rgba(99,210,180,0.2);}
+
+.status-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:9px;letter-spacing:0.06em;border:1px solid;}
+.stat-open{background:rgba(224,112,112,0.08);color:var(--danger);border-color:rgba(224,112,112,0.2);}
+.stat-progress{background:rgba(122,184,232,0.08);color:var(--accent3);border-color:rgba(122,184,232,0.2);}
+.stat-closed{background:rgba(99,210,180,0.06);color:var(--accent);border-color:rgba(99,210,180,0.15);}
+.stat-watch{background:rgba(232,201,122,0.08);color:var(--warning);border-color:rgba(232,201,122,0.2);}
+
+.action-icons{display:flex;gap:6px;align-items:center;}
+.icon-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px;transition:all .15s;}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.icon-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(3,6,9,0.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:44px;width:600px;max-width:96vw;position:relative;transform:translateY(20px);transition:transform .3s;max-height:90vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--danger),var(--warning));border-radius:14px 14px 0 0;}
+.modal-close{position:absolute;top:16px;right:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:13px;transition:all .15s;}
+.modal-close:hover{border-color:var(--danger);color:var(--danger);}
+.modal-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--danger);text-transform:uppercase;margin-bottom:8px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;margin-bottom:26px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;transition:border-color .2s;outline:none;width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
+.form-select{cursor:pointer;}
+.form-textarea{resize:vertical;min-height:75px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+.btn-primary{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:11px 22px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.btn-primary:hover{background:#7fe0c8;}
+.btn-secondary{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text);padding:11px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+.empty-state{text-align:center;padding:60px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);}
+.empty-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+@media print{nav,.project-selector,.tabs,.toolbar,.ai-float-btn,.modal-overlay{display:none!important;}
+.layout{display:block!important;padding-top:0!important;}
+.main{padding:0!important;}body{background:#fff;color:#111;}}
+</style>
+</head>
+<body>
+<a href="pm-hub-ai.html?from=RAID" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA" onclick="this.href='pm-hub-ai.html?from=RAID&project='+currentProject">🤖</a>
+
+<nav>
+  <div class="nav-logo">PM Hub / RAID</div>
+  <div class="nav-links">
+    <a href="pm-hub.html">Dashboard</a>
+    <a href="pm-hub-gantt.html">Planning</a>
+    <a href="pm-hub-kanban.html">Kanban</a>
+    <a href="pm-hub-raid.html" class="active">RAID</a>
+    <a href="pm-hub-resources.html">Ressources</a>
+    <a href="pm-hub-report.html">Reporting</a>
+    <a href="pm-hub-templates.html">Templates</a>
+    <a href="pm-hub-ai.html">🤖 IA</a>
+    <a href="pm-hub-settings.html">⚙</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-section-label">Navigation</div>
+    <a class="sb-item" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Dashboard</a>
+    <a class="sb-item" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning Gantt</a>
+    <a class="sb-item active" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> RAID Log</a>
+    <a class="sb-item" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources</a>
+    <a class="sb-item" href="pm-hub-report.html"><span class="sb-item-icon">📊</span> Reporting</a>
+    <a class="sb-item" href="pm-hub-templates.html"><span class="sb-item-icon">📋</span> Templates</a>
+    <div class="sb-section-label" style="margin-top:16px;">Types</div>
+    <div class="sb-item" onclick="setTab('risks')" style="cursor:pointer;"><span class="sb-item-icon">🔴</span> Risques</div>
+    <div class="sb-item" onclick="setTab('actions')" style="cursor:pointer;"><span class="sb-item-icon">🔵</span> Actions</div>
+    <div class="sb-item" onclick="setTab('issues')" style="cursor:pointer;"><span class="sb-item-icon">🟡</span> Issues</div>
+    <div class="sb-item" onclick="setTab('decisions')" style="cursor:pointer;"><span class="sb-item-icon">🟢</span> Décisions</div>
+  </aside>
+
+  <main class="main">
+    <div class="page-tag">Gestion des risques & actions</div>
+    <h1 class="page-h1">RAID <em>Log</em></h1>
+    <p class="page-sub">Risques · Actions · Issues · Décisions — Suivi centralisé et proactif.</p>
+
+    <!-- PROJECT SELECTOR -->
+    <div class="project-selector">
+      <span class="proj-sel-label">Projet :</span>
+      <div id="projChips"></div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-strip">
+      <div class="kpi red"><div class="kpi-label">Risques ouverts</div><div class="kpi-val" id="kRisks">0</div></div>
+      <div class="kpi blue"><div class="kpi-label">Actions en cours</div><div class="kpi-val" id="kActions">0</div></div>
+      <div class="kpi yellow"><div class="kpi-label">Issues actives</div><div class="kpi-val" id="kIssues">0</div></div>
+      <div class="kpi green"><div class="kpi-label">Décisions prises</div><div class="kpi-val" id="kDecisions">0</div></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" id="tab-risks" onclick="setTab('risks')">Risques<span class="tab-count" id="tc-risks">0</span></div>
+      <div class="tab" id="tab-actions" onclick="setTab('actions')">Actions<span class="tab-count b" id="tc-actions">0</span></div>
+      <div class="tab" id="tab-issues" onclick="setTab('issues')">Issues<span class="tab-count y" id="tc-issues">0</span></div>
+      <div class="tab" id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="tab-count g" id="tc-decisions">0</span></div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div id="tabInfo" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);"></div>
+      <button type="button" style="background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:9px 18px;border-radius:5px;font-size:11px;cursor:pointer;" onclick="window.print()">🖨 Imprimer</button>
+      <button class="add-btn" onclick="openAddModal()">＋ Ajouter</button>
+    </div>
+
+    <!-- TABLE -->
+    <div id="raidTableContainer"></div>
+
+  </main>
+</div>
+
+<!-- MODAL AJOUT -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-tag" id="modalTypeTag">Risque</div>
+    <h2 class="modal-title" id="modalTitle">Nouveau Risque</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Description *</label>
+        <input class="form-input" id="f_desc" placeholder="Décrivez le risque / l'action / l'issue..."/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Probabilité</label>
+        <select class="form-select" id="f_proba">
+          <option>Faible</option><option selected>Moyen</option><option>Élevé</option><option>Certain</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Impact / Sévérité</label>
+        <select class="form-select" id="f_impact">
+          <option>Faible</option><option>Moyen</option><option selected>Élevé</option><option>Critique</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Owner / Responsable</label>
+        <select class="form-select" id="f_owner">
+          <option value="AN">AN — Abdelhakim Nechniche</option>
+          <option value="ML">ML — Marc Leblanc</option>
+          <option value="KB">KB — Karim Benali</option>
+          <option value="SC">SC — Sophie Carré</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Statut</label>
+        <select class="form-select" id="f_status">
+          <option value="open">Ouvert</option>
+          <option value="progress">En cours</option>
+          <option value="watch">Surveillance</option>
+          <option value="closed">Clôturé</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Échéance</label>
+        <input class="form-input" type="date" id="f_due"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Plan de mitigation / Action</label>
+        <textarea class="form-textarea" id="f_mitigation" placeholder="Comment gérer ce risque ? Quelle action corrective ?"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveItem()">Enregistrer →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProject = 1; // AI Data Center par défaut
+let currentTab = 'risks';
+let editingId = null;
+
+// ── SEED DATA (injecté une seule fois dans localStorage si vide) ──
+const SEED = {
+  risks: [
+    { id:1001, desc:'Retard fournisseur infrastructure serveurs', proba:'Élevé', impact:'Élevé', severity:'high', owner:'AN', status:'open', due:'2026-03-15', mitigation:'Identifier 2 fournisseurs alternatifs, clause contractuelle pénalités', createdAt:'2025-11-15' },
+    { id:1002, desc:'Dérive du périmètre (scope creep) en phase déploiement', proba:'Moyen', impact:'Critique', severity:'critical', owner:'AN', status:'watch', due:'2026-04-01', mitigation:'Comité de changement formel, gel de périmètre après phase 2', createdAt:'2025-11-20' },
+    { id:1003, desc:'Compétences IA/ML insuffisantes en interne', proba:'Faible', impact:'Élevé', severity:'medium', owner:'SC', status:'progress', due:'2026-02-01', mitigation:'Formation équipe + recrutement contractor si nécessaire', createdAt:'2025-12-01' },
+  ],
+  actions: [
+    { id:1004, desc:'Valider architecture avec direction technique', proba:'—', impact:'—', severity:'medium', owner:'AN', status:'progress', due:'2026-01-20', mitigation:'Présentation planifiée semaine 3 Jan 2026', createdAt:'2025-11-10' },
+    { id:1005, desc:'Obtenir devis fournisseurs hardware (3 min.)', proba:'—', impact:'—', severity:'low', owner:'KB', status:'open', due:'2026-01-31', mitigation:'', createdAt:'2025-12-10' },
+    { id:1006, desc:'Rédiger plan de formation équipe', proba:'—', impact:'—', severity:'medium', owner:'SC', status:'open', due:'2026-02-15', mitigation:'', createdAt:'2026-01-05' },
+    { id:1007, desc:'Organiser kick-off avec parties prenantes', proba:'—', impact:'—', severity:'high', owner:'AN', status:'closed', due:'2025-12-01', mitigation:'Réalisé le 05/12/2025', createdAt:'2025-11-01' },
+  ],
+  issues: [
+    { id:1008, desc:'Accès VPN bloqué pour équipe distante', proba:'—', impact:'Élevé', severity:'high', owner:'KB', status:'progress', due:'2026-01-15', mitigation:'IT en cours de résolution — contournement VPN backup', createdAt:'2026-01-08' },
+  ],
+  decisions: [
+    { id:1009, desc:'Architecture hybride cloud / on-premise retenue', proba:'—', impact:'—', severity:'low', owner:'AN', status:'closed', due:'2025-12-15', mitigation:'Décidé en COPIL du 10/12/2025. Azure + datacenter Nantes.', createdAt:'2025-12-10' },
+    { id:1010, desc:'Méthodologie Hybride (Prédictif + Agile) validée', proba:'—', impact:'—', severity:'low', owner:'AN', status:'closed', due:'2025-11-30', mitigation:'Validé par sponsor le 28/11/2025', createdAt:'2025-11-28' },
+  ],
+};
+
+function initSeed() {
+  const existing = PMHUB.getRaids(1);
+  if(Object.values(existing).every(arr => arr.length === 0)) {
+    PMHUB.saveRaids(1, JSON.parse(JSON.stringify(SEED)));
+  }
+}
+
+const TAB_META = {
+  risks:     { label:'Risques',   icon:'🔴', addLabel:'Nouveau Risque' },
+  actions:   { label:'Actions',   icon:'🔵', addLabel:'Nouvelle Action' },
+  issues:    { label:'Issues',    icon:'🟡', addLabel:'Nouvelle Issue' },
+  decisions: { label:'Décisions', icon:'🟢', addLabel:'Nouvelle Décision' },
+};
+
+function getRaidData() {
+  return PMHUB.getRaids(currentProject);
+}
+
+function persistRaidData(data) {
+  PMHUB.saveRaids(currentProject, data);
+}
+
+function updateKPIs() {
+  const data = getRaidData();
+  const openRisks = data.risks.filter(r=>r.status!=='closed').length;
+  const openActions = data.actions.filter(r=>r.status!=='closed').length;
+  const openIssues = data.issues.filter(r=>r.status!=='closed').length;
+  const closedDec = data.decisions.filter(r=>r.status==='closed').length;
+  document.getElementById('kRisks').textContent = openRisks;
+  document.getElementById('kActions').textContent = openActions;
+  document.getElementById('kIssues').textContent = openIssues;
+  document.getElementById('kDecisions').textContent = closedDec;
+  document.getElementById('tc-risks').textContent = data.risks.length;
+  document.getElementById('tc-actions').textContent = data.actions.length;
+  document.getElementById('tc-issues').textContent = data.issues.length;
+  document.getElementById('tc-decisions').textContent = data.decisions.length;
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('tabInfo').textContent = TAB_META[tab].icon + ' ' + TAB_META[tab].label;
+  renderTable();
+}
+
+function severityClass(impact) {
+  const m = { 'Critique':'critical','Élevé':'high','Moyen':'medium','Faible':'low' };
+  return m[impact] || 'low';
+}
+function statusClass(s) {
+  const m = { open:'stat-open', progress:'stat-progress', watch:'stat-watch', closed:'stat-closed' };
+  return m[s] || 'stat-open';
+}
+function statusLabel(s) {
+  const m = { open:'Ouvert', progress:'En cours', watch:'Surveillance', closed:'Clôturé' };
+  return m[s] || s;
+}
+function formatDate(d) {
+  if(!d || d==='—') return '—';
+  const [y,m,day] = d.split('-');
+  const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return `${parseInt(day)} ${M[parseInt(m)-1]} ${y}`;
+}
+
+function renderTable() {
+  const data = getRaidData();
+  const items = data[currentTab] || [];
+  const container = document.getElementById('raidTableContainer');
+
+  if(items.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div>Aucun élément pour ce projet.</div><div style="margin-top:8px;font-size:10px;">Cliquez sur "Ajouter" pour créer le premier.</div></div>`;
+    return;
+  }
+
+  const showProba = currentTab === 'risks';
+  const rows = items.map(item => `
+    <tr class="${item.status==='closed'?'closed':''}">
+      <td>
+        <div class="title-cell">${item.desc}</div>
+        ${item.mitigation ? `<div class="owner-cell">→ ${item.mitigation.slice(0,80)}${item.mitigation.length>80?'…':''}</div>` : ''}
+      </td>
+      ${showProba ? `<td style="font-family:'DM Mono',monospace;color:var(--text-soft);">${item.proba}</td>` : ''}
+      <td>${item.impact && item.impact!=='—' ? `<span class="sev-badge sev-${item.severity||severityClass(item.impact)}">${item.impact}</span>` : '—'}</td>
+      <td><span style="font-family:'DM Mono',monospace;font-size:10px;background:rgba(99,210,180,0.08);color:var(--accent);padding:3px 9px;border-radius:3px;">${item.owner}</span></td>
+      <td><span class="status-badge ${statusClass(item.status)}">${statusLabel(item.status)}</span></td>
+      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:10px;">${formatDate(item.due)}</td>
+      <td>
+        <div class="action-icons">
+          <button class="icon-btn" onclick="editItem(${item.id})" title="Éditer">✏️</button>
+          <button class="icon-btn del" onclick="deleteItem(${item.id})" title="Supprimer">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <table class="raid-table">
+      <thead><tr>
+        <th>Description</th>
+        ${showProba ? '<th>Probabilité</th>' : ''}
+        <th>Impact</th><th>Owner</th><th>Statut</th><th>Échéance</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function openAddModal() {
+  editingId = null;
+  const meta = TAB_META[currentTab];
+  document.getElementById('modalTypeTag').textContent = meta.label;
+  document.getElementById('modalTitle').textContent = meta.addLabel;
+  document.getElementById('f_desc').value = '';
+  document.getElementById('f_mitigation').value = '';
+  document.getElementById('f_due').value = '';
+  document.getElementById('f_status').value = 'open';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function editItem(id) {
+  const data = getRaidData();
+  const all = [...data.risks,...data.actions,...data.issues,...data.decisions];
+  const item = all.find(i => i.id === id);
+  if(!item) return;
+  editingId = id;
+  document.getElementById('modalTypeTag').textContent = TAB_META[currentTab].label;
+  document.getElementById('modalTitle').textContent = 'Modifier';
+  document.getElementById('f_desc').value = item.desc;
+  document.getElementById('f_proba').value = item.proba !== '—' ? item.proba : 'Moyen';
+  document.getElementById('f_impact').value = item.impact !== '—' ? item.impact : 'Élevé';
+  document.getElementById('f_owner').value = item.owner;
+  document.getElementById('f_status').value = item.status;
+  document.getElementById('f_due').value = item.due || '';
+  document.getElementById('f_mitigation').value = item.mitigation || '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveItem() {
+  const desc = document.getElementById('f_desc').value.trim();
+  if(!desc) { document.getElementById('f_desc').style.borderColor='var(--danger)'; return; }
+  const impact = document.getElementById('f_impact').value;
+  const item = {
+    desc,
+    proba:      currentTab==='risks' ? document.getElementById('f_proba').value : '—',
+    impact:     ['actions','decisions'].includes(currentTab) ? '—' : impact,
+    severity:   severityClass(impact),
+    owner:      document.getElementById('f_owner').value,
+    status:     document.getElementById('f_status').value,
+    due:        document.getElementById('f_due').value,
+    mitigation: document.getElementById('f_mitigation').value,
+  };
+
+  const data = getRaidData();
+  if(editingId) {
+    const idx = data[currentTab].findIndex(i=>i.id===editingId);
+    if(idx!==-1) data[currentTab][idx] = {...data[currentTab][idx],...item};
+  } else {
+    item.id = Date.now();
+    item.createdAt = new Date().toISOString().split('T')[0];
+    data[currentTab].push(item);
+  }
+  persistRaidData(data);
+  closeModal();
+  updateKPIs();
+  renderTable();
+  showToast(editingId ? '✅ Élément mis à jour.' : '✅ Élément ajouté.');
+}
+
+function deleteItem(id) {
+  if(!confirm('Supprimer cet élément définitivement ?')) return;
+  const data = getRaidData();
+  data[currentTab] = data[currentTab].filter(i=>i.id!==id);
+  persistRaidData(data);
+  updateKPIs();
+  renderTable();
+  showToast('🗑️ Élément supprimé.');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function renderProjChips() {
+  const projects = PMHUB.getProjects().filter(p=>p.status==='active'||p.status==='risk');
+  const container = document.getElementById('projChips');
+  container.innerHTML = '';
+  projects.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'proj-chip' + (currentProject===p.id?' active':'');
+    chip.textContent = p.name.length>30 ? p.name.slice(0,29)+'…' : p.name;
+    chip.onclick = () => { currentProject=p.id; renderProjChips(); updateKPIs(); renderTable(); };
+    container.appendChild(chip);
+  });
+  // Fallback si aucun projet actif trouvé
+  if(projects.length === 0) {
+    container.innerHTML = '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucun projet actif</span>';
+  }
+}
+
+function showToast(msg) {
+  let t = document.getElementById('pmhub-toast');
+  if(!t) {
+    t = document.createElement('div');
+    t.id = 'pmhub-toast';
+    t.style.cssText = `position:fixed;bottom:32px;right:32px;z-index:999;
+      background:#0c1118;border:1px solid rgba(99,210,180,0.35);border-radius:10px;
+      padding:14px 20px;font-family:'DM Mono',monospace;font-size:12px;color:#dde5ed;
+      display:flex;align-items:center;gap:10px;
+      transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.transform = 'translateY(0)'; t.style.opacity = '1';
+  setTimeout(()=>{ t.style.transform='translateY(80px)'; t.style.opacity='0'; }, 3000);
+}
+
+// INIT
+initSeed();
+renderProjChips();
+updateKPIs();
+setTab('risks');
+</script>
+</body>
+</html>

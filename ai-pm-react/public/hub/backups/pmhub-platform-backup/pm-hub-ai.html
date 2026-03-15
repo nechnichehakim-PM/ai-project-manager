@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Centre IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/pmhub-theme.css">
+<script src="pmhub-data.js"></script>
+<script src="pmhub-nav-context.js"></script>
+<script>
+if (typeof PMHUB === 'undefined') {
+  const _ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
+  const AIP={openai:{label:'OpenAI',endpoint:'https://api.openai.com/v1/chat/completions',models:['gpt-5.4','gpt-5-mini','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','gpt-4o','gpt-4o-mini','gpt-4-turbo','o1','o1-mini','o3-mini','gpt-3.5-turbo'],headerKey:'Authorization',headerPrefix:'Bearer '},anthropic:{label:'Anthropic',endpoint:'https://api.anthropic.com/v1/messages',models:['claude-opus-4-5','claude-sonnet-4-5','claude-haiku-4-5'],headerKey:'x-api-key',headerPrefix:''},mistral:{label:'Mistral',endpoint:'https://api.mistral.ai/v1/chat/completions',models:['mistral-large-latest','mistral-medium-latest'],headerKey:'Authorization',headerPrefix:'Bearer '},custom:{label:'Custom',endpoint:'',models:[],headerKey:'Authorization',headerPrefix:'Bearer '}};
+  window.PMHUB={AI_PROVIDERS:AIP,getAISettings:()=>_ls.get('pmhub_ai_settings',{provider:'',apiKey:'',model:'',endpoint:'',enabled:false}),saveAISettings:(d)=>_ls.set('pmhub_ai_settings',d),isAIEnabled:()=>{const s=_ls.get('pmhub_ai_settings',{});return s.enabled&&s.apiKey&&s.provider;},getProfile:()=>_ls.get('pmhub_profile',{initials:'AN',name:'Abdelhakim Nechniche',title:'Telecom & IT Project Manager - PMP - PRINCE2 7th - Agile Scrum Master',company:'AMARIS Consulting',location:'Orvault, France',badges:['PMP','PRINCE2 7th','Agile Scrum Master','PMOCP']}),getProjects:()=>_ls.get('pmhub_projects',[{id:1,ref:'PRJ-2025-001',name:'AI-Driven Smart Data Center',status:'active',progress:35,type:'R&D / Innovation',start:'2025-11-01',end:'2026-09-30',budget:'450 000',team:['AN','ML','KB','SC'],phase:'Planification',priority:'Critique',risks:3,actions:7,desc:'Deploiement datacenter intelligent IA, automatisation operations, optimisation energetique, monitoring predictif.',sponsor:'Direction Innovation AMARIS',client:'Interne Grand Compte',color:'#63d2b4'},{id:2,ref:'PRJ-2024-008',name:'Orange PMPR / BLIM',status:'closed',progress:100,type:'Telecoms',client:'Orange France'},{id:3,ref:'PRJ-2025-002',name:'Power BI R&D',status:'closed',progress:100,type:'Data Analytics'}]),getResources:()=>_ls.get('pmhub_resources',[{id:'AN',name:'Abdelhakim Nechniche',role:'Project Manager',level:'Senior',availability:80,skills:['PMP','PRINCE2','Jira','Power BI','Telecoms']},{id:'ML',name:'Marc Leblanc',role:'Data Architect',level:'Senior',availability:60,skills:['Data Engineering','Python','Azure']},{id:'KB',name:'Karim Benali',role:'Infrastructure Engineer',level:'Confirme',availability:80,skills:['Datacenter','Reseau','VMware']},{id:'SC',name:'Sophie Carre',role:'AI/ML Engineer',level:'Confirme',availability:70,skills:['ML','Python','TensorFlow']}]),getRaids:(id)=>{const all=_ls.get('pmhub_raids',{});return all[id]||{risks:[{desc:'Retard fournisseur infrastructure serveurs',severity:'high',status:'open',owner:'AN',mitigation:'Identifier fournisseurs alternatifs'},{desc:'Derive du perimetre en phase deploiement',severity:'critical',status:'watch',owner:'AN',mitigation:'Comite changement formel'},{desc:'Competences IA/ML insuffisantes',severity:'medium',status:'progress',owner:'SC',mitigation:'Formation + recrutement contractor'}],actions:[{desc:'Valider architecture avec direction technique',status:'progress',owner:'AN',due:'2026-01-20'},{desc:'Obtenir devis fournisseurs hardware',status:'open',owner:'KB',due:'2026-01-31'},{desc:'Rediger plan formation equipe',status:'open',owner:'SC',due:'2026-02-15'}],issues:[{desc:'Acces VPN bloque equipe distante',severity:'high',status:'progress',owner:'KB'}],decisions:[{desc:'Architecture hybride cloud/on-premise retenue',status:'closed',owner:'AN'},{desc:'Methodologie Hybride validee',status:'closed',owner:'AN'}]};},
+  async callAI(sys,usr){const s=this.getAISettings();if(!s.enabled||!s.apiKey||!s.provider)throw new Error('IA non configuree. Allez dans Parametres.');const p=AIP[s.provider];const ep=s.provider==='custom'?s.endpoint:p.endpoint;const mdl=s.model||p.models[0];const hdrs={'Content-Type':'application/json'};hdrs[p.headerKey]=p.headerPrefix+s.apiKey;if(s.provider==='anthropic')hdrs['anthropic-version']='2023-06-01';let body;if(s.provider==='anthropic'){body={model:mdl,max_tokens:3000,system:sys,messages:[{role:'user',content:usr}]};}else{body={model:mdl,messages:[{role:'system',content:sys},{role:'user',content:usr}],temperature:0.7,max_completion_tokens:3000};}const res=await fetch(ep,{method:'POST',headers:hdrs,body:JSON.stringify(body)});if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur API '+res.status);}const d=await res.json();if(s.provider==='anthropic')return d.content?.[0]?.text||'';return d.choices?.[0]?.message?.content||'';}};
+}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;}
+.sidebar{border-right:1px solid var(--border);background:rgba(12,17,24,0.85);display:flex;flex-direction:column;overflow:hidden;}
+.sb-status{padding:18px;border-bottom:1px solid var(--border);}
+.sb-badge-ai{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:8px 12px;border-radius:6px;margin-bottom:6px;}
+.sb-badge-ai.on{background:rgba(99,210,180,0.08);border:1px solid rgba(99,210,180,0.2);color:var(--accent);}
+.sb-badge-ai.off{background:rgba(224,112,112,0.06);border:1px solid rgba(224,112,112,0.15);color:var(--danger);}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.ai-dot.on{animation:glow 2s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 6px rgba(99,210,180,0.5)}50%{box-shadow:0 0 14px rgba(99,210,180,0.8)}}
+.sb-model{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 0;}
+.sb-sec{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-muted);padding:12px 18px 5px;}
+.sb-btn{display:flex;align-items:center;gap:11px;padding:10px 18px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-btn.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-btn-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sb-btn-lbl{flex:1;}
+.sb-btn-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.sb-projs{padding:12px 14px 14px;border-top:1px solid var(--border);}
+.sb-projs-title{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.proj-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;cursor:pointer;transition:all .18s;}
+.proj-chip:hover{border-color:var(--border-a);}
+.proj-chip.active{border-color:var(--accent);background:rgba(99,210,180,0.05);}
+.proj-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.proj-name{font-size:10px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.main{display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;}
+.panel{display:none;flex-direction:column;height:100%;overflow:hidden;}
+.panel.active{display:flex;}
+.ph{padding:22px 32px 14px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.ph-row{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.ph-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.ph-tag::before{content:'';width:12px;height:1px;background:var(--accent);}
+.ph-h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:-0.02em;}
+.ph-h1 em{font-style:italic;color:var(--accent);}
+.ph-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:3px;}
+.chat-body{flex:1;overflow-y:auto;padding:18px 32px;display:flex;flex-direction:column;gap:12px;}
+.chat-welcome{text-align:center;padding:32px 16px;}
+.cw-icon{font-size:42px;margin-bottom:14px;}
+.cw-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;margin-bottom:8px;}
+.cw-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.8;margin-bottom:20px;}
+.sug-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;}
+.sug{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;cursor:pointer;transition:all .2s;}
+.sug:hover{border-color:var(--border-a);background:rgba(99,210,180,0.03);}
+.sug-icon{font-size:14px;margin-bottom:5px;}
+.sug-text{font-size:11px;font-weight:600;line-height:1.3;}
+.sug-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.msg{display:flex;gap:9px;animation:fadeUp .3s ease;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;max-width:88%;}
+.msg.ai{align-self:flex-start;max-width:92%;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:'DM Mono',monospace;font-weight:600;}
+.msg-av.u{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#060a0d;}
+.msg-av.a{background:var(--surface2);border:1px solid var(--border-a);color:var(--accent);}
+.msg-bbl{padding:10px 14px;border-radius:9px;font-size:12px;line-height:1.75;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-word;}
+.msg-bbl.u{background:rgba(99,210,180,0.1);border:1px solid rgba(99,210,180,0.18);color:var(--text);}
+.msg-bbl.a{background:var(--surface);border:1px solid var(--border);color:var(--text-soft);}
+.msg-bbl.thinking{color:var(--text-muted);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.chat-footer{flex-shrink:0;padding:10px 32px 18px;border-top:1px solid var(--border);}
+.chat-row{display:flex;gap:9px;align-items:flex-end;}
+.chat-ta{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;resize:none;outline:none;min-height:44px;max-height:120px;line-height:1.6;transition:border-color .2s;}
+.chat-ta:focus{border-color:var(--border-a);}
+.send-btn{width:44px;height:44px;background:var(--accent);border:none;border-radius:7px;cursor:pointer;flex-shrink:0;font-size:16px;transition:all .2s;}
+.send-btn:hover{background:#7fe0c8;}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.chat-hint{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:5px;text-align:center;}
+.tool-body{flex:1;overflow-y:auto;padding:22px 32px;}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-bottom:22px;}
+.opts.three{grid-template-columns:repeat(3,1fr);}
+.opt{background:var(--surface);border:2px solid var(--border);border-radius:9px;padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.opt:hover{border-color:rgba(99,210,180,0.25);transform:translateY(-1px);}
+.opt.selected{border-color:var(--accent);background:rgba(99,210,180,0.04);}
+.opt.selected::after{content:'checkmark';font-size:0;position:absolute;top:10px;right:12px;width:16px;height:16px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.opt.selected::before{content:'✓';position:absolute;top:11px;right:14px;font-size:10px;color:#060a0d;font-weight:700;z-index:1;}
+.opt-icon{font-size:22px;margin-bottom:9px;}
+.opt-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.opt-desc{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);line-height:1.5;}
+.fcard{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:22px;margin-bottom:14px;}
+.fcard-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.frow{display:grid;gap:12px;margin-bottom:12px;}
+.frow.two{grid-template-columns:1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.flabel{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);}
+.fsel,.finput{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;transition:border-color .2s;}
+.fsel:focus,.finput:focus{border-color:var(--accent);}
+.fta{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;resize:vertical;min-height:68px;line-height:1.7;transition:border-color .2s;}
+.fta:focus{border-color:var(--accent);}
+.rcard{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:20px;margin-top:14px;display:none;}
+.rcard.show{display:block;}
+.rcard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.rcard-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);}
+.rcard-acts{display:flex;gap:7px;}
+.rcard-body{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.9;white-space:pre-wrap;word-break:break-word;max-height:52vh;overflow-y:auto;}
+.rcard-body.loading{color:var(--text-muted);animation:blink 1s infinite;}
+.btn-p{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:10px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.btn-p:hover{background:#7fe0c8;transform:translateY(-1px);}
+.btn-p:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-s{display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--text-muted);padding:6px 12px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);}
+.ia-off{background:rgba(224,112,112,0.05);border:1px solid rgba(224,112,112,0.2);border-radius:9px;padding:18px 22px;display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.ia-off-ttl{font-size:13px;font-weight:700;color:var(--danger);margin-bottom:3px;}
+.ia-off-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;}
+.ia-off a{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);text-decoration:none;padding:7px 13px;border:1px solid rgba(99,210,180,0.25);border-radius:5px;white-space:nowrap;margin-left:auto;transition:all .2s;}
+.ia-off a:hover{background:rgba(99,210,180,0.07);}
+.akpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.akpi{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px;text-align:center;}
+.akpi-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;margin-bottom:3px;}
+.akpi-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.bsections{display:flex;flex-direction:column;gap:12px;}
+.bblock{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:18px;}
+.bblock-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.bblock-icon{font-size:16px;}
+.bblock-title{font-size:13px;font-weight:700;}
+.bblock-body{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.9;white-space:pre-wrap;}
+.bblock-body.loading{color:var(--text-muted);animation:blink 1s infinite;}
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--surface);border:1px solid rgba(99,210,180,0.3);border-radius:9px;padding:12px 17px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(65px);opacity:0;transition:all .3s;pointer-events:none;}
+.ctx-banner{background:rgba(99,210,180,0.06);border:1px solid rgba(99,210,180,0.2);border-radius:8px;padding:10px 16px;margin:0 32px 14px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--accent);display:flex;align-items:center;gap:10px;}
+.ctx-banner span{color:var(--text-muted);}
+/* AI Command Center — structure UX Human first / AI optional */
+.ai-command-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ai-command-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+.ai-command-h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:-0.02em;}
+.ai-command-h1 em{font-style:italic;color:var(--accent);}
+.ai-command-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:6px;}
+.ai-command-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--text-muted);}
+.ai-section-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:24px 32px 10px;}
+.ai-modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:0 32px 24px;}
+.ai-module-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color .2s, box-shadow .2s;}
+.ai-module-card:hover{border-color:rgba(99,210,180,0.25);box-shadow:0 4px 20px rgba(0,0,0,0.15);}
+.ai-module-card h3{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.ai-module-card h3 span{font-size:18px;}
+.ai-module-card p{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;}
+.ai-module-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.ai-module-actions .btn-manual{background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-decoration:none;transition:all .18s;}
+.ai-module-actions .btn-manual:hover{border-color:var(--accent);color:var(--accent);}
+.ai-module-actions .btn-assist{background:rgba(99,210,180,0.08);color:var(--accent);border:1px solid rgba(99,210,180,0.25);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .18s;}
+.ai-module-actions .btn-assist:hover{background:rgba(99,210,180,0.12);}
+.ai-module-actions .btn-full{background:var(--accent);color:#060a0d;border:none;padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;cursor:pointer;transition:all .18s;}
+.ai-module-actions .btn-full:hover{background:#7fe0c8;transform:translateY(-1px);}
+.ai-manual-zone{padding:0 32px 24px;}
+.ai-manual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ai-manual-link{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--text);text-decoration:none;font-size:12px;font-weight:600;transition:all .18s;}
+.ai-manual-link:hover{border-color:rgba(99,210,180,0.2);background:rgba(255,255,255,0.02);}
+.ai-manual-link span{font-size:16px;}
+.ai-quick-bar{display:flex;flex-wrap:wrap;gap:10px;padding:16px 32px 28px;border-top:1px solid var(--border);background:rgba(12,17,24,0.5);}
+.ai-quick-bar .btn-p{margin:0;}
+.panel-dashboard{overflow-y:auto;display:flex;flex-direction:column;}
+.panel-dashboard .chat-body{max-height:320px;}
+.panel-dashboard .chat-footer{padding:10px 32px 16px;}
+@media (max-width:900px){.ai-modules-grid{grid-template-columns:1fr;} .ai-manual-grid{grid-template-columns:1fr 1fr;}}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="sb-group" data-group="dashboard" href="pm-hub.html"><span class="sb-item-icon">🏠</span> Vue d'ensemble</a>
+    <a class="sb-group" data-group="planning" href="pm-hub-gantt.html"><span class="sb-item-icon">📅</span> Planning & exécution</a>
+    <a class="sb-group" data-group="governance" href="pm-hub-raid.html"><span class="sb-item-icon">⚠️</span> Suivi & gouvernance</a>
+    <a class="sb-group" data-group="resources" href="pm-hub-resources.html"><span class="sb-item-icon">👥</span> Ressources & bibliothèque</a>
+    <a class="sb-group" data-group="config" href="pm-hub-settings.html"><span class="sb-item-icon">⚙️</span> Configuration</a>
+    <a class="sb-group active" data-group="ai" href="pm-hub-ai.html"><span class="sb-item-icon">🤖</span> Centre IA</a>
+    <div class="sb-status" style="margin-top:16px;">
+      <div class="sb-badge-ai off" id="aiBadge"><div class="ai-dot" id="aiDot"></div><span id="aiLbl">IA non configurée</span></div>
+      <div class="sb-model" id="aiModel">Allez dans Paramètres pour configurer</div>
+    </div>
+    <div class="sb-projs">
+      <div class="sb-projs-title">Contexte actif</div>
+      <div id="projChips"></div>
+    </div>
+  </aside>
+  <main class="main">
+
+    <!-- DASHBOARD ACCUEIL — Human first / AI optional -->
+    <div class="panel active panel-dashboard" id="panel-dashboard">
+      <div class="ai-command-header">
+        <div class="ai-command-tag">Centre IA</div>
+        <h1 class="ai-command-h1">AI Command <em>Center</em></h1>
+        <p class="ai-command-sub">Pilotez vos projets avec ou sans IA — vous gardez le contrôle.</p>
+        <div class="ai-command-badge">Human control first · AI assistance optional</div>
+      </div>
+
+      <!-- Section 1 : Assistant PM Copilot -->
+      <div class="ai-section-title">Assistant PM Copilot</div>
+      <div class="ph" style="padding-top:0;border:none;"><div class="ph-tag">Conversation</div><div class="ph-h1">Votre <em>assistant</em> de projet</div><div class="ph-sub">Analyse, recommandations, génération de documents — toujours modifiable par vous.</div></div>
+      <div class="chat-body" id="chatBodyDashboard">
+        <div class="chat-welcome" id="chatWelcomeDashboard">
+          <div class="cw-icon">🤖</div>
+          <div class="cw-title">Bonjour Abdelhakim</div>
+          <div class="cw-sub">Je connais vos projets, votre équipe et votre RAID. Posez une question ou choisissez un module ci-dessous.</div>
+          <div class="sug-grid">
+            <div class="sug" onclick="sendSugDashboard(this,'Analyse la santé de mon projet principal')"><div class="sug-icon">🏥</div><div class="sug-text">Santé du projet</div><div class="sug-sub">Diagnostic avancement et risques</div></div>
+            <div class="sug" onclick="sendSugDashboard(this,'Risques critiques à traiter cette semaine')"><div class="sug-icon">⚠️</div><div class="sug-text">Risques critiques</div><div class="sug-sub">Priorisation immédiate</div></div>
+            <div class="sug" onclick="sendSugDashboard(this,'Mes 5 priorités cette semaine')"><div class="sug-icon">📋</div><div class="sug-text">Priorités semaine</div><div class="sug-sub">Focus opérationnel</div></div>
+            <div class="sug" onclick="sendSugDashboard(this,'Préparer le prochain COPIL')"><div class="sug-icon">🏛️</div><div class="sug-text">Préparer COPIL</div><div class="sug-sub">Agenda et points clés</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <div class="chat-row">
+          <textarea class="chat-ta" id="chatInputDashboard" placeholder="Posez votre question PM…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatDashboard();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+          <button class="send-btn" id="sendBtnDashboard" onclick="sendChatDashboard()">➤</button>
+        </div>
+      </div>
+
+      <!-- Section 2 : Modules IA (3 options par module) -->
+      <div class="ai-section-title">Modules IA</div>
+      <div class="ai-modules-grid">
+        <div class="ai-module-card">
+          <h3><span>⚠️</span> Analyse RAID</h3>
+          <p>Risques, actions, issues, décisions. Créez à la main ou faites analyser/générer par l'IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub-raid.html" class="btn-manual">+ Ajouter un risque (manuel)</a>
+            <button type="button" class="btn-assist" onclick="showPanel('raid')">Analyser les risques avec IA</button>
+            <button type="button" class="btn-full" onclick="showPanel('raid');setTimeout(analyseRaid,400)">Générer RAID complet avec IA</button>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>✍️</span> Rédaction PM</h3>
+          <p>Emails, CR, rapports de statut, notes d'escalade. Rédaction manuelle ou assistée par IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub-report.html" class="btn-manual">Créer document (manuel)</a>
+            <button type="button" class="btn-assist" onclick="showPanel('redac')">Assistant IA</button>
+            <button type="button" class="btn-full" onclick="showPanel('redac');setTimeout(genRedac,400)">Générer automatiquement</button>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>📊</span> Briefing portfolio</h3>
+          <p>Synthèse hebdomadaire de tous vos projets. Vue manuelle ou génération IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub.html" class="btn-manual">Voir portefeuille (manuel)</a>
+            <button type="button" class="btn-assist" onclick="showPanel('briefing')">Assistant IA</button>
+            <button type="button" class="btn-full" onclick="showPanel('briefing');setTimeout(genBriefing,400)">Générer briefing hebdo</button>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>⚡</span> Génération livrables</h3>
+          <p>Charte, WBS, RACI, RAID initial, jalons. Création manuelle ou pack généré par IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub.html" class="btn-manual">Créer manuellement</a>
+            <button type="button" class="btn-assist" onclick="showPanel('livrable')">Assistant IA</button>
+            <button type="button" class="btn-full" onclick="showPanel('livrable');setTimeout(genLivrable,400)">Générer automatiquement</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3 : Gestion manuelle (sans IA) -->
+      <div class="ai-section-title">Gestion manuelle</div>
+      <div class="ai-manual-zone">
+        <div class="ai-manual-grid">
+          <a href="pm-hub.html" class="ai-manual-link"><span>➕</span> Créer projet</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📋</span> Ajouter tâche</a>
+          <a href="pm-hub-raid.html" class="ai-manual-link"><span>⚠️</span> Ajouter risque</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>🔗</span> Ajouter dépendance</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📅</span> Créer jalon</a>
+          <a href="pm-hub-raid.html" class="ai-manual-link"><span>📄</span> Créer livrable</a>
+        </div>
+      </div>
+
+      <!-- Section 4 : Quick actions -->
+      <div class="ai-section-title">Actions rapides</div>
+      <div class="ai-quick-bar">
+        <a href="pm-hub.html" class="btn-p" style="text-decoration:none;">+ Créer projet</a>
+        <button type="button" class="btn-p" onclick="showPanel('raid');setTimeout(analyseRaid,400)">Analyser projet avec IA</button>
+        <button type="button" class="btn-p" onclick="showPanel('briefing');setTimeout(genBriefing,400)">Générer briefing hebdomadaire</button>
+        <button type="button" class="btn-p" onclick="showPanel('redac')">Générer rapport COMEX</button>
+      </div>
+    </div>
+
+    <!-- CHAT (vue pleine) -->
+    <div class="panel" id="panel-chat">
+      <div class="ph"><div class="ph-tag">Assistant PM</div><div class="ph-h1">Votre <em>assistant</em> de projet</div><div class="ph-sub">Connaît vos projets, RAID et équipe. Posez n'importe quelle question.</div></div>
+      <div class="chat-body" id="chatBody">
+        <div class="chat-welcome" id="chatWelcome">
+          <div class="cw-icon">🤖</div>
+          <div class="cw-title">Bonjour Abdelhakim</div>
+          <div class="cw-sub">Je connais vos projets, votre équipe et votre RAID.<br>Que voulez-vous savoir ?</div>
+          <div class="sug-grid">
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">🏥</div><div class="sug-text">Santé du projet AI Data Center</div><div class="sug-sub">Analyse complète de l\'avancement</div></div>
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">⚠️</div><div class="sug-text">Risques critiques à traiter</div><div class="sug-sub">Priorisation immédiate</div></div>
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">📋</div><div class="sug-text">Mes 5 priorités cette semaine</div><div class="sug-sub">Focus opérationnel</div></div>
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">👥</div><div class="sug-text">Équilibre charge de l'équipe</div><div class="sug-sub">Analyse dispo et compétences</div></div>
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">🎯</div><div class="sug-text">Conformité bonnes pratiques PMP</div><div class="sug-sub">Audit rapide du projet</div></div>
+            <div class="sug" onclick="sendSug(this)"><div class="sug-icon">🏛️</div><div class="sug-text">Préparer le prochain COPIL</div><div class="sug-sub">Agenda et points clés</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <div class="chat-row">
+          <textarea class="chat-ta" id="chatInput" placeholder="Posez votre question PM…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendChat()">➤</button>
+        </div>
+        <div class="chat-hint">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne</div>
+      </div>
+    </div>
+
+    <!-- RAID -->
+    <div class="panel" id="panel-raid">
+      <div class="ph"><div class="ph-row"><div><div class="ph-tag">Analyse IA</div><div class="ph-h1">Analyse des <em>risques</em></div><div class="ph-sub">L'IA lit votre RAID et vous donne un diagnostic actionnable.</div></div><button class="btn-p" id="btnRaid" onclick="analyseRaid()">🔍 Analyser mon RAID</button></div></div>
+      <div class="tool-body" id="raidBody">
+        <div class="akpis" id="raidKpis"></div>
+        <div id="raidEmpty" style="text-align:center;padding:50px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Cliquez sur <strong style="color:var(--accent);">Analyser mon RAID</strong> pour obtenir le diagnostic.</div>
+        <div class="rcard" id="raidRes"><div class="rcard-hdr"><div class="rcard-lbl" id="raidLbl">Diagnostic IA — RAID</div><div class="rcard-acts"><button class="btn-s" onclick="copyEl('raidBody2')">📋 Copier</button><button class="btn-s" onclick="analyseRaid()">🔄</button></div></div><div class="rcard-body" id="raidBody2"></div></div>
+      </div>
+    </div>
+
+    <!-- REDAC -->
+    <div class="panel" id="panel-redac">
+      <div class="ph"><div class="ph-tag">Rédaction automatique</div><div class="ph-h1"><em>Rédacteur</em> PM</div><div class="ph-sub">Emails, comptes-rendus, notes d'escalade, rapports — générés en quelques secondes.</div></div>
+      <div class="tool-body">
+        <div class="opts" id="redacOpts">
+          <div class="opt selected" data-t="email-copil" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📧</div><div class="opt-name">Email COPIL</div><div class="opt-desc">CR comité de pilotage, points clés et décisions</div></div>
+          <div class="opt" data-t="statut" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📊</div><div class="opt-name">Rapport de statut</div><div class="opt-desc">Avancement, indicateurs RAG, risques, prochaines étapes</div></div>
+          <div class="opt" data-t="escalade" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚨</div><div class="opt-name">Note d'escalade</div><div class="opt-desc">Alerte direction, problème critique, demande de décision</div></div>
+          <div class="opt" data-t="cr-reunion" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📝</div><div class="opt-name">Compte-rendu réunion</div><div class="opt-desc">CR structuré, participants, décisions, actions</div></div>
+          <div class="opt" data-t="kick-off" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚀</div><div class="opt-name">Email de kick-off</div><div class="opt-desc">Lancement officiel, objectifs, équipe, planning</div></div>
+          <div class="opt" data-t="cloture" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🏁</div><div class="opt-name">Note de clôture</div><div class="opt-desc">Bilan final, REX, leçons apprises</div></div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">⚙️ Paramètres</div>
+          <div class="frow two"><div class="fg"><label class="flabel">Projet</label><select class="fsel" id="rProj"></select></div><div class="fg"><label class="flabel">Destinataire</label><input class="finput" id="rDest" placeholder="Direction, Sponsor, Équipe…"/></div></div>
+          <div class="fg" style="margin-bottom:12px;"><label class="flabel">Points clés à inclure (optionnel)</label><textarea class="fta" id="rPts" placeholder="Ex: retard 2 semaines, budget à 40%, risque critique…"></textarea></div>
+          <div class="frow two"><div class="fg"><label class="flabel">Ton</label><select class="fsel" id="rTon"><option>professionnel</option><option>formel</option><option>synthétique</option><option>positif</option></select></div><div class="fg"><label class="flabel">Langue</label><select class="fsel" id="rLang"><option>français</option><option>anglais</option></select></div></div>
+          <button class="btn-p" id="btnRedac" onclick="genRedac()" style="margin-top:8px;">✍️ Générer →</button>
+        </div>
+        <div class="rcard" id="redacRes"><div class="rcard-hdr"><div class="rcard-lbl" id="redacLbl">Document généré</div><div class="rcard-acts"><button class="btn-s" onclick="copyEl('redacBody')">📋 Copier</button><button class="btn-s" onclick="genRedac()">🔄</button></div></div><div class="rcard-body" id="redacBody"></div></div>
+      </div>
+    </div>
+
+    <!-- BRIEFING -->
+    <div class="panel" id="panel-briefing">
+      <div class="ph"><div class="ph-row"><div><div class="ph-tag">Intelligence portfolio</div><div class="ph-h1">Briefing <em>hebdomadaire</em></div><div class="ph-sub">Synthèse automatique de tous vos projets, prête en secondes.</div></div><button class="btn-p" id="btnBriefing" onclick="genBriefing()">📊 Générer le briefing</button></div></div>
+      <div class="tool-body">
+        <div id="bEmpty" style="text-align:center;padding:50px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Cliquez sur <strong style="color:var(--accent);">Générer le briefing</strong> pour obtenir votre synthèse.</div>
+        <div class="bsections" id="bSections" style="display:none;">
+          <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">🎯</span><div class="bblock-title">Résumé exécutif</div></div><div class="bblock-body" id="bR"></div></div>
+          <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">📈</span><div class="bblock-title">Avancement par projet</div></div><div class="bblock-body" id="bA"></div></div>
+          <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">🔴</span><div class="bblock-title">Points d'attention & risques</div></div><div class="bblock-body" id="bP"></div></div>
+          <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">✅</span><div class="bblock-title">Actions prioritaires cette semaine</div></div><div class="bblock-body" id="bAc"></div></div>
+          <div style="display:flex;gap:8px;padding-top:4px;"><button class="btn-s" onclick="copyBriefing()">📋 Copier tout</button><button class="btn-s" onclick="genBriefing()">🔄 Actualiser</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVRABLES -->
+    <div class="panel" id="panel-livrable">
+      <div class="ph"><div class="ph-tag">Génération IA</div><div class="ph-h1">Génération de <em>livrables</em></div><div class="ph-sub">Décrivez votre projet — l'IA génère charte, WBS, RAID, RACI et jalons.</div></div>
+      <div class="tool-body">
+        <div class="opts three" id="livOpts">
+          <div class="opt selected" data-t="charte" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📋</div><div class="opt-name">Charte Projet</div><div class="opt-desc">Project Charter complet, objectifs SMART, gouvernance</div></div>
+          <div class="opt" data-t="wbs" onclick="selOpt(this,'livOpts')"><div class="opt-icon">🌳</div><div class="opt-name">WBS</div><div class="opt-desc">Work Breakdown Structure avec phases et livrables</div></div>
+          <div class="opt" data-t="raid-init" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚠️</div><div class="opt-name">RAID Initial</div><div class="opt-desc">Risques, actions, décisions pré-identifiés</div></div>
+          <div class="opt" data-t="raci" onclick="selOpt(this,'livOpts')"><div class="opt-icon">👥</div><div class="opt-name">Matrice RACI</div><div class="opt-desc">Responsabilités selon votre équipe réelle</div></div>
+          <div class="opt" data-t="jalons" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📅</div><div class="opt-name">Jalons & Planning</div><div class="opt-desc">Jalons critiques avec estimations</div></div>
+          <div class="opt" data-t="complet" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚡</div><div class="opt-name">Pack complet</div><div class="opt-desc">Tout en une génération (Charte+WBS+RAID+RACI)</div></div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">📝 Contexte du projet</div>
+          <div class="frow two"><div class="fg"><label class="flabel">Projet</label><select class="fsel" id="lProj"></select></div><div class="fg"><label class="flabel">Type de projet</label><select class="fsel" id="lType"><option>R&D / Innovation</option><option>Télécoms / Infrastructure</option><option>Data / Analytics</option><option>Transformation digitale</option><option>Déploiement réseau</option></select></div></div>
+          <div class="fg" style="margin-bottom:12px;"><label class="flabel">Description (plus c'est précis, meilleur c'est)</label><textarea class="fta" id="lDesc" rows="3" placeholder="Ex: Déploiement d'un Data Center intelligent piloté par IA…"></textarea></div>
+          <div class="frow two"><div class="fg"><label class="flabel">Budget estimé</label><input class="finput" id="lBudget" placeholder="Ex: 450 000 €"/></div><div class="fg"><label class="flabel">Durée estimée</label><input class="finput" id="lDuree" placeholder="Ex: 10 mois"/></div></div>
+          <button class="btn-p" id="btnLiv" onclick="genLivrable()" style="margin-top:8px;">⚡ Générer →</button>
+        </div>
+        <div class="rcard" id="livRes"><div class="rcard-hdr"><div class="rcard-lbl" id="livLbl">Livrable généré</div><div class="rcard-acts"><button class="btn-s" onclick="copyEl('livBody')">📋 Copier</button><button class="btn-s" onclick="genLivrable()">🔄</button></div></div><div class="rcard-body" id="livBody"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div id="toast"></div>
+<script>
+let chatHistory=[], generating=false;
+const profile = PMHUB.getProfile();
+
+function toast(msg,t='ok'){const el=document.getElementById('toast');el.style.borderColor=t==='err'?'rgba(224,112,112,0.3)':'rgba(99,210,180,0.3)';el.textContent=msg;el.style.transform='translateY(0)';el.style.opacity='1';setTimeout(()=>{el.style.transform='translateY(65px)';el.style.opacity='0';},3200);}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function copyEl(id){const t=document.getElementById(id).textContent;navigator.clipboard.writeText(t).then(()=>toast('📋 Copié !')).catch(()=>toast('❌ Échec','err'));}
+
+function iaBanner(){return '<div class="ia-off"><div style="font-size:22px">⚡</div><div><div class="ia-off-ttl">IA non configurée</div><div class="ia-off-sub">Configurez votre fournisseur IA pour utiliser cette fonctionnalité.</div></div><a href="pm-hub-settings.html?section=ai">⚙ Configurer</a></div>';}
+
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  var panelEl = document.getElementById('panel-'+id);
+  if(panelEl) panelEl.classList.add('active');
+  var sbNav = document.getElementById('nav-'+id);
+  if(sbNav) sbNav.classList.add('active');
+  document.querySelectorAll('#nav-context [data-panel]').forEach(function(el){
+    el.classList.toggle('active', el.getAttribute('data-panel')===id);
+  });
+  if(id==='raid') initRaidKpis();
+}
+function sendChatDashboard(){
+  var input=document.getElementById('chatInputDashboard');
+  var msg=(input&&input.value)?input.value.trim():'';
+  if(!msg) return;
+  showPanel('chat');
+  document.getElementById('chatInput').value=msg;
+  input.value='';
+  sendChat();
+}
+function sendSugDashboard(el,text){
+  var t=(typeof text==='string')?text:(el&&el.querySelector('.sug-text'))?el.querySelector('.sug-text').textContent.trim():'';
+  if(!t) return;
+  showPanel('chat');
+  document.getElementById('chatInput').value=t;
+  sendChat();
+}
+
+function selOpt(el,gid){document.querySelectorAll('#'+gid+' .opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');}
+
+function initContextBanner(){
+  const from=PMHUB.getParam('from');
+  const projectId=PMHUB.getParam('project');
+  const ban=document.getElementById('ctxBanner');
+  if(!ban)return;
+  if(!from && !projectId){ban.style.display='none';return;}
+  const parts=[]; if(from) parts.push('Page : '+decodeURIComponent(from)); if(projectId){const p=PMHUB.getProjectById(projectId); parts.push('Projet : '+(p?p.name:projectId));}
+  ban.innerHTML='<span>📍 Contexte</span> '+parts.join(' · ');
+  ban.style.display='flex';
+}
+function initStatus(){
+  const s=PMHUB.getAISettings();
+  const badge=document.getElementById('aiBadge'), dot=document.getElementById('aiDot'), lbl=document.getElementById('aiLbl'), mdl=document.getElementById('aiModel');
+  if(s.enabled&&s.apiKey&&s.provider){
+    const pl=(PMHUB.AI_PROVIDERS||{})[s.provider]?.label||s.provider;
+    badge.className='sb-badge-ai on';dot.className='ai-dot on';lbl.textContent='IA active — '+pl;mdl.textContent=s.model||'Modèle par défaut';
+  } else {badge.className='sb-badge-ai off';dot.className='ai-dot';lbl.textContent='IA non configurée';mdl.textContent='Allez dans Paramètres';}
+}
+
+function initChips(){
+  const projs=PMHUB.getProjects().filter(p=>p.status==='active');
+  const c=document.getElementById('projChips');
+  c.innerHTML=projs.length?projs.map((p,i)=>`<div class="proj-chip ${i===0?'active':''}" onclick="document.querySelectorAll('.proj-chip').forEach(x=>x.classList.remove('active'));this.classList.add('active')"><div class="proj-dot" style="background:${p.color||'var(--accent)'}"></div><div class="proj-name">${p.name}</div></div>`).join(''):'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">Aucun projet actif</div>';
+
+  ['rProj','lProj'].forEach(sid=>{
+    const sel=document.getElementById(sid);if(!sel)return;
+    sel.innerHTML=projs.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    if(sid==='lProj'){sel.onchange=()=>prefillLiv(+sel.value);if(projs.length)prefillLiv(projs[0].id);}
+  });
+}
+
+function prefillLiv(id){
+  const p=PMHUB.getProjects().find(x=>x.id===id);if(!p)return;
+  document.getElementById('lDesc').value=p.desc||'';
+  document.getElementById('lBudget').value=p.budget?p.budget+' €':'';
+  if(p.start&&p.end){const m=Math.round((new Date(p.end)-new Date(p.start))/(1000*60*60*24*30));document.getElementById('lDuree').value=m+' mois';}
+}
+
+function getCtx(){
+  const from=PMHUB.getParam('from');
+  const projectId=PMHUB.getParam('project');
+  let ctxNote=''; if(from) ctxNote+='L\'utilisateur consulte la page "'+decodeURIComponent(from)+'". '; if(projectId){const p=PMHUB.getProjectById(projectId); if(p) ctxNote+='Projet focal : '+p.name+' (ref '+p.ref+'). ';}
+  const projs=PMHUB.getProjects();const res=PMHUB.getResources();
+  const active=projs.filter(p=>p.status==='active');
+  const focalId=projectId||active[0]?.id||1;
+  const raid=PMHUB.getRaids(focalId);
+  return `Tu es expert PM senior (PMP, PRINCE2, Agile). Tu travailles avec ${profile.name}, ${profile.title}, ${profile.company}, ${profile.location}. Certifications : ${(profile.badges||[]).join(', ')}.
+${ctxNote}
+
+PROJETS ACTIFS :
+${active.map(p=>`- ${p.name} (${p.ref}) : ${p.progress}% | Phase: ${p.phase||'—'} | Budget: ${p.budget||'—'}€ | Fin: ${p.end||'—'} | Equipe: ${(p.team||[]).join(', ')} | Priorite: ${p.priority||'—'}`).join('\n')}
+
+PROJETS CLOTURES : ${projs.filter(p=>p.status==='closed').map(p=>p.name).join(', ')}
+
+EQUIPE :
+${res.map(r=>`- ${r.id} ${r.name} (${r.role}, ${r.level}) Dispo:${r.availability}% Skills:${(r.skills||[]).join(',')}`).join('\\n')}
+
+RAID (projet principal) :
+Risques ouverts: ${(raid.risks||[]).filter(r=>r.status!=='closed').length} | Critiques: ${(raid.risks||[]).filter(r=>r.severity==='critical').length} | Actions ouvertes: ${(raid.actions||[]).filter(a=>a.status!=='closed').length} | Issues: ${(raid.issues||[]).filter(i=>i.status!=='closed').length}
+
+Reponds en francais, de facon concise et professionnelle.`;
+}
+
+// CHAT
+async function sendChat(){
+  if(generating)return;
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();if(!msg)return;
+  if(!PMHUB.isAIEnabled()){addMsg('ai','⚡ IA non configurée. Allez dans Paramètres → ⚙ pour configurer.');return;}
+  document.getElementById('chatWelcome')&&(document.getElementById('chatWelcome').style.display='none');
+  addMsg('user',msg);chatHistory.push({role:'user',content:msg});
+  input.value='';input.style.height='auto';
+  generating=true;document.getElementById('sendBtn').disabled=true;
+  const thk=addMsg('ai','⏳ En train de réfléchir…','thinking');
+  try{
+    const s=PMHUB.getAISettings();
+    const p=(PMHUB.AI_PROVIDERS||{})[s.provider];
+    const ep=s.provider==='custom'?s.endpoint:p.endpoint;
+    const mdl=s.model||p.models[0];
+    const hdrs={'Content-Type':'application/json'};hdrs[p.headerKey]=p.headerPrefix+s.apiKey;
+    if(s.provider==='anthropic')hdrs['anthropic-version']='2023-06-01';
+    const hist=chatHistory.slice(-12);
+    let body;
+    if(s.provider==='anthropic'){body={model:mdl,max_tokens:3000,system:getCtx(),messages:[{role:'user',content:hist.map(m=>'['+m.role.toUpperCase()+']: '+m.content).join('\\n')}]};}
+    else{body={model:mdl,messages:[{role:'system',content:getCtx()},...hist],temperature:0.7,max_completion_tokens:3000};}
+    const res=await fetch(ep,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur API '+res.status);}
+    const d=await res.json();
+    const txt=s.provider==='anthropic'?d.content?.[0]?.text||'':d.choices?.[0]?.message?.content||'';
+    thk.remove();addMsg('ai',txt);chatHistory.push({role:'assistant',content:txt});
+  }catch(err){thk.remove();addMsg('ai','❌ '+err.message);toast(err.message,'err');}
+  finally{generating=false;document.getElementById('sendBtn').disabled=false;}
+}
+
+function addMsg(role,text,cls=''){
+  const body=document.getElementById('chatBody');
+  const div=document.createElement('div');div.className='msg '+role;
+  div.innerHTML=`<div class="msg-av ${role==='user'?'u':'a'}">${role==='user'?(profile.initials||'AN'):'🤖'}</div><div class="msg-bbl ${role==='user'?'u':'a'} ${cls}">${esc(text)}</div>`;
+  body.appendChild(div);body.scrollTop=body.scrollHeight;return div;
+}
+
+const SUG_Q={
+  'Santé du projet AI Data Center':'Analyse la santé globale de mon projet AI-Driven Smart Data Center : avancement, risques, équipe, budget. Donne-moi un diagnostic clair avec des points d attention.',
+  'Risques critiques à traiter':'Quels sont mes risques critiques en ce moment et que dois-je faire en priorité cette semaine ?',
+  'Mes 5 priorités cette semaine':'Donne-moi mes 5 actions prioritaires pour cette semaine sur mon portefeuille de projets.',
+  'Équilibre charge de l\'équipe':'Mon équipe est-elle bien équilibrée sur le projet AI Data Center ? Surcharges ? Lacunes de compétences ?',
+  'Conformité bonnes pratiques PMP':'Mon projet AI Data Center respecte-t-il les bonnes pratiques PMP/PRINCE2 ? Qu\'est-ce qui manque ?',
+  'Préparer le prochain COPIL':'Qu\'est-ce que je dois préparer pour mon prochain COPIL sur le projet AI Data Center ? Agenda recommandé ?'
+};
+function sendSug(el){const txt=el.querySelector('.sug-text').textContent.trim();document.getElementById('chatInput').value=SUG_Q[txt]||txt;sendChat();}
+
+// RAID
+function initRaidKpis(){
+  const projs=PMHUB.getProjects().filter(p=>p.status==='active');
+  if(!projs.length)return;
+  const raid=PMHUB.getRaids(projs[0].id);
+  const or=(raid.risks||[]).filter(r=>r.status!=='closed').length;
+  const cr=(raid.risks||[]).filter(r=>r.severity==='critical').length;
+  const oa=(raid.actions||[]).filter(a=>a.status!=='closed').length;
+  const oi=(raid.issues||[]).filter(i=>i.status!=='closed').length;
+  document.getElementById('raidKpis').innerHTML=[
+    [or,'Risques ouverts',or>2?'var(--danger)':'var(--warning)'],
+    [cr,'Critiques',cr>0?'var(--danger)':'var(--success)'],
+    [oa,'Actions ouvertes','var(--accent3)'],
+    [oi,'Issues actives',oi>0?'var(--warning)':'var(--success)']
+  ].map(([v,l,c])=>`<div class="akpi"><div class="akpi-val" style="color:${c}">${v}</div><div class="akpi-lbl">${l}</div></div>`).join('');
+}
+
+async function analyseRaid(){
+  if(!PMHUB.isAIEnabled()){document.getElementById('raidBody').insertAdjacentHTML('afterbegin',iaBanner());return;}
+  const projs=PMHUB.getProjects().filter(p=>p.status==='active');
+  if(!projs.length){toast('Aucun projet actif','err');return;}
+  const proj=projs[0],raid=PMHUB.getRaids(proj.id);
+  const res=document.getElementById('raidRes'),body=document.getElementById('raidBody2'),empty=document.getElementById('raidEmpty'),btn=document.getElementById('btnRaid');
+  empty.style.display='none';res.classList.add('show');body.className='rcard-body loading';body.textContent='⏳ Analyse en cours…';btn.disabled=true;
+  const raidTxt=`Projet: ${proj.name} | Avancement: ${proj.progress}%
+RISQUES(${(raid.risks||[]).length}): ${(raid.risks||[]).map(r=>'['+r.severity+'/'+r.status+'] '+r.desc+' Owner:'+r.owner+' Mitigation:'+(r.mitigation||'non definie')).join(' | ')}
+ACTIONS(${(raid.actions||[]).length}): ${(raid.actions||[]).map(a=>'['+a.status+'] '+a.desc+' Owner:'+a.owner+' Due:'+(a.due||'?')).join(' | ')}
+ISSUES(${(raid.issues||[]).length}): ${(raid.issues||[]).map(i=>i.desc).join(' | ')}
+DECISIONS(${(raid.decisions||[]).length}): ${(raid.decisions||[]).map(d=>'['+d.status+'] '+d.desc).join(' | ')}`;
+  try{
+    const r=await PMHUB.callAI('Tu es expert en gestion des risques projet (PMP, PRINCE2). Analyse de facon structuree et actionnable.','Analyse ce RAID Log et donne-moi:\n1. DIAGNOSTIC: sante du RAID (score /10) et points critiques\n2. TOP 3 RISQUES a traiter EN URGENCE avec actions concretes\n3. ACTIONS en retard ou a risque de derapage\n4. RISQUES OUBLIES: 2-3 risques probables non listes (type de projet IA/Datacenter)\n5. CE QUI VA BIEN dans la gestion des risques\n6. RECOMMANDATIONS: 3 actions concretes pour ameliorer\n\n'+raidTxt);
+    body.className='rcard-body';body.textContent=r;toast('Analyse terminee !');
+  }catch(err){body.className='rcard-body';body.textContent='Erreur: '+err.message;toast(err.message,'err');}
+  finally{btn.disabled=false;}
+}
+
+// REDAC
+const REDAC={
+  'email-copil':{label:'Email COPIL',prompt:(p,dest,pts,ton)=>`Redige un email de compte-rendu COPIL pour le projet ${p.name}, destine a ${dest||'la direction'}. Ton: ${ton}. Inclure: resume statut, avancement (${p.progress}%), points decides, risques majeurs, prochaines etapes. ${pts?'Points: '+pts:''}`},
+  'statut':{label:'Rapport de statut',prompt:(p,dest,pts,ton)=>`Redige un rapport de statut pour ${p.name} (${p.progress}%, phase: ${p.phase||'?'}), destine a ${dest||'equipe'}. Ton: ${ton}. Format RAG. ${pts?'Points: '+pts:''}`},
+  'escalade':{label:'Note d\'escalade',prompt:(p,dest,pts,ton)=>`Redige une note d\'escalade formelle pour ${p.name}, a ${dest||'la direction'}. Ton: ${ton}. ${pts?'Probleme: '+pts:'Identifier le probleme critique du RAID.'}`},
+  'cr-reunion':{label:'Compte-rendu reunion',prompt:(p,dest,pts,ton)=>`Redige un CR de reunion de projet pour ${p.name}, destine a ${dest||'equipe'}. Ton: ${ton}. Format: participants, ordre du jour, decisions, actions. ${pts?'Points abordes: '+pts:''}`},
+  'kick-off':{label:'Email kick-off',prompt:(p,dest,pts,ton)=>`Redige l'email de lancement officiel du projet ${p.name} destine a ${dest||'parties prenantes'}. Ton: ${ton}. Equipe: ${(p.team||[]).join(', ')}, budget ${p.budget||'?'}€. ${pts?'Points: '+pts:''}`},
+  'cloture':{label:'Note de cloture',prompt:(p,dest,pts,ton)=>`Redige la note de cloture du projet ${p.name}. Destine a ${dest||'direction et sponsor'}. Ton: ${ton}. Bilan, REX, lecons apprises, recommandations. ${pts?'Points: '+pts:''}`}
+};
+
+async function genRedac(){
+  if(!PMHUB.isAIEnabled()){document.querySelector('#panel-redac .tool-body').insertAdjacentHTML('afterbegin',iaBanner());return;}
+  const selType=document.querySelector('#redacOpts .selected')?.dataset.t||'email-copil';
+  const pid=+document.getElementById('rProj').value;
+  const proj=PMHUB.getProjects().find(p=>p.id===pid)||PMHUB.getProjects()[0];
+  if(!proj){toast('Aucun projet','err');return;}
+  const dest=document.getElementById('rDest').value,pts=document.getElementById('rPts').value,ton=document.getElementById('rTon').value;
+  const tpl=REDAC[selType];
+  const res=document.getElementById('redacRes'),body=document.getElementById('redacBody'),btn=document.getElementById('btnRedac');
+  document.getElementById('redacLbl').textContent=tpl.label;
+  res.classList.add('show');body.className='rcard-body loading';body.textContent='Redaction en cours…';btn.disabled=true;
+  const raid=PMHUB.getRaids(proj.id);
+  const raidCtx=`Risques critiques/high: ${(raid.risks||[]).filter(r=>r.severity==='critical'||r.severity==='high').map(r=>r.desc).join(', ')||'aucun'}. Actions ouvertes: ${(raid.actions||[]).filter(a=>a.status!=='closed').length}.`;
+  try{
+    const r=await PMHUB.callAI(`Tu es expert en communication de projet (PMP, PRINCE2). Tu rediges des documents professionnels pour ${profile.name}, ${profile.title}. Contexte RAID: ${raidCtx}`,tpl.prompt(proj,dest,pts,ton));
+    body.className='rcard-body';body.textContent=r;toast('Document genere !');
+  }catch(err){body.className='rcard-body';body.textContent='Erreur: '+err.message;toast(err.message,'err');}
+  finally{btn.disabled=false;}
+}
+
+// BRIEFING
+async function genBriefing(){
+  if(!PMHUB.isAIEnabled()){document.querySelector('#panel-briefing .tool-body').insertAdjacentHTML('afterbegin',iaBanner());return;}
+  const btn=document.getElementById('btnBriefing'),empty=document.getElementById('bEmpty'),secs=document.getElementById('bSections');
+  btn.disabled=true;empty.style.display='none';secs.style.display='flex';
+  ['bR','bA','bP','bAc'].forEach(id=>{document.getElementById(id).className='bblock-body loading';document.getElementById(id).textContent='Generation…';});
+  const projs=PMHUB.getProjects();const res=PMHUB.getResources();
+  const today=new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const ctx=`PM: ${profile.name} | ${profile.title} | ${profile.company} | ${today}
+PORTEFEUILLE:
+${projs.map(p=>`- [${p.status}] ${p.name}: ${p.progress}% | Phase: ${p.phase||'?'} | Fin: ${p.end||'?'} | Budget: ${p.budget||'?'}€`).join('\\n')}
+EQUIPE:
+${res.map(r=>`- ${r.name} (${r.role}) Dispo:${r.availability}%`).join('\\n')}
+RAID principal: ${(()=>{const r=PMHUB.getRaids(1);return `Risques ouverts:${(r.risks||[]).filter(x=>x.status!=='closed').length} | Critiques:${(r.risks||[]).filter(x=>x.severity==='critical').length} | Actions:${(r.actions||[]).filter(x=>x.status!=='closed').length}`;})()}`;
+  const prompts=[
+    {id:'bR',q:'Redige un resume executif CONCIS (5-7 lignes) de l etat du portefeuille au '+today+'. Points essentiels uniquement.'},
+    {id:'bA',q:'Pour chaque projet, donne l etat avec indicateur RAG, le % et 1 point cle. Format liste.'},
+    {id:'bP',q:'Identifie les 3-5 points d attention critiques du portefeuille : risques, retards, problemes equipe. Liste priorisee.'},
+    {id:'bAc',q:'Liste les 5-7 actions prioritaires du PM CETTE semaine pour maintenir le portefeuille sur les rails. Liste numerotee avec responsable.'}
+  ];
+  try{
+    await Promise.all(prompts.map(async ({id,q})=>{
+      try{const r=await PMHUB.callAI('Tu es assistant PM expert. Contexte: '+ctx,q);document.getElementById(id).className='bblock-body';document.getElementById(id).textContent=r;}
+      catch(err){document.getElementById(id).className='bblock-body';document.getElementById(id).textContent='Erreur: '+err.message;}
+    }));
+    toast('Briefing genere !');
+  }catch(err){toast(err.message,'err');}
+  finally{btn.disabled=false;}
+}
+
+function copyBriefing(){
+  const h={bR:'RESUME EXECUTIF',bA:'AVANCEMENT PAR PROJET',bP:"POINTS D'ATTENTION",bAc:'ACTIONS PRIORITAIRES'};
+  const t=Object.entries(h).map(([id,ttl])=>'## '+ttl+'\n\n'+document.getElementById(id).textContent).join('\\n');
+  navigator.clipboard.writeText(t).then(()=>toast('Copie !')).catch(()=>toast('Echec','err'));
+}
+
+// LIVRABLES
+const LIV_P={
+  charte:(ctx)=>`Genere une Charte de Projet (Project Charter) complete et professionnelle. Inclure: titre, objectifs SMART, perimetre IN/OUT, parties prenantes, sponsor, budget, delais, criteres succes, contraintes, hypotheses, gouvernance. Format structure par sections.
+
+${ctx}`,
+  wbs:(ctx)=>`Genere un Work Breakdown Structure (WBS) complet. Structure 5 phases (Init/Plan/Exec/Controle/Cloture) avec livrables et taches principales. Format hierarchique numerote.
+
+${ctx}`,
+  'raid-init':(ctx)=>`Genere un RAID Log initial: 5 risques (proba/impact/severite/mitigation/owner), 5 actions cles demarrage, 2-3 decisions a prendre. Format tableau structure.
+
+${ctx}`,
+  raci:(ctx)=>`Genere une matrice RACI pour ce projet en te basant sur l equipe fournie. 8-10 livrables/activites principaux avec roles R/A/C/I. Format matrice claire.
+
+${ctx}`,
+  jalons:(ctx)=>`Genere un planning de jalons critiques: 8-10 jalons, description, dates estimees, criteres validation. Tenir compte budget et duree fournis. Format chronologique.
+
+${ctx}`,
+  complet:(ctx)=>`Genere un pack complet de demarrage: (1) Resume charte, (2) WBS simplifie 3 niveaux, (3) Top 5 risques, (4) RACI synthetique, (5) 6 jalons cles. Format structure professionnel.
+
+${ctx}`
+};
+const LIV_LBL={charte:'Charte Projet',wbs:'WBS',raci:'Matrice RACI','raid-init':'RAID Initial',jalons:'Jalons',complet:'Pack Complet'};
+
+async function genLivrable(){
+  if(!PMHUB.isAIEnabled()){document.querySelector('#panel-livrable .tool-body').insertAdjacentHTML('afterbegin',iaBanner());return;}
+  const selType=document.querySelector('#livOpts .selected')?.dataset.t||'charte';
+  const pid=+document.getElementById('lProj').value;
+  const proj=PMHUB.getProjects().find(p=>p.id===pid)||PMHUB.getProjects()[0];
+  const desc=document.getElementById('lDesc').value,budget=document.getElementById('lBudget').value,duree=document.getElementById('lDuree').value,type=document.getElementById('lType').value;
+  const res=document.getElementById('livRes'),body=document.getElementById('livBody'),btn=document.getElementById('btnLiv');
+  document.getElementById('livLbl').textContent=LIV_LBL[selType]||'Livrable';
+  res.classList.add('show');body.className='rcard-body loading';body.textContent='Generation en cours…';btn.disabled=true;
+  const r2=PMHUB.getResources();
+  const ctx=`Projet: ${proj?.name||'?'} | Ref: ${proj?.ref||'?'} | Type: ${type}
+Description: ${desc||proj?.desc||'?'}
+Budget: ${budget||proj?.budget||'?'} | Duree: ${duree||'?'}
+Debut: ${proj?.start||'?'} | Fin prevue: ${proj?.end||'?'}
+PM: ${profile.name} (${profile.title})
+Equipe: ${r2.map(r=>r.id+' '+r.name+' ('+r.role+')').join(', ')}
+Sponsor: ${proj?.sponsor||'?'} | Client: ${proj?.client||'?'}`;
+  try{
+    const r=await PMHUB.callAI('Tu es PM senior certifie PMP et PRINCE2. Tu generes des livrables projet professionnels, detailles et directement utilisables. Reponds en francais.',LIV_P[selType](ctx));
+    body.className='rcard-body';body.textContent=r;toast('Livrable genere !');
+  }catch(err){body.className='rcard-body';body.textContent='Erreur: '+err.message;toast(err.message,'err');}
+  finally{btn.disabled=false;}
+}
+
+// INIT
+initStatus();initChips();initContextBanner();
+const up=new URLSearchParams(window.location.search).get('panel');if(up)showPanel(up);
+</script>
+</body>
+</html>
