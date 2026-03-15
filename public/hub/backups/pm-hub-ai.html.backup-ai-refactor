@@ -144,38 +144,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 #toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--surface);border:1px solid rgba(99,210,180,0.3);border-radius:9px;padding:12px 17px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(65px);opacity:0;transition:all .3s;pointer-events:none;}
 .ctx-banner{background:rgba(99,210,180,0.06);border:1px solid rgba(99,210,180,0.2);border-radius:8px;padding:10px 16px;margin:0 32px 14px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--accent);display:flex;align-items:center;gap:10px;}
 .ctx-banner span{color:var(--text-muted);}
-/* AI Command Center — structure UX Human first / AI optional */
-.ai-command-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.ai-command-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
-.ai-command-h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:-0.02em;}
-.ai-command-h1 em{font-style:italic;color:var(--accent);}
-.ai-command-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:6px;}
-.ai-command-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--text-muted);}
-.ai-section-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:24px 32px 10px;}
-.ai-modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:0 32px 24px;}
-.ai-module-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color .2s, box-shadow .2s;}
-.ai-module-card:hover{border-color:rgba(99,210,180,0.25);box-shadow:0 4px 20px rgba(0,0,0,0.15);}
-.ai-module-card h3{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
-.ai-module-card h3 span{font-size:18px;}
-.ai-module-card p{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;}
-.ai-module-actions{display:flex;flex-wrap:wrap;gap:8px;}
-.ai-module-actions .btn-manual{background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-decoration:none;transition:all .18s;}
-.ai-module-actions .btn-manual:hover{border-color:var(--accent);color:var(--accent);}
-.ai-module-actions .btn-assist{background:rgba(99,210,180,0.08);color:var(--accent);border:1px solid rgba(99,210,180,0.25);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .18s;}
-.ai-module-actions .btn-assist:hover{background:rgba(99,210,180,0.12);}
-.ai-module-actions .btn-full{background:var(--accent);color:#060a0d;border:none;padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;cursor:pointer;transition:all .18s;}
-.ai-module-actions .btn-full:hover{background:#7fe0c8;transform:translateY(-1px);}
-.ai-manual-zone{padding:0 32px 24px;}
-.ai-manual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.ai-manual-link{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--text);text-decoration:none;font-size:12px;font-weight:600;transition:all .18s;}
-.ai-manual-link:hover{border-color:rgba(99,210,180,0.2);background:rgba(255,255,255,0.02);}
-.ai-manual-link span{font-size:16px;}
-.ai-quick-bar{display:flex;flex-wrap:wrap;gap:10px;padding:16px 32px 28px;border-top:1px solid var(--border);background:rgba(12,17,24,0.5);}
-.ai-quick-bar .btn-p{margin:0;}
-.panel-dashboard{overflow-y:auto;display:flex;flex-direction:column;}
-.panel-dashboard .chat-body{max-height:320px;}
-.panel-dashboard .chat-footer{padding:10px 32px 16px;}
-@media (max-width:900px){.ai-modules-grid{grid-template-columns:1fr;} .ai-manual-grid{grid-template-columns:1fr 1fr;}}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
 </style>
 </head>
@@ -208,104 +176,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
   </aside>
   <main class="main">
 
-    <!-- DASHBOARD ACCUEIL — Human first / AI optional -->
-    <div class="panel active panel-dashboard" id="panel-dashboard">
-      <div class="ai-command-header">
-        <div class="ai-command-tag">Centre IA</div>
-        <h1 class="ai-command-h1">AI Command <em>Center</em></h1>
-        <p class="ai-command-sub">Pilotez vos projets avec ou sans IA — vous gardez le contrôle.</p>
-        <div class="ai-command-badge">Human control first · AI assistance optional</div>
-      </div>
-
-      <!-- Section 1 : Assistant PM Copilot -->
-      <div class="ai-section-title">Assistant PM Copilot</div>
-      <div class="ph" style="padding-top:0;border:none;"><div class="ph-tag">Conversation</div><div class="ph-h1">Votre <em>assistant</em> de projet</div><div class="ph-sub">Analyse, recommandations, génération de documents — toujours modifiable par vous.</div></div>
-      <div class="chat-body" id="chatBodyDashboard">
-        <div class="chat-welcome" id="chatWelcomeDashboard">
-          <div class="cw-icon">🤖</div>
-          <div class="cw-title">Bonjour Abdelhakim</div>
-          <div class="cw-sub">Je connais vos projets, votre équipe et votre RAID. Posez une question ou choisissez un module ci-dessous.</div>
-          <div class="sug-grid">
-            <div class="sug" onclick="sendSugDashboard(this,'Analyse la santé de mon projet principal')"><div class="sug-icon">🏥</div><div class="sug-text">Santé du projet</div><div class="sug-sub">Diagnostic avancement et risques</div></div>
-            <div class="sug" onclick="sendSugDashboard(this,'Risques critiques à traiter cette semaine')"><div class="sug-icon">⚠️</div><div class="sug-text">Risques critiques</div><div class="sug-sub">Priorisation immédiate</div></div>
-            <div class="sug" onclick="sendSugDashboard(this,'Mes 5 priorités cette semaine')"><div class="sug-icon">📋</div><div class="sug-text">Priorités semaine</div><div class="sug-sub">Focus opérationnel</div></div>
-            <div class="sug" onclick="sendSugDashboard(this,'Préparer le prochain COPIL')"><div class="sug-icon">🏛️</div><div class="sug-text">Préparer COPIL</div><div class="sug-sub">Agenda et points clés</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="chat-footer">
-        <div class="chat-row">
-          <textarea class="chat-ta" id="chatInputDashboard" placeholder="Posez votre question PM…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatDashboard();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
-          <button class="send-btn" id="sendBtnDashboard" onclick="sendChatDashboard()">➤</button>
-        </div>
-      </div>
-
-      <!-- Section 2 : Modules IA (3 options par module) -->
-      <div class="ai-section-title">Modules IA</div>
-      <div class="ai-modules-grid">
-        <div class="ai-module-card">
-          <h3><span>⚠️</span> Analyse RAID</h3>
-          <p>Risques, actions, issues, décisions. Créez à la main ou faites analyser/générer par l'IA.</p>
-          <div class="ai-module-actions">
-            <a href="pm-hub-raid.html" class="btn-manual">+ Ajouter un risque (manuel)</a>
-            <button type="button" class="btn-assist" onclick="showPanel('raid')">Analyser les risques avec IA</button>
-            <button type="button" class="btn-full" onclick="showPanel('raid');setTimeout(analyseRaid,400)">Générer RAID complet avec IA</button>
-          </div>
-        </div>
-        <div class="ai-module-card">
-          <h3><span>✍️</span> Rédaction PM</h3>
-          <p>Emails, CR, rapports de statut, notes d'escalade. Rédaction manuelle ou assistée par IA.</p>
-          <div class="ai-module-actions">
-            <a href="pm-hub-report.html" class="btn-manual">Créer document (manuel)</a>
-            <button type="button" class="btn-assist" onclick="showPanel('redac')">Assistant IA</button>
-            <button type="button" class="btn-full" onclick="showPanel('redac');setTimeout(genRedac,400)">Générer automatiquement</button>
-          </div>
-        </div>
-        <div class="ai-module-card">
-          <h3><span>📊</span> Briefing portfolio</h3>
-          <p>Synthèse hebdomadaire de tous vos projets. Vue manuelle ou génération IA.</p>
-          <div class="ai-module-actions">
-            <a href="pm-hub.html" class="btn-manual">Voir portefeuille (manuel)</a>
-            <button type="button" class="btn-assist" onclick="showPanel('briefing')">Assistant IA</button>
-            <button type="button" class="btn-full" onclick="showPanel('briefing');setTimeout(genBriefing,400)">Générer briefing hebdo</button>
-          </div>
-        </div>
-        <div class="ai-module-card">
-          <h3><span>⚡</span> Génération livrables</h3>
-          <p>Charte, WBS, RACI, RAID initial, jalons. Création manuelle ou pack généré par IA.</p>
-          <div class="ai-module-actions">
-            <a href="pm-hub.html" class="btn-manual">Créer manuellement</a>
-            <button type="button" class="btn-assist" onclick="showPanel('livrable')">Assistant IA</button>
-            <button type="button" class="btn-full" onclick="showPanel('livrable');setTimeout(genLivrable,400)">Générer automatiquement</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section 3 : Gestion manuelle (sans IA) -->
-      <div class="ai-section-title">Gestion manuelle</div>
-      <div class="ai-manual-zone">
-        <div class="ai-manual-grid">
-          <a href="pm-hub.html" class="ai-manual-link"><span>➕</span> Créer projet</a>
-          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📋</span> Ajouter tâche</a>
-          <a href="pm-hub-raid.html" class="ai-manual-link"><span>⚠️</span> Ajouter risque</a>
-          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>🔗</span> Ajouter dépendance</a>
-          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📅</span> Créer jalon</a>
-          <a href="pm-hub-raid.html" class="ai-manual-link"><span>📄</span> Créer livrable</a>
-        </div>
-      </div>
-
-      <!-- Section 4 : Quick actions -->
-      <div class="ai-section-title">Actions rapides</div>
-      <div class="ai-quick-bar">
-        <a href="pm-hub.html" class="btn-p" style="text-decoration:none;">+ Créer projet</a>
-        <button type="button" class="btn-p" onclick="showPanel('raid');setTimeout(analyseRaid,400)">Analyser projet avec IA</button>
-        <button type="button" class="btn-p" onclick="showPanel('briefing');setTimeout(genBriefing,400)">Générer briefing hebdomadaire</button>
-        <button type="button" class="btn-p" onclick="showPanel('redac')">Générer rapport COMEX</button>
-      </div>
-    </div>
-
-    <!-- CHAT (vue pleine) -->
-    <div class="panel" id="panel-chat">
+    <!-- CHAT -->
+    <div class="panel active" id="panel-chat">
       <div class="ph"><div class="ph-tag">Assistant PM</div><div class="ph-h1">Votre <em>assistant</em> de projet</div><div class="ph-sub">Connaît vos projets, RAID et équipe. Posez n'importe quelle question.</div></div>
       <div class="chat-body" id="chatBody">
         <div class="chat-welcome" id="chatWelcome">
@@ -418,30 +290,13 @@ function iaBanner(){return '<div class="ia-off"><div style="font-size:22px">⚡<
 function showPanel(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
-  var panelEl = document.getElementById('panel-'+id);
-  if(panelEl) panelEl.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
   var sbNav = document.getElementById('nav-'+id);
   if(sbNav) sbNav.classList.add('active');
   document.querySelectorAll('#nav-context [data-panel]').forEach(function(el){
     el.classList.toggle('active', el.getAttribute('data-panel')===id);
   });
   if(id==='raid') initRaidKpis();
-}
-function sendChatDashboard(){
-  var input=document.getElementById('chatInputDashboard');
-  var msg=(input&&input.value)?input.value.trim():'';
-  if(!msg) return;
-  showPanel('chat');
-  document.getElementById('chatInput').value=msg;
-  input.value='';
-  sendChat();
-}
-function sendSugDashboard(el,text){
-  var t=(typeof text==='string')?text:(el&&el.querySelector('.sug-text'))?el.querySelector('.sug-text').textContent.trim():'';
-  if(!t) return;
-  showPanel('chat');
-  document.getElementById('chatInput').value=t;
-  sendChat();
 }
 
 function selOpt(el,gid){document.querySelectorAll('#'+gid+' .opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');}

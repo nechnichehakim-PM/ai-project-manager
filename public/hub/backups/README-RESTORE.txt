@@ -17,3 +17,8 @@ Fichiers : pmhub-theme.css.backup-v2, pm-hub.html.backup-v2
 Pour restaurer cette version :
   Copy-Item backups\pmhub-theme.css.backup-v2 themes\pmhub-theme.css -Force
   Copy-Item backups\pm-hub.html.backup-v2 pm-hub.html -Force
+
+--- Backup Centre IA (refonte UX Human first / AI optional) ---
+Fichier : pm-hub-ai.html.backup-ai-refactor
+Pour restaurer l’ancienne page Centre IA :
+  Copy-Item backups\pm-hub-ai.html.backup-ai-refactor pm-hub-ai.html -Force

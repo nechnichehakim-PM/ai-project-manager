@@ -15,6 +15,7 @@
     { id: 'resources',  label: 'Ressources & bibliothèque', first: 'pm-hub-resources.html', pages: [{ name: 'Ressources', href: 'pm-hub-resources.html', icon: '👥' }, { name: 'Templates', href: 'pm-hub-templates.html', icon: '📄' }] },
     { id: 'config',     label: 'Configuration', first: 'pm-hub-settings.html', pages: [{ name: 'Paramètres', href: 'pm-hub-settings.html', icon: '⚙️' }] },
     { id: 'ai',         label: 'Centre IA', first: 'pm-hub-ai.html', pages: [
+      { name: 'Accueil', panel: 'dashboard', icon: '🏠' },
       { name: 'Assistant contextuel', panel: 'chat', icon: '💬' },
       { name: 'Analyse des risques', panel: 'raid', icon: '⚠️' },
       { name: 'Rédacteur PM', panel: 'redac', icon: '✍️' },
