@@ -70,10 +70,9 @@
     <!-- HERO BAR -->
     <div class="hero-bar">
       <div class="hero-left">
-        <span class="hero-badge">AI Assisted Project Management</span>
         <div class="hero-tag">Project Management Operating System</div>
-        <h1 class="hero-title">PM Hub — AI Project Management Platform</h1>
-        <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
+        <h1 class="hero-title">Pilotez.<br>Anticipez.<br><em>Livrez.</em></h1>
+        <p class="hero-sub">Centralisation de tous vos projets, templates, risques et reporting — structuré comme un Senior PM.</p>
       </div>
     </div>
 
