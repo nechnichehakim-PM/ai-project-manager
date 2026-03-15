@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PM Hub — Abdelhakim Nechniche</title>
+<title>PM Hub — AI Project Management Platform</title>
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
@@ -70,23 +70,28 @@
     <!-- HERO BAR -->
     <div class="hero-bar">
       <div class="hero-left">
-        <span class="hero-badge">AI Assisted Project Management</span>
-        <div class="hero-tag">Project Management Operating System</div>
+        <span class="hero-badge">Assisté par l'intelligence artificielle</span>
+        <div class="hero-tag">Plateforme de gestion de projet</div>
         <h1 class="hero-title">PM Hub — AI Project Management Platform</h1>
         <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
+        <ul class="hero-benefits">
+          <li>Pilotage centralisé</li>
+          <li>Gouvernance renforcée</li>
+          <li>Assistance IA à la décision</li>
+        </ul>
       </div>
     </div>
 
     <!-- WIZARD PROMPT -->
     <div class="wizard-prompt" id="wizardPrompt">
       <div class="wiz-left">
-        <div class="wiz-tag">🧭 Séquençage Projet</div>
-        <div class="wiz-title">Nouveau projet ? Lancez le PM Wizard</div>
-        <div class="wiz-desc">Guidé étape par étape : Cadrage → Charte → WBS → RACI → RAID → Planning → Gouvernance</div>
+        <div class="wiz-tag">Lancement assisté par l'IA</div>
+        <div class="wiz-title">Démarrez un nouveau projet en mode guidé</div>
+        <div class="wiz-desc">Cadrage intelligent, Charte projet, WBS, RACI, RAID, Planning et Gouvernance — structuré étape par étape comme un Senior PM.</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex-shrink:0;">
         <div class="wiz-steps" id="wizSteps"></div>
-        <button class="btn-primary" onclick="launchWizard()">Lancer le wizard →</button>
+        <button class="btn-primary wiz-cta" onclick="launchWizard()">Démarrer le wizard →</button>
       </div>
     </div>
 
@@ -104,7 +109,7 @@
       </div>
       <div class="kpi-card red" data-kpi="raid" id="kpiCardRaid">
         <div class="kpi-label">Points RAID ouverts</div>
-        <div class="kpi-value red" id="kpiRaid">3</div>
+        <div class="kpi-value red" id="kpiRaid">—</div>
         <div class="kpi-sub">Risques & actions</div>
       </div>
       <div class="kpi-card blue" data-kpi="total" id="kpiCardTotal">
@@ -116,9 +121,9 @@
 
     <!-- PROJETS -->
     <div class="section-title-row">
-      <div class="section-title">Portefeuille Projets</div>
+      <div class="section-title">Vos projets</div>
       <div class="section-meta" id="totalLabel">— projets</div>
-      <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">⚙ Personnaliser</button>
+      <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">Personnaliser</button>
     </div>
 
     <div class="toolbar">
@@ -328,10 +333,16 @@ function applyFilters() {
 
   const all = PMHUB.getProjects();
   const stats = PMHUB.getStats();
-  document.getElementById('kpiActive').textContent   = stats.active;
-  document.getElementById('kpiProgress').textContent = stats.avgProgress+'%';
-  document.getElementById('kpiTotal').textContent    = stats.total;
-  document.getElementById('totalLabel').textContent  = `${all.length} projet${all.length>1?'s':''}`;
+  var raidCount = 0;
+  try { all.forEach(function(p) { var r = PMHUB.getRaids(p.id); raidCount += (r.risks||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.actions||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.issues||[]).length; }); } catch(e) {}
+  var useDemo = all.length === 0;
+  document.getElementById('kpiActive').textContent   = useDemo ? '12' : stats.active;
+  document.getElementById('kpiProgress').textContent = useDemo ? '78%' : (stats.avgProgress + '%');
+  document.getElementById('kpiRaid').textContent     = useDemo ? '4' : (raidCount || '0');
+  document.getElementById('kpiTotal').textContent    = useDemo ? '14' : stats.total;
+  document.getElementById('totalLabel').textContent  = useDemo ? '14 projets' : (all.length + ' projet' + (all.length > 1 ? 's' : ''));
+  var sbRaid = document.getElementById('sbRaidCount');
+  if (sbRaid) sbRaid.textContent = useDemo ? '4' : (raidCount || '0');
 
   // Sidebar projects
   const sbp = document.getElementById('sbProjects');
