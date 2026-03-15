@@ -24,11 +24,11 @@
   <div class="nav-context" id="nav-context"></div>
   <div class="nav-links">
     <a href="#" class="nav-cta" onclick="openModal(); return false;">+ Nouveau projet</a>
-    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+    <a href="pm-hub-settings.html" class="nav-icon nav-link-with-label" title="Paramètres"><span class="nav-icon-symbol">⚙</span><span class="nav-icon-label">Paramètres</span></a>
   </div>
 </nav>
 
-<a href="pm-hub-ai.html?from=Dashboard" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA — Référez-vous à l'IA partout">🤖</a>
+<a href="pm-hub-ai.html?from=Dashboard" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA — Référez-vous à l'IA partout"><span class="ai-float-icon">🤖</span><span class="ai-float-label">Assistant IA</span></a>
 
 <!-- LAYOUT -->
 <div class="layout">
@@ -39,11 +39,11 @@
   <!-- MAIN -->
   <main class="main">
 
-    <!-- HERO BAR -->
-    <div class="hero-bar">
+    <!-- HERO BAR (masqué si au moins 1 projet) -->
+    <div class="hero-bar" id="heroBar">
       <div class="hero-left">
         <span class="hero-badge">AI Assisted Project Governance</span>
-        <h1 class="hero-title">PM Hub<br><span class="hero-title-accent">AI Project Command Center</span></h1>
+        <h1 class="hero-title" id="heroTitle">Tableau de bord</h1>
         <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
         <ul class="hero-benefits">
           <li>Pilotage centralisé</li>
@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <!-- WIZARD PROMPT -->
+    <!-- WIZARD PROMPT (masqué si au moins 1 projet) -->
     <div class="wizard-prompt" id="wizardPrompt">
       <div class="wiz-left">
         <div class="wiz-tag">Lancement assisté par l'IA</div>
@@ -90,14 +90,24 @@
       </div>
     </div>
 
+    <!-- EMPTY STATE (aucun projet) -->
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-state-icon" aria-hidden="true">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </div>
+      <h2 class="empty-state-title">Aucun projet actif</h2>
+      <p class="empty-state-desc">Créez votre premier projet pour commencer à piloter.</p>
+      <button type="button" class="btn-primary empty-state-cta" onclick="openModal()">+ Nouveau projet</button>
+    </div>
+
     <!-- PROJETS -->
-    <div class="section-title-row">
+    <div class="section-title-row" id="sectionTitleRow">
       <div class="section-title">Vos projets</div>
       <div class="section-meta" id="totalLabel">— projets</div>
       <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">Personnaliser</button>
     </div>
 
-    <div class="toolbar">
+    <div class="toolbar" id="toolbar">
       <div class="search-box">
         <span style="color:var(--text-muted);font-size:13px;">🔍</span>
         <input type="text" placeholder="Rechercher..." oninput="filterProjects(this.value)"/>
@@ -107,6 +117,7 @@
       <button class="filter-btn" onclick="setFilter('hold',this)">En attente</button>
       <button class="filter-btn" onclick="setFilter('risk',this)">À risque</button>
       <button class="filter-btn" onclick="setFilter('closed',this)">Clôturés</button>
+      <button class="filter-btn" onclick="setFilter('archived',this)">Archivés</button>
     </div>
 
     <!-- Project Health Dashboard (premier projet actif) -->
@@ -133,6 +144,29 @@
 
   </main>
 </div>
+
+<style>
+.empty-state { text-align: center; padding: 64px 24px; max-width: 420px; margin: 32px auto 48px; }
+.empty-state-icon { color: var(--text-muted); opacity: 0.6; margin-bottom: 20px; }
+.empty-state-icon svg { display: block; margin: 0 auto; }
+.empty-state-title { font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+.empty-state-desc { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+.empty-state-cta { padding: 12px 24px; font-size: 0.95rem; }
+.nav-link-with-label { display: inline-flex !important; align-items: center; gap: 6px; padding: 8px 14px !important; }
+.nav-icon-symbol { font-size: 1rem; }
+.nav-icon-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: inherit; }
+.ai-float-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px 12px 14px; border-radius: 12px; }
+.ai-float-icon { font-size: 1.2rem; }
+.ai-float-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.9); }
+.kpi-prefs-list { display: flex; flex-direction: column; gap: 8px; }
+.kpi-pref-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.kpi-pref-drag { display: flex; gap: 4px; }
+.kpi-pref-btn { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); border-radius: 6px; cursor: pointer; font-size: 12px; }
+.kpi-pref-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.kpi-pref-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+.kpi-pref-toggle { display: flex; align-items: center; cursor: pointer; }
+.kpi-pref-toggle input { margin-right: 8px; }
+</style>
 
 <!-- MODAL NOUVEAU PROJET -->
 <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
@@ -206,7 +240,7 @@ let currentFilter = 'all';
 let searchQuery = '';
 
 function statusLabel(s) {
-  return { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' }[s] || s;
+  return { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque', archived:'Archivé' }[s] || s;
 }
 function formatDate(d) {
   if(!d) return '—';
@@ -216,7 +250,7 @@ function formatDate(d) {
 }
 function progressClass(p, status) {
   if(status==='risk') return 'danger';
-  if(status==='closed') return 'muted';
+  if(status==='closed' || status==='archived') return 'muted';
   if(p<40) return 'warn';
   return '';
 }
@@ -257,9 +291,9 @@ function renderProjects(list) {
             ${tplCount ? ` · <span style="color:var(--accent)">${tplCount} tpl</span>` : ''}
           </div>
           <div class="card-actions" onclick="event.stopPropagation();">
-            <a href="${projectDashboardUrl}" class="card-btn-primary">Voir le dashboard</a>
+            ${p.status==='archived' ? `<button type="button" class="card-btn primary" onclick="restoreProject(${p.id},event)">Restaurer</button>` : `<a href="${projectDashboardUrl}" class="card-btn-primary">Voir le dashboard</a>`}
             ${p.status==='active' ? `<button type="button" class="card-btn orange" onclick="goWizard(${p.id},event)">Wizard</button>` : ''}
-            <button type="button" class="card-btn" onclick="goTemplates(${p.id},event)">Templates</button>
+            ${p.status!=='archived' ? `<button type="button" class="card-btn" onclick="goTemplates(${p.id},event)">Templates</button>` : ''}
             <button type="button" class="card-btn red" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
           </div>
         </div>
@@ -281,6 +315,7 @@ function renderProjects(list) {
 function goTemplates(id, e) { e.stopPropagation(); PMHUB.goTo('pm-hub-templates.html',{project:id}); }
 function goWizard(id, e)    { e.stopPropagation(); PMHUB.goTo('pm-hub-wizard.html',{project:id}); }
 function launchWizard()     { PMHUB.goTo('pm-hub-wizard.html'); }
+function restoreProject(id, e) { e.stopPropagation(); PMHUB.restoreProject(id); applyFilters(); showToast('Projet restauré.'); }
 
 // ── DELETE PROJECT ──
 let _deleteId = null;
@@ -293,6 +328,13 @@ function confirmDelete(id, name, e) {
 function closeConfirm() {
   _deleteId = null;
   document.getElementById('confirmOverlay').classList.remove('open');
+}
+function executeArchive() {
+  if(_deleteId === null) return;
+  PMHUB.archiveProject(_deleteId);
+  closeConfirm();
+  applyFilters();
+  showToast('Projet archivé.');
 }
 function executeDelete() {
   if(_deleteId === null) return;
@@ -318,30 +360,53 @@ function showToast(msg) {
 
 function applyFilters() {
   let list = PMHUB.getProjects();
-  if(currentFilter!=='all') list = list.filter(p=>p.status===currentFilter);
+  if (currentFilter === 'archived') list = list.filter(p=>p.status==='archived');
+  else if (currentFilter !== 'all') list = list.filter(p=>p.status===currentFilter);
+  else list = list.filter(p=>p.status!=='archived');
   if(searchQuery) list = list.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase()));
   renderProjects(list);
 
-  const all = PMHUB.getProjects();
+  const activeList = PMHUB.getProjects().filter(p=>p.status!=='archived');
   const stats = PMHUB.getStats();
   var raidCount = 0;
-  try { all.forEach(function(p) { var r = PMHUB.getRaids(p.id); raidCount += (r.risks||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.actions||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.issues||[]).length; }); } catch(e) {}
-  var useDemo = all.length === 0;
-  document.getElementById('kpiActive').textContent   = useDemo ? '12' : stats.active;
-  document.getElementById('kpiProgress').textContent = useDemo ? '78%' : (stats.avgProgress + '%');
-  document.getElementById('kpiRaid').textContent     = useDemo ? '4' : (raidCount || '0');
-  document.getElementById('kpiTotal').textContent    = useDemo ? '14' : stats.total;
-  document.getElementById('totalLabel').textContent  = useDemo ? '14 projets' : (all.length + ' projet' + (all.length > 1 ? 's' : ''));
+  try { activeList.forEach(function(p) { var r = PMHUB.getRaids(p.id); raidCount += (r.risks||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.actions||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.issues||[]).length; }); } catch(e) {}
+  var noProjects = activeList.length === 0;
+  document.getElementById('kpiActive').textContent   = noProjects ? '0' : stats.active;
+  document.getElementById('kpiProgress').textContent  = noProjects ? '0%' : (stats.avgProgress + '%');
+  document.getElementById('kpiRaid').textContent     = noProjects ? '0' : (raidCount || '0');
+  document.getElementById('kpiTotal').textContent    = noProjects ? '0' : stats.total;
+  document.getElementById('totalLabel').textContent  = noProjects ? '0 projet' : (list.length + ' projet' + (list.length > 1 ? 's' : ''));
   var sbRaid = document.getElementById('sbRaidCount');
-  if (sbRaid) sbRaid.textContent = useDemo ? '4' : (raidCount || '0');
+  if (sbRaid) sbRaid.textContent = noProjects ? '0' : (raidCount || '0');
 
-  // Sidebar projects : rendu par pmhub-sidebar.js
+  var emptyEl = document.getElementById('emptyState');
+  var sectionRow = document.getElementById('sectionTitleRow');
+  var toolbarEl = document.getElementById('toolbar');
+  var gridEl = document.getElementById('projectsGrid');
+  if (emptyEl && sectionRow && toolbarEl && gridEl) {
+    if (noProjects && currentFilter !== 'archived') {
+      emptyEl.style.display = 'block';
+      sectionRow.style.display = 'none';
+      toolbarEl.style.display = 'none';
+      gridEl.style.display = 'none';
+    } else {
+      emptyEl.style.display = 'none';
+      sectionRow.style.display = 'flex';
+      toolbarEl.style.display = 'flex';
+      gridEl.style.display = 'grid';
+    }
+  }
 
-  // Wizard steps dots
   const ws = document.getElementById('wizSteps');
   if(ws) {
     ws.innerHTML = PMHUB.WIZARD_STEPS.map((_,i)=>`<div class="wiz-step-dot${i<2?' done':''}"></div>`).join('');
   }
+
+  var heroBar = document.getElementById('heroBar');
+  var wizardPrompt = document.getElementById('wizardPrompt');
+  var prefs = getDashboardPrefs();
+  if (heroBar) heroBar.style.display = activeList.length >= 1 ? 'none' : '';
+  if (wizardPrompt) wizardPrompt.style.display = (activeList.length >= 1 && !prefs.showWizard) ? 'none' : (activeList.length === 0 ? '' : (prefs.showWizard ? '' : 'none'));
 
   renderHealthDashboard();
 }
@@ -435,14 +500,19 @@ function createAndWizard() {
 
 // ── DASHBOARD PERSONNALISABLE ──
 const DASHBOARD_PREFS_KEY = 'pmhub_dashboard_prefs';
-const DEFAULT_DASHBOARD_PREFS = { kpiOrder: ['active','progress','raid','total'], showWizard: true };
+const KPI_IDS = ['active','progress','raid','total'];
+const KPI_LABELS = { active:'Projets actifs', progress:'Avancement moyen', raid:'Risques critiques', total:'Portefeuille total' };
+const DEFAULT_DASHBOARD_PREFS = { kpiOrder: KPI_IDS.slice(), kpiVisible: { active:true, progress:true, raid:true, total:true }, showWizard: true };
 
 function getDashboardPrefs() {
   try {
     const raw = localStorage.getItem(DASHBOARD_PREFS_KEY);
     if (!raw) return DEFAULT_DASHBOARD_PREFS;
     const p = JSON.parse(raw);
-    return { ...DEFAULT_DASHBOARD_PREFS, ...p, kpiOrder: p.kpiOrder || DEFAULT_DASHBOARD_PREFS.kpiOrder };
+    const kpiOrder = p.kpiOrder && p.kpiOrder.length ? p.kpiOrder : DEFAULT_DASHBOARD_PREFS.kpiOrder;
+    const kpiVisible = { ...DEFAULT_DASHBOARD_PREFS.kpiVisible, ...(p.kpiVisible || {}) };
+    KPI_IDS.forEach(function(k) { if (kpiVisible[k] === undefined) kpiVisible[k] = true; });
+    return { ...DEFAULT_DASHBOARD_PREFS, ...p, kpiOrder, kpiVisible, showWizard: p.showWizard !== false };
   } catch (e) { return DEFAULT_DASHBOARD_PREFS; }
 }
 function saveDashboardPrefs(prefs) {
@@ -458,22 +528,43 @@ function applyDashboardPrefs() {
   if (!strip) return;
   const cards = {};
   strip.querySelectorAll('[data-kpi]').forEach(function(el) { cards[el.getAttribute('data-kpi')] = el; });
+  strip.innerHTML = '';
   prefs.kpiOrder.forEach(function(k) {
-    if (cards[k]) strip.appendChild(cards[k]);
+    if (prefs.kpiVisible[k] !== false && cards[k]) strip.appendChild(cards[k]);
   });
+}
+
+function moveKpiPref(k, delta) {
+  var list = document.getElementById('kpiPrefsList');
+  if (!list) return;
+  var rows = Array.from(list.querySelectorAll('.kpi-pref-row'));
+  var idx = rows.findIndex(function(r) { return r.getAttribute('data-kpi') === k; });
+  if (idx < 0) return;
+  var next = idx + delta;
+  if (next < 0 || next >= rows.length) return;
+  var row = rows[idx];
+  if (delta > 0) list.insertBefore(row, rows[next].nextSibling);
+  else list.insertBefore(row, rows[next]);
 }
 
 function openDashboardPrefs() {
   const prefs = getDashboardPrefs();
   const modal = document.getElementById('dashboardPrefsOverlay');
-  if (!modal) return;
-  ['active','progress','raid','total'].forEach(function(k) {
-    const cb = document.getElementById('prefKpi_' + k);
-    if (cb) cb.checked = prefs.kpiOrder.indexOf(k) !== -1;
-  });
-  const orderActive = document.getElementById('prefKpiOrder');
-  if (orderActive) orderActive.value = prefs.kpiOrder.join(',');
-  const cbWiz = document.getElementById('prefShowWizard');
+  const listEl = document.getElementById('kpiPrefsList');
+  if (!modal || !listEl) return;
+  listEl.innerHTML = prefs.kpiOrder.map(function(k) {
+    var label = KPI_LABELS[k] || k;
+    var checked = prefs.kpiVisible[k] !== false ? ' checked' : '';
+    return '<div class="kpi-pref-row" data-kpi="' + k + '">' +
+      '<span class="kpi-pref-drag">' +
+      '<button type="button" class="kpi-pref-btn" onclick="moveKpiPref(\'' + k + '\',-1)" title="Monter">↑</button>' +
+      '<button type="button" class="kpi-pref-btn" onclick="moveKpiPref(\'' + k + '\',1)" title="Descendre">↓</button>' +
+      '</span>' +
+      '<span class="kpi-pref-label">' + label + '</span>' +
+      '<label class="kpi-pref-toggle"><input type="checkbox" class="prefKpiCheck" data-kpi="' + k + '"' + checked + '><span class="toggle-track"><span class="toggle-thumb"></span></span></label>' +
+      '</div>';
+  }).join('');
+  var cbWiz = document.getElementById('prefShowWizard');
   if (cbWiz) cbWiz.checked = prefs.showWizard !== false;
   modal.classList.add('open');
 }
@@ -481,11 +572,22 @@ function closeDashboardPrefs() {
   document.getElementById('dashboardPrefsOverlay').classList.remove('open');
 }
 function saveDashboardPrefsAndClose() {
-  const orderVal = (document.getElementById('prefKpiOrder') || {}).value || 'active,progress,raid,total';
-  const kpiOrder = orderVal.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return ['active','progress','raid','total'].indexOf(s) !== -1; });
-  if (kpiOrder.length === 0) kpiOrder.push('active','progress','raid','total');
-  const showWizard = (document.getElementById('prefShowWizard') || {}).checked !== false;
-  saveDashboardPrefs({ kpiOrder: kpiOrder, showWizard: showWizard });
+  var listEl = document.getElementById('kpiPrefsList');
+  var kpiOrder = [];
+  var kpiVisible = {};
+  if (listEl) {
+    listEl.querySelectorAll('.kpi-pref-row').forEach(function(row) {
+      var k = row.getAttribute('data-kpi');
+      if (k) {
+        kpiOrder.push(k);
+        var cb = row.querySelector('.prefKpiCheck');
+        kpiVisible[k] = cb ? cb.checked : true;
+      }
+    });
+  }
+  if (kpiOrder.length === 0) kpiOrder = KPI_IDS.slice();
+  var showWizard = (document.getElementById('prefShowWizard') || {}).checked !== false;
+  saveDashboardPrefs({ kpiOrder: kpiOrder, kpiVisible: kpiVisible, showWizard: showWizard });
   applyDashboardPrefs();
   closeDashboardPrefs();
   showToast('Préférences enregistrées.');
@@ -496,18 +598,19 @@ applyFilters();
 applyDashboardPrefs();
 </script>
 
-<!-- CONFIRM DELETE -->
+<!-- CONFIRM DELETE / ARCHIVE -->
 <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
   <div class="confirm-box">
     <div class="confirm-icon">🗑️</div>
-    <div class="confirm-title">Supprimer ce projet ?</div>
+    <div class="confirm-title">Supprimer ou archiver ce projet ?</div>
     <div class="confirm-desc">
-      Vous allez supprimer définitivement<br>
-      <span class="confirm-name" id="confirmName"></span><br>
-      Cette action est irréversible. Tous les templates liés seront supprimés.
+      <span class="confirm-name" id="confirmName"></span><br><br>
+      <strong>Archiver</strong> : le projet est masqué du tableau de bord mais conservé (consultable dans « Archivés »).<br><br>
+      <strong>Supprimer définitivement</strong> : action irréversible. Tous les templates liés seront supprimés.
     </div>
-    <div class="confirm-actions">
+    <div class="confirm-actions" style="flex-wrap:wrap;gap:10px;">
       <button class="btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-primary" onclick="executeArchive()">Archiver le projet</button>
       <button class="btn-danger" onclick="executeDelete()">Supprimer définitivement</button>
     </div>
   </div>
@@ -519,10 +622,10 @@ applyDashboardPrefs();
     <button class="modal-close" onclick="closeDashboardPrefs()">✕</button>
     <div class="modal-tag">Préférences</div>
     <h2 class="modal-title">Personnaliser le dashboard</h2>
-    <div class="form-group" style="margin-bottom:16px;">
-      <label class="form-label">Ordre des KPIs (séparés par des virgules)</label>
-      <input type="text" class="form-input" id="prefKpiOrder" placeholder="active, progress, raid, total" value="active,progress,raid,total"/>
-      <span style="font-size:11px;color:var(--text-muted);">Mots possibles : active, progress, raid, total</span>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">KPIs — afficher et ordre</label>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Choisissez les indicateurs à afficher et réordonnez-les avec les flèches.</p>
+      <div class="kpi-prefs-list" id="kpiPrefsList"></div>
     </div>
     <div class="form-group" style="margin-bottom:16px;">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">

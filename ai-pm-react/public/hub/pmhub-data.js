@@ -359,19 +359,28 @@ const PMHUB = (() => {
   function getProfile()       { return load(KEYS.profile, DEFAULT_PROFILE); }
   function saveProfile(data)  { return save(KEYS.profile, data); }
 
-  // ── STATS ─────────────────────────────────────────────────────
+  // ── STATS (hors archivés) ──────────────────────────────────────
   function getStats() {
-    const list = getProjects();
+    const list = getProjects().filter(p => p.status !== 'archived');
     return {
       total:       list.length,
       active:      list.filter(p => p.status === 'active').length,
       risk:        list.filter(p => p.status === 'risk').length,
       hold:        list.filter(p => p.status === 'hold').length,
       closed:      list.filter(p => p.status === 'closed').length,
+      archived:    getProjects().filter(p => p.status === 'archived').length,
       avgProgress: list.length
         ? Math.round(list.reduce((s,p) => s + (p.progress||0), 0) / list.length)
         : 0
     };
+  }
+
+  function archiveProject(id) {
+    return updateProject(id, { status: 'archived' });
+  }
+
+  function restoreProject(id) {
+    return updateProject(id, { status: 'active' });
   }
 
   // ── PORTFOLIO / PMO KPIs ──────────────────────────────────────
@@ -599,7 +608,7 @@ const PMHUB = (() => {
 
   // ── PUBLIC API ────────────────────────────────────────────────
   return {
-    getProjects, saveProjects, addProject, updateProject, deleteProject, getProjectById,
+    getProjects, saveProjects, addProject, updateProject, deleteProject, archiveProject, restoreProject, getProjectById,
     getTemplate, saveTemplate, getProjectTemplates, countSavedTemplates,
     getRaids, saveRaids, addRaidItem, updateRaidItem, deleteRaidItem,
     getGanttTasks, saveGanttTasks,
