@@ -120,23 +120,28 @@
       <button class="filter-btn" onclick="setFilter('archived',this)">Archivés</button>
     </div>
 
-    <!-- Project Health Dashboard (premier projet actif) -->
-    <section class="health-dashboard" id="healthDashboard">
-      <div class="section-title-row">
-        <h2 class="section-title">Santé projet</h2>
-        <span class="section-meta" id="healthProjectName">—</span>
+    <!-- Portefeuille projets + Santé portefeuille -->
+    <section class="portfolio-health-section" id="healthDashboard">
+      <div class="portfolio-projects-panel">
+        <h2 class="portfolio-panel-title">Portefeuille projets</h2>
+        <div class="portfolio-projects-list" id="portfolioProjectsList"></div>
       </div>
-      <div class="health-cards">
-        <div class="health-kpi health-score"><div class="health-kpi-label">Project Health Score</div><div class="health-kpi-val" id="healthScore">—</div><div class="health-gauge" id="healthGauge"></div></div>
-        <div class="health-kpi"><div class="health-kpi-label">Budget consommé</div><div class="health-kpi-val" id="healthBudget">—</div></div>
-        <div class="health-kpi"><div class="health-kpi-label">Avancement</div><div class="health-kpi-val" id="healthProgress">—</div></div>
-        <div class="health-kpi"><div class="health-kpi-label">Risques ouverts</div><div class="health-kpi-val" id="healthRisks">—</div></div>
-        <div class="health-kpi"><div class="health-kpi-label">Issues</div><div class="health-kpi-val" id="healthIssues">—</div></div>
-        <div class="health-kpi"><div class="health-kpi-label">Prochaine échéance</div><div class="health-kpi-val health-kpi-small" id="healthDeadline">—</div></div>
-      </div>
-      <div class="health-charts">
-        <div class="chart-card"><div class="chart-card-title">RAG · Statut</div><div class="rag-indicator" id="ragIndicator"><span class="rag-dot rag-green"></span> Vert</div></div>
-        <div class="chart-card chart-card-wide"><div class="chart-card-title">Tendance avancement</div><div class="chart-wrap" id="healthTrendChart"></div></div>
+      <div class="portfolio-health-panel">
+        <h2 class="portfolio-panel-title">Santé portefeuille</h2>
+        <div class="portfolio-health-score-wrap">
+          <div class="portfolio-health-score-val" id="portfolioHealthScore">—</div>
+          <div class="portfolio-health-score-label">Project Health Score</div>
+        </div>
+        <div class="portfolio-rag-dots" id="portfolioRagDots">
+          <span class="rag-dot rag-green" title="Vert"></span>
+          <span class="rag-dot rag-amber" title="Ambre"></span>
+          <span class="rag-dot rag-red" title="Rouge"></span>
+        </div>
+        <div class="portfolio-health-metrics">
+          <div class="portfolio-metric"><span class="portfolio-metric-label">Issues ouvertes</span><span class="portfolio-metric-val" id="portfolioIssues">—</span></div>
+          <div class="portfolio-metric"><span class="portfolio-metric-label">Prochaine échéance</span><span class="portfolio-metric-val" id="portfolioDeadline">—</span></div>
+          <div class="portfolio-metric"><span class="portfolio-metric-label">RAG global</span><span class="portfolio-metric-val portfolio-rag-global" id="portfolioRagGlobal">—</span></div>
+        </div>
       </div>
     </section>
 
@@ -170,6 +175,42 @@ nav { overflow: visible; }
 .kpi-pref-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
 .kpi-pref-toggle { display: flex; align-items: center; cursor: pointer; }
 .kpi-pref-toggle input { margin-right: 8px; }
+.portfolio-health-section { display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 48px; }
+.portfolio-projects-panel, .portfolio-health-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+.portfolio-panel-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent2); margin-bottom: 20px; font-weight: 600; }
+.portfolio-projects-list { display: flex; flex-direction: column; gap: 12px; }
+.portfolio-project-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit; }
+.portfolio-project-row:hover { border-color: rgba(245, 158, 11, 0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.portfolio-project-info { min-width: 0; }
+.portfolio-project-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.portfolio-project-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.portfolio-project-status { display: inline-block; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.portfolio-project-status.active { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+.portfolio-project-status.risk { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.portfolio-project-status.hold { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.portfolio-project-status.closed { background: rgba(107, 118, 133, 0.2); color: var(--text-muted); }
+.portfolio-project-progress { grid-column: 1 / -1; }
+.portfolio-project-progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.portfolio-project-progress-fill { height: 100%; border-radius: 3px; transition: width 0.25s ease; }
+.portfolio-project-progress-fill.green { background: var(--success); }
+.portfolio-project-progress-fill.yellow { background: var(--warning); }
+.portfolio-project-progress-fill.red { background: var(--danger); }
+.portfolio-project-progress-fill.muted { background: var(--text-muted); }
+.portfolio-project-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.portfolio-health-score-wrap { text-align: center; margin-bottom: 16px; }
+.portfolio-health-score-val { font-family: var(--font-heading); font-size: 48px; font-weight: 800; color: var(--accent2); line-height: 1; }
+.portfolio-health-score-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
+.portfolio-rag-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.portfolio-rag-dots .rag-dot { width: 10px; height: 10px; border-radius: 50%; }
+.portfolio-rag-dots .rag-green { background: var(--success); }
+.portfolio-rag-dots .rag-amber { background: var(--warning); }
+.portfolio-rag-dots .rag-red { background: var(--danger); }
+.portfolio-health-metrics { display: flex; flex-direction: column; gap: 12px; }
+.portfolio-metric { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface2); border-radius: var(--radius-sm); }
+.portfolio-metric-label { font-size: 12px; color: var(--text-muted); }
+.portfolio-metric-val { font-weight: 700; font-size: 14px; color: var(--text); }
+.portfolio-rag-global { color: var(--accent2); }
+@media (max-width: 900px) { .portfolio-health-section { grid-template-columns: 1fr; } }
 </style>
 
 <!-- MODAL NOUVEAU PROJET -->
@@ -418,48 +459,57 @@ function applyFilters() {
 function renderHealthDashboard() {
   var el = document.getElementById('healthDashboard');
   if (!el) return;
-  var projectId = PMHUB.getParam('project');
-  var active = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
-  var p = projectId ? PMHUB.getProjectById(parseInt(projectId,10)) : active[0];
-  if (!p) { el.style.display = 'none'; return; }
-  el.style.display = 'block';
-  var health = PMHUB.getProjectHealth(p.id);
-  var evm = PMHUB.getBudgetEVM(p.id);
-  document.getElementById('healthProjectName').textContent = p.name;
-  document.getElementById('healthScore').textContent = health.score + '/100';
-  document.getElementById('healthBudget').textContent = (evm.bac ? Math.round(evm.ac / evm.bac * 100) + '%' : '—');
-  document.getElementById('healthProgress').textContent = (p.progress != null ? p.progress + '%' : '—');
-  document.getElementById('healthRisks').textContent = health.openRisks;
-  document.getElementById('healthIssues').textContent = health.openIssues;
-  document.getElementById('healthDeadline').textContent = health.nextDeadline ? new Date(health.nextDeadline).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
-  var ragEl = document.getElementById('ragIndicator');
-  if (ragEl) {
-    ragEl.className = 'rag-indicator';
-    ragEl.innerHTML = '<span class="rag-dot rag-' + (health.rag === 'green' ? 'green' : health.rag === 'red' ? 'red' : 'amber') + '"></span> ' + (health.rag === 'green' ? 'Vert' : health.rag === 'red' ? 'Rouge' : 'Orange');
+  var list = PMHUB.getProjects().filter(function(p){ return p.status !== 'archived'; });
+  if (list.length === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'grid';
+
+  var listEl = document.getElementById('portfolioProjectsList');
+  if (listEl) {
+    listEl.innerHTML = list.map(function(p) {
+      var client = p.client || '—';
+      var progress = p.progress != null ? p.progress : 0;
+      var progressColor = p.status === 'risk' ? 'red' : p.status === 'closed' || p.status === 'archived' ? 'muted' : progress < 40 ? 'yellow' : 'green';
+      var statusClass = p.status === 'hold' ? 'hold' : p.status;
+      var statusText = statusLabel(p.status);
+      var url = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+      return '<a href="' + url + '" class="portfolio-project-row">' +
+        '<div class="portfolio-project-info">' +
+          '<div class="portfolio-project-name">' + (p.name || 'Sans nom') + '</div>' +
+          '<div class="portfolio-project-meta">' + client + '</div>' +
+          '<span class="portfolio-project-status ' + statusClass + '">' + statusText + '</span>' +
+        '</div>' +
+        '<div class="portfolio-project-progress">' +
+          '<div class="portfolio-project-progress-bar"><div class="portfolio-project-progress-fill ' + progressColor + '" style="width:' + progress + '%"></div></div>' +
+          '<div class="portfolio-project-pct">' + progress + '%</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
   }
-  if (typeof echarts !== 'undefined') {
-    var gaugeEl = document.getElementById('healthGauge');
-    var gaugeColor = health.rag === 'green' ? '#22C55E' : health.rag === 'red' ? '#EF4444' : '#F59E0B';
-    if (gaugeEl) {
-      if (!gaugeEl._chart) gaugeEl._chart = echarts.init(gaugeEl);
-      gaugeEl._chart.setOption({
-        series: [{ type: 'gauge', startAngle: 200, endAngle: -20, min: 0, max: 100, splitNumber: 5, radius: '90%', center: ['50%','75%'], itemStyle: { color: gaugeColor }, progress: { show: true, width: 8, value: health.score }, axisLine: { lineStyle: { width: 8, color: [[1, 'rgba(255,255,255,0.08)']] } }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false }, pointer: { show: false }, detail: { show: false } }]
-      }, true);
+
+  var totalScore = 0, totalIssues = 0, nextDeadline = null, hasRed = false, hasAmber = false;
+  list.forEach(function(p) {
+    var h = PMHUB.getProjectHealth(p.id);
+    totalScore += h.score;
+    totalIssues += (h.openIssues || 0);
+    if (p.end && (p.status === 'active' || p.status === 'risk' || p.status === 'hold')) {
+      var d = new Date(p.end);
+      if (!nextDeadline || d < nextDeadline) nextDeadline = d;
     }
-    var trendEl = document.getElementById('healthTrendChart');
-    if (trendEl && !trendEl._chart) {
-      trendEl._chart = echarts.init(trendEl);
-    }
-    if (trendEl && trendEl._chart) {
-      var weeks = ['S1','S2','S3','S4','S5','S6'];
-      var vals = [0, 8, 18, 25, 30, (p.progress || 0)];
-      trendEl._chart.setOption({
-        grid: { left: 40, right: 20, top: 20, bottom: 28 },
-        xAxis: { type: 'category', data: weeks, axisLine: { lineStyle: { color: 'var(--glass-border)' } }, axisLabel: { color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' } },
-        yAxis: { type: 'value', min: 0, max: 100, axisLine: { show: false }, splitLine: { lineStyle: { color: 'var(--glass-border)' } }, axisLabel: { color: 'var(--text-muted)' } },
-        series: [{ type: 'line', data: vals, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: 'var(--primary)', width: 2 }, itemStyle: { color: 'var(--primary)' }, areaStyle: { color: 'rgba(99,102,241,0.15)' } }]
-      });
-    }
+    if (h.rag === 'red') hasRed = true; else if (h.rag === 'amber') hasAmber = true;
+  });
+  var avgScore = list.length ? Math.round(totalScore / list.length) : 0;
+  var ragGlobal = hasRed ? 'Rouge' : hasAmber ? 'Ambre' : 'Vert';
+
+  document.getElementById('portfolioHealthScore').textContent = avgScore;
+  document.getElementById('portfolioIssues').textContent = totalIssues;
+  document.getElementById('portfolioDeadline').textContent = nextDeadline ? nextDeadline.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—';
+  document.getElementById('portfolioRagGlobal').textContent = ragGlobal;
+
+  var dotsEl = document.getElementById('portfolioRagDots');
+  if (dotsEl) {
+    dotsEl.querySelectorAll('.rag-dot').forEach(function(d) { d.style.opacity = '0.35'; });
+    var activeDot = dotsEl.querySelector('.rag-' + (hasRed ? 'red' : hasAmber ? 'amber' : 'green'));
+    if (activeDot) activeDot.style.opacity = '1';
   }
 }
 
