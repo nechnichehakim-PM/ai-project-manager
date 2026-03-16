@@ -152,15 +152,16 @@ nav {
 
 /* ── GANTT CHART ── */
 .gantt-chart {
-  flex:1; overflow:auto; position:relative;
-  min-width:0; /* allow flex child to shrink and show scrollbars */
+  flex:1; overflow-x:auto; overflow-y:auto; position:relative;
+  min-width:0; min-height:0; /* flex: allow shrink + scrollbars */
 }
-.gantt-chart::-webkit-scrollbar { width:8px; height:8px; }
+.gantt-chart::-webkit-scrollbar { width:10px; height:10px; }
 .gantt-chart::-webkit-scrollbar-track { background:var(--bg); }
 .gantt-chart::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:4px; }
 .gantt-chart::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+.gantt-chart::-webkit-scrollbar-corner { background:var(--bg); }
 
-.gantt-inner { min-width:100%; position:relative; display:inline-block; }
+.gantt-inner { position:relative; /* width fixée en JS pour le scroll H */ }
 
 /* Header timeline */
 .gantt-header {
@@ -359,6 +360,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; h
     <span id="projectDates" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)"></span>
   </div>
   <div class="toolbar-actions">
+    <button class="tb-btn" onclick="scrollGanttLeft()" title="Défiler à gauche">←</button>
+    <button class="tb-btn" onclick="scrollGanttRight()" title="Défiler à droite">→</button>
     <button class="tb-btn" onclick="zoomOut()">⊖ Zoom</button>
     <button class="tb-btn" onclick="scrollToToday()">📍 Aujourd'hui</button>
     <button class="tb-btn" onclick="toggleCriticalPath()">🔴 Chemin critique</button>
@@ -647,9 +650,12 @@ function renderGantt() {
   // Header
   renderGanttHeader(minDate, totalDays, dayW, totalW);
 
-  // Conteneur scrollable : forcer la largeur du contenu pour activer le scroll horizontal
+  // Forcer la largeur du contenu = largeur timeline pour activer le scroll horizontal
   const innerEl = document.getElementById('ganttInner');
-  if (innerEl) innerEl.style.minWidth = totalW + 'px';
+  if (innerEl) {
+    innerEl.style.width = totalW + 'px';
+    innerEl.style.minWidth = totalW + 'px';
+  }
 
   // Rows + bars
   const rowsEl = document.getElementById('ganttRows');
@@ -769,9 +775,21 @@ function renderGantt() {
   arrowPath.setAttribute('fill','rgba(99,210,180,0.5)');
   marker.appendChild(arrowPath); defs.appendChild(marker); svg.appendChild(defs);
 
-  // Sync scroll avec task panel
-  document.getElementById('ganttChart').addEventListener('scroll', syncScroll, {passive:true});
-  document.getElementById('taskList').addEventListener('scroll', syncScroll2, {passive:true});
+  // Sync scroll avec task panel (une seule fois pour éviter doublons)
+  const chartEl = document.getElementById('ganttChart');
+  const listEl = document.getElementById('taskList');
+  if (chartEl && !chartEl._scrollSyncBound) {
+    chartEl._scrollSyncBound = true;
+    chartEl.addEventListener('scroll', syncScroll, {passive:true});
+    listEl.addEventListener('scroll', syncScroll2, {passive:true});
+    // Shift + molette = défilement horizontal
+    chartEl.addEventListener('wheel', function(e) {
+      if (e.shiftKey && e.deltaY !== 0) {
+        chartEl.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, {passive:false});
+  }
 }
 
 function renderGanttHeader(minDate, totalDays, dayW, totalW) {
@@ -832,14 +850,18 @@ function var_(name) {
 // DATES
 // ══════════════════════════════════════════════════════
 function getDateRange() {
-  const dates = tasks.flatMap(t => [new Date(t.start), new Date(t.end)]);
-  let min = new Date(Math.min(...dates)); min.setHours(0,0,0,0);
-  let max = new Date(Math.max(...dates)); max.setHours(0,0,0,0);
-  // Padding
-  min.setDate(min.getDate()-14);
-  max.setDate(max.getDate()+21);
-  const totalDays = Math.round((max-min)/86400000);
-  return { minDate:min, maxDate:max, totalDays };
+  const dates = tasks.length
+    ? tasks.flatMap(t => [new Date(t.start), new Date(t.end)])
+    : [new Date(), new Date()];
+  const minTs = Math.min(...dates.map(d => d.getTime()));
+  const maxTs = Math.max(...dates.map(d => d.getTime()));
+  let min = new Date(minTs); min.setHours(0,0,0,0);
+  let max = new Date(maxTs); max.setHours(0,0,0,0);
+  min.setDate(min.getDate() - 14);
+  max.setDate(max.getDate() + 21);
+  let totalDays = Math.round((max - min) / 86400000);
+  if (!totalDays || totalDays < 60) totalDays = 90; /* minimum pour que le scroll H soit visible */
+  return { minDate: min, maxDate: max, totalDays };
 }
 
 function formatDate(d) {
@@ -1084,7 +1106,18 @@ function scrollToToday() {
   const dayW = DAY_W * dayZoom;
   const today = new Date(); today.setHours(0,0,0,0);
   const offset = Math.round((today-minDate)/86400000) * dayW;
-  document.getElementById('ganttChart').scrollLeft = Math.max(0, offset - 200);
+  const el = document.getElementById('ganttChart');
+  if (el) el.scrollLeft = Math.max(0, offset - 200);
+}
+
+function scrollGanttLeft() {
+  const el = document.getElementById('ganttChart');
+  if (el) el.scrollLeft = Math.max(0, el.scrollLeft - 400);
+}
+
+function scrollGanttRight() {
+  const el = document.getElementById('ganttChart');
+  if (el) el.scrollLeft = Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + 400);
 }
 
 function toggleCriticalPath() {
