@@ -153,12 +153,14 @@ nav {
 /* ── GANTT CHART ── */
 .gantt-chart {
   flex:1; overflow:auto; position:relative;
+  min-width:0; /* allow flex child to shrink and show scrollbars */
 }
-.gantt-chart::-webkit-scrollbar { width:6px; height:6px; }
+.gantt-chart::-webkit-scrollbar { width:8px; height:8px; }
 .gantt-chart::-webkit-scrollbar-track { background:var(--bg); }
-.gantt-chart::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:3px; }
+.gantt-chart::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:4px; }
+.gantt-chart::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
 
-.gantt-inner { min-width:100%; position:relative; }
+.gantt-inner { min-width:100%; position:relative; display:inline-block; }
 
 /* Header timeline */
 .gantt-header {
@@ -644,6 +646,10 @@ function renderGantt() {
 
   // Header
   renderGanttHeader(minDate, totalDays, dayW, totalW);
+
+  // Conteneur scrollable : forcer la largeur du contenu pour activer le scroll horizontal
+  const innerEl = document.getElementById('ganttInner');
+  if (innerEl) innerEl.style.minWidth = totalW + 'px';
 
   // Rows + bars
   const rowsEl = document.getElementById('ganttRows');
