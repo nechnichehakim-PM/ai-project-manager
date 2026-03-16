@@ -268,9 +268,12 @@ function showToast(msg) {
 }
 
 function renderResources() {
+  const grid = document.getElementById("resourcesGrid");
+  const allocHeader = document.getElementById("allocHeader");
+  const allocBody = document.getElementById("allocBody");
+  if (!grid || !allocHeader || !allocBody) return;
   const resources = PMHUB.getResources();
   const projects = PMHUB.getProjects().filter(p=>p.status==="active");
-  const grid = document.getElementById("resourcesGrid");
   if(!resources.length) {
     grid.innerHTML = "<div style='text-align:center;padding:60px;font-family:DM Mono,monospace;color:var(--text-muted);'>Aucun membre. Cliquez sur Ajouter.</div>";
   } else {
@@ -302,21 +305,25 @@ function renderResources() {
   document.getElementById("kOver").textContent = overloaded;
 
   const activeProjects = PMHUB.getProjects().filter(p=>p.status==="active");
-  const thead = document.getElementById("allocHeader");
-  const tbody = document.getElementById("allocBody");
-  thead.innerHTML = "<th>Ressource</th>" + activeProjects.map(p=>"<th>"+p.name.slice(0,20)+"</th>").join("") + "<th>Charge totale</th>";
+  const thead = allocHeader;
+  const tbody = allocBody;
+  thead.innerHTML = "<th>Ressource</th>" + activeProjects.map(p=>"<th>"+ (p.name||'').slice(0,20)+"</th>").join("") + "<th>Charge totale</th>";
   tbody.innerHTML = resources.map(r => {
     const cells = activeProjects.map(p => {
       const inTeam = p.team && p.team.includes(r.id);
       const pct = inTeam ? Math.round(100/Math.max(1,(p.team||[]).length)) : 0;
-      return "<td style="text-align:center;">" + (inTeam ? "<span style="background:rgba(99,210,180,0.1);color:var(--accent);border:1px solid rgba(99,210,180,0.2);padding:3px 10px;border-radius:3px;font-size:10px;">"+pct+"%</span>" : "<span style="color:var(--text-muted);">—</span>") + "</td>";
+      return "<td style=\"text-align:center;\">" + (inTeam ? "<span style=\"background:rgba(99,210,180,0.1);color:var(--accent);border:1px solid rgba(99,210,180,0.2);padding:3px 10px;border-radius:3px;font-size:10px;\">"+pct+"%</span>" : "<span style=\"color:var(--text-muted);\">—</span>") + "</td>";
     }).join("");
     const totalAlloc = activeProjects.filter(p=>p.team&&p.team.includes(r.id)).length * 25;
-    return "<tr><td><span style="background:"+r.color+"22;color:"+r.color+";padding:3px 9px;border-radius:3px;font-size:10px;">"+r.id+"</span> "+r.name.split(" ")[0]+" "+(r.name.split(" ")[1]||"")+"</td>"+cells+"<td style="text-align:center;color:"+(totalAlloc>100?"var(--danger)":"var(--success)")+";">"+(totalAlloc||0)+"%</td></tr>";
+    return "<tr><td><span style=\"background:"+r.color+"22;color:"+r.color+";padding:3px 9px;border-radius:3px;font-size:10px;\">"+r.id+"</span> "+(r.name||'').split(" ").slice(0,2).join(" ")+"</td>"+cells+"<td style=\"text-align:center;color:"+(totalAlloc>100?"var(--danger)":"var(--success)")+";\">"+(totalAlloc||0)+"%</td></tr>";
   }).join("");
 }
 
-renderResources();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", renderResources);
+} else {
+  renderResources();
+}
 </script>
 
 <!-- MODAL RESSOURCE -->
