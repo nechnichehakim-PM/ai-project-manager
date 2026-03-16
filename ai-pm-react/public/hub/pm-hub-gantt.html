@@ -139,6 +139,12 @@ nav {
 }
 .task-progress-pill.warn { background:rgba(232,201,122,.1); color:var(--accent2); }
 .task-progress-pill.crit { background:rgba(224,112,112,.1); color:var(--danger); }
+.task-assignee {
+  font-family:'DM Mono',monospace; font-size:9px;
+  padding:2px 6px; border-radius:3px; margin-right:6px; flex-shrink:0;
+  background:rgba(122,184,232,.15); color:var(--accent3);
+  border:1px solid rgba(122,184,232,.25);
+}
 
 /* Group row */
 .task-row.group { background:var(--surface2); }
@@ -417,8 +423,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; h
           </select>
         </div>
         <div class="form-group">
-          <div class="form-label">Responsable</div>
-          <input class="form-input" id="taskOwner" placeholder="Nom ou initiales">
+          <div class="form-label">Responsable (rôle)</div>
+          <input class="form-input" id="taskOwner" placeholder="Ex: CdP, DEV, MOA">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Assigné à (ressource)</div>
+          <select class="form-select" id="taskAssignee">
+            <option value="">— Non assigné</option>
+          </select>
         </div>
         <div class="form-group">
           <div class="form-label">Date de début</div>
@@ -578,6 +590,13 @@ function renderAll() {
 }
 
 // ── TASK PANEL ──
+function getResourceName(id) {
+  if (!id) return '';
+  const r = (PMHUB.getResources && PMHUB.getResources()) || [];
+  const res = r.find(x => x.id === id);
+  return res ? res.name : id;
+}
+
 function renderTaskPanel() {
   const list = document.getElementById('taskList');
   list.innerHTML = '';
@@ -590,12 +609,14 @@ function renderTaskPanel() {
     const indent = t.type === 'task' || t.type === 'milestone' ? 16 : 0;
     const prog = t.progress || 0;
     const pillClass = prog >= 80 ? '' : prog >= 40 ? 'warn' : 'crit';
+    const assigneeHtml = t.assignee && t.type !== 'group' ? `<span class="task-assignee" title="${getResourceName(t.assignee).replace(/"/g,'&quot;')}">${t.assignee}</span>` : '';
 
     row.innerHTML = `
       <div class="task-indent" style="width:${indent}px"></div>
       ${t.type==='group' ? '<div class="task-expand">▾</div>' : '<div style="width:20px"></div>'}
       <div class="task-color-dot" style="background:${t.color||'#63d2b4'}"></div>
       <div class="task-name">${t.type==='milestone'?'💎 ':t.type==='group'?'📁 ':''}${t.name}</div>
+      ${assigneeHtml}
       ${t.type!=='group'?`<div class="task-progress-pill ${pillClass}">${prog}%</div>`:''}
     `;
     row.onclick = () => openEditTask(t.id);
@@ -942,11 +963,13 @@ function syncScroll2(e) {
 // ══════════════════════════════════════════════════════
 function openAddTask() {
   editingTaskId = null;
+  fillAssigneeSelect();
   document.getElementById('modalTitle').textContent = 'Nouvelle tâche';
   document.getElementById('editTaskId').value = '';
   document.getElementById('taskName').value = '';
   document.getElementById('taskType').value = 'task';
   document.getElementById('taskOwner').value = '';
+  document.getElementById('taskAssignee').value = '';
   document.getElementById('taskDep').value = '';
   document.getElementById('taskColor').value = '#63d2b4';
   document.getElementById('taskProgress').value = 0;
@@ -963,11 +986,13 @@ function openEditTask(id) {
   const t = tasks.find(x=>x.id===id);
   if (!t) return;
   editingTaskId = id;
+  fillAssigneeSelect();
   document.getElementById('modalTitle').textContent = 'Modifier la tâche';
   document.getElementById('editTaskId').value = id;
   document.getElementById('taskName').value = t.name;
   document.getElementById('taskType').value = t.type;
   document.getElementById('taskOwner').value = t.owner||'';
+  document.getElementById('taskAssignee').value = t.assignee||'';
   document.getElementById('taskStart').value = t.start;
   document.getElementById('taskEnd').value = t.end;
   document.getElementById('taskDep').value = (t.deps||[]).join(', ');
@@ -976,6 +1001,23 @@ function openEditTask(id) {
   document.getElementById('progressVal').textContent = t.progress||0;
   document.getElementById('btnDelete').style.display = 'block';
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function fillAssigneeSelect() {
+  const sel = document.getElementById('taskAssignee');
+  if (!sel) return;
+  const project = activeProjectId ? PMHUB.getProjectById(activeProjectId) : null;
+  const teamIds = project && project.team ? project.team : [];
+  const resources = PMHUB.getResources();
+  const options = [ { value: '', text: '— Non assigné' } ];
+  teamIds.forEach(id => {
+    const r = resources.find(x => x.id === id);
+    options.push({ value: id, text: r ? r.name : id });
+  });
+  resources.forEach(r => {
+    if (!teamIds.includes(r.id)) options.push({ value: r.id, text: r.name + ' (hors équipe)' });
+  });
+  sel.innerHTML = options.map(o => `<option value="${o.value}">${o.text.replace(/"/g,'&quot;')}</option>`).join('');
 }
 
 function saveTask() {
@@ -989,6 +1031,7 @@ function saveTask() {
     name,
     type:     document.getElementById('taskType').value,
     owner:    document.getElementById('taskOwner').value,
+    assignee: document.getElementById('taskAssignee').value || null,
     start:    document.getElementById('taskStart').value,
     end:      document.getElementById('taskEnd').value,
     color:    document.getElementById('taskColor').value,

@@ -99,9 +99,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 /* TEAM */
 .team-list{display:flex;flex-direction:column;gap:12px;}
 .team-item{display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+.team-item-left{display:flex;align-items:center;gap:14px;flex:1;}
 .team-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0;}
 .team-name{font-weight:600;font-size:13px;}
 .team-role{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.team-item-actions{flex-shrink:0;}
+.btn-remove-res{padding:6px 12px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;}
+.btn-remove-res:hover{border-color:var(--danger);color:var(--danger);}
+.add-resource-wrap{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.add-resource-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;border:1px dashed var(--accent);background:rgba(99,210,180,0.06);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.add-resource-btn:hover{background:rgba(99,210,180,0.12);}
+.add-resource-modal .modal{max-width:400px;}
+.add-resource-modal .res-pick-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.add-resource-modal .res-pick-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;}
+.add-resource-modal .res-pick-item:hover{border-color:var(--accent);background:rgba(99,210,180,0.06);}
+.add-resource-modal .res-pick-item .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.add-resource-modal .res-pick-item .name{font-weight:600;font-size:13px;}
+.add-resource-modal .res-pick-item .role{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
 
 /* MILESTONES */
 .ms-list{display:flex;flex-direction:column;gap:0;}
@@ -147,7 +161,67 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
     <div id="projectContent"></div>
   </main>
 </div>
+
+<!-- Modal Ajouter une ressource au projet -->
+<div class="modal-overlay add-resource-modal" id="addResourceModalOverlay" onclick="if(event.target===this)closeAddResourceModal()">
+  <div class="modal">
+    <div class="modal-strip"></div>
+    <div class="modal-header">
+      <div class="modal-title">Ajouter une ressource au projet</div>
+      <button class="modal-close" onclick="closeAddResourceModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Choisissez un membre à ajouter à l'équipe du projet.</p>
+      <div class="res-pick-list" id="addResourceList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
+// Allouer / retirer des ressources au projet (appelées depuis le HTML généré)
+function removeResourceFromProject(projectId, resId) {
+  const p = PMHUB.getProjectById(projectId);
+  if (!p) return;
+  const team = (p.team || []).filter(id => id !== resId);
+  PMHUB.updateProject(parseInt(projectId, 10), { team });
+  initProjectDashboard();
+}
+function openAddResourceModal(projectId) {
+  window._addResProjectId = projectId;
+  const p = PMHUB.getProjectById(projectId);
+  const allRes = PMHUB.getResources();
+  const teamIds = p && p.team ? p.team : [];
+  const available = allRes.filter(r => !teamIds.includes(r.id));
+  const listEl = document.getElementById('addResourceList');
+  const overlay = document.getElementById('addResourceModalOverlay');
+  if (!listEl || !overlay) return;
+  if (!available.length) {
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">Toutes les ressources sont déjà sur ce projet.</div>';
+  } else {
+    listEl.innerHTML = available.map(r => `
+      <div class="res-pick-item" onclick="addResourceToProject('${projectId}','${(r.id||'').replace(/'/g,"\\'")}')">
+        <div class="avatar" style="background:${(r.color||'#63d2b4')}33;color:${r.color||'#63d2b4'};border:2px solid ${(r.color||'#63d2b4')}44;">${r.id}</div>
+        <div>
+          <div class="name">${(r.name||'').replace(/</g,'&lt;')}</div>
+          <div class="role">${(r.role||'').replace(/</g,'&lt;')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  overlay.classList.add('open');
+}
+function addResourceToProject(projectId, resId) {
+  const p = PMHUB.getProjectById(projectId);
+  if (!p) return;
+  const team = [...(p.team || []), resId];
+  PMHUB.updateProject(parseInt(projectId, 10), { team });
+  document.getElementById('addResourceModalOverlay').classList.remove('open');
+  initProjectDashboard();
+}
+function closeAddResourceModal() {
+  document.getElementById('addResourceModalOverlay').classList.remove('open');
+}
+
 function initProjectDashboard() {
   try {
     function getParam(name) {
@@ -317,18 +391,26 @@ function initProjectDashboard() {
       <div class="chart-card">
         <div class="chart-card-header">
           <div class="chart-title">Équipe projet</div>
-          <div class="chart-sub">Ressources assignées</div>
+          <div class="chart-sub">Ressources assignées — ajoutez ou retirez des membres</div>
         </div>
         <div class="team-list">
           ${teamMembers.length ? teamMembers.map(r => `
             <div class="team-item">
-              <div class="team-avatar" style="background:${(r.color||project.color||'var(--accent)')}33;color:${r.color||project.color||'var(--accent)'};border:2px solid ${(r.color||project.color||'var(--accent)')}66;">${r.id}</div>
-              <div>
-                <div class="team-name">${r.name}</div>
-                <div class="team-role">${r.role || 'Membre'}</div>
+              <div class="team-item-left">
+                <div class="team-avatar" style="background:${(r.color||project.color||'var(--accent)')}33;color:${r.color||project.color||'var(--accent)'};border:2px solid ${(r.color||project.color||'var(--accent)')}66;">${r.id}</div>
+                <div>
+                  <div class="team-name">${r.name}</div>
+                  <div class="team-role">${r.role || 'Membre'}</div>
+                </div>
+              </div>
+              <div class="team-item-actions">
+                <button type="button" class="btn-remove-res" onclick="removeResourceFromProject('${projectId}','${(r.id||'').replace(/'/g,"\\'")}')" title="Retirer du projet">Retirer</button>
               </div>
             </div>
-          `).join('') : '<div class="team-item"><span style="color:var(--text-muted);">Aucune ressource assignée.</span></div>'}
+          `).join('') : '<div class="team-item"><span style="color:var(--text-muted);">Aucune ressource assignée. Cliquez sur Ajouter une ressource.</span></div>'}
+        </div>
+        <div class="add-resource-wrap">
+          <button type="button" class="add-resource-btn" onclick="openAddResourceModal('${projectId}')">＋ Ajouter une ressource</button>
         </div>
       </div>
     </div>
