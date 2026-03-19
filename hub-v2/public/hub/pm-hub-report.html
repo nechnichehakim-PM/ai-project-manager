@@ -168,7 +168,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
       </div>
       <div class="kpi r">
         <div class="kpi-label">Risques critiques</div>
-        <div class="kpi-val">2</div>
+        <div class="kpi-val" id="kCriticalRisks">—</div>
         <div class="kpi-sub">Ouverts · RAID</div>
         <div class="kpi-trend" style="color:var(--danger);">⚠ Surveillance</div>
       </div>
@@ -237,17 +237,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
           <div class="chart-title">RAID — Résumé</div>
           <div class="chart-sub">État des risques & actions</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          ${[['Risques ouverts','3','var(--danger)','8 total'],['Actions en cours','4','var(--accent3)','7 total'],['Issues actives','1','var(--warning)','1 total'],['Décisions prises','2','var(--accent)','2 total']].map(([l,v,c,s])=>`
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
-              <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);">${l}</span>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${c};">${v}</span>
-                <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">${s}</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;" id="raidSummary"></div>
       </div>
 
       <!-- Équipe -->
@@ -278,25 +268,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
     <!-- JALONS -->
     <div class="chart-card">
       <div class="chart-card-header">
-        <div class="chart-title">Jalons à venir — AI Data Center</div>
-        <div class="chart-sub">Prochains jalons critiques</div>
+        <div class="chart-title" id="jalonsTitle">Jalons à venir</div>
+        <div class="chart-sub">Prochains jalons critiques du portefeuille</div>
       </div>
-      <div class="ms-list">
-        ${[
-          {label:'Architecture validée', date:'20 Jan 2026', status:'progress', critical:false, statLabel:'En cours', statColor:'var(--accent3)'},
-          {label:'MVP infrastructure déployé', date:'15 Mar 2026', status:'planned', critical:true, statLabel:'Planifié', statColor:'var(--text-muted)'},
-          {label:'Go-Live Phase 1', date:'01 Jun 2026', status:'planned', critical:true, statLabel:'Critique', statColor:'var(--danger)'},
-          {label:'Formation équipes', date:'15 Jul 2026', status:'planned', critical:false, statLabel:'Planifié', statColor:'var(--text-muted)'},
-          {label:'Clôture et bilan', date:'30 Sep 2026', status:'planned', critical:false, statLabel:'Planifié', statColor:'var(--text-muted)'},
-        ].map(m => `
-          <div class="ms-row">
-            <div class="ms-indicator" style="background:${m.critical?'var(--danger)':'var(--accent3)'}"></div>
-            <div class="ms-label">${m.label}</div>
-            <div class="ms-date">${m.date}</div>
-            <span class="ms-status" style="color:${m.statColor};border-color:${m.statColor}33;background:${m.statColor}10;">${m.statLabel}</span>
-          </div>
-        `).join('')}
-      </div>
+      <div class="ms-list" id="jalonsList"></div>
     </div>
 
   </main>
@@ -343,6 +318,8 @@ document.querySelectorAll('.period-chip').forEach((c, i) => {
     renderBarChart();
     renderDonut();
     renderProjTable();
+    renderRaidSummary();
+    renderJalons();
   };
 });
 
@@ -446,10 +423,82 @@ document.getElementById('kActive').textContent = stats.active;
 document.getElementById('kProgress').textContent = stats.avgProgress+'%';
 document.getElementById('kProgressTrend').textContent = stats.avgProgress > 50 ? '↑ Bonne progression' : '→ En cours';
 
+function renderRaidSummary() {
+  const projects = PMHUB.getProjects().filter(p => p.status !== 'closed');
+  let risks = 0, actions = 0, issues = 0, decisions = 0;
+  let riskTotal = 0, actionTotal = 0, issueTotal = 0, decisionTotal = 0;
+  projects.forEach(p => {
+    const raid = PMHUB.getRaids(p.id);
+    risks    += (raid.risks     || []).filter(r => r.status !== 'closed').length;
+    riskTotal+= (raid.risks     || []).length;
+    actions  += (raid.actions   || []).filter(a => a.status !== 'closed').length;
+    actionTotal+=(raid.actions  || []).length;
+    issues   += (raid.issues    || []).filter(i => i.status !== 'closed').length;
+    issueTotal+= (raid.issues   || []).length;
+    decisions+= (raid.decisions || []).length;
+    decisionTotal+=(raid.decisions||[]).length;
+  });
+  // Update KPI risques critiques
+  document.getElementById('kCriticalRisks').textContent = risks;
+  const rows = [
+    ['Risques ouverts',  risks,     'var(--danger)',  riskTotal     + ' total'],
+    ['Actions en cours', actions,   'var(--accent3)', actionTotal   + ' total'],
+    ['Issues actives',   issues,    'var(--warning)', issueTotal    + ' total'],
+    ['Décisions prises', decisions, 'var(--accent)',  decisionTotal + ' total'],
+  ];
+  document.getElementById('raidSummary').innerHTML = rows.map(([l,v,c,s]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);">${l}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${c};">${v}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">${s}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderJalons() {
+  const projects = PMHUB.getProjects().filter(p => p.status === 'active');
+  const today = new Date(); today.setHours(0,0,0,0);
+  let milestones = [];
+  projects.forEach(p => {
+    const gantt = PMHUB.getGanttTasks(p.id);
+    const tasks = (gantt && gantt.tasks) ? gantt.tasks : [];
+    tasks.forEach(t => {
+      if ((t.milestone || t.type === 'milestone') && (t.progress || 0) < 100) {
+        milestones.push({ name: t.name || t.label || 'Jalon', end: t.end, projectName: p.name, progress: t.progress || 0 });
+      }
+    });
+  });
+  milestones.sort((a, b) => new Date(a.end) - new Date(b.end));
+  milestones = milestones.slice(0, 8);
+
+  if (!milestones.length) {
+    document.getElementById('jalonsList').innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);padding:16px 0;">Aucun jalon à venir. Créez des tâches jalon dans le Gantt.</div>';
+    return;
+  }
+  document.getElementById('jalonsList').innerHTML = milestones.map(m => {
+    const d = new Date(m.end); d.setHours(0,0,0,0);
+    const daysLeft = Math.round((d - today) / 86400000);
+    const isPast   = daysLeft < 0;
+    const isUrgent = !isPast && daysLeft <= 30;
+    const color = isPast ? 'var(--danger)' : isUrgent ? 'var(--warning)' : 'var(--accent3)';
+    const label = isPast ? 'En retard' : isUrgent ? 'Urgent' : 'Planifié';
+    return `<div class="ms-row">
+      <div class="ms-indicator" style="background:${color}"></div>
+      <div class="ms-label">${m.name} <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-muted);">· ${m.projectName}</span></div>
+      <div class="ms-date">${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
+      <span class="ms-status" style="color:${color};border-color:${color}33;background:${color}11;">${label}</span>
+    </div>`;
+  }).join('');
+}
+
 renderBarChart();
 renderDonut();
 renderTeamAvail();
 renderProjTable();
+renderRaidSummary();
+renderJalons();
 </script>
 <div id="ai-suggestions-bar"></div>
 <script src="pmhub-ai-suggestions.js"></script>
