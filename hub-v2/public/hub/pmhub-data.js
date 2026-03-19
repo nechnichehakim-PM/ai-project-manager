@@ -3,6 +3,23 @@
  * Abdelhakim Nechniche — Telecom & IT Project Manager
  */
 
+// ── THEME NO-FLASH (exécuté en premier pour éviter le flash) ────
+(function () {
+  try {
+    var t = localStorage.getItem('pmhub_theme');
+    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  } catch (e) {}
+})();
+
+// ── INJECTION SCRIPTS PARTAGÉS ──────────────────────────────────
+(function injectThemeToggle() {
+  if (document.getElementById('pmhub-theme-toggle-js')) return;
+  var s = document.createElement('script');
+  s.id = 'pmhub-theme-toggle-js';
+  s.src = 'pmhub-theme-toggle.js';
+  document.head.appendChild(s);
+})();
+
 // ── INJECTION SUPABASE (chargé avant le reste) ─────────────────
 (function injectSupabase() {
   if (document.getElementById('pmhub-supabase-cdn')) return;

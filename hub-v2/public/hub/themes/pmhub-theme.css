@@ -41,6 +41,52 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ── LIGHT MODE OVERRIDES ── */
+html[data-theme="light"] {
+  --bg: #F4F6FB;
+  --surface: #FFFFFF;
+  --surface2: #F0F2F7;
+  --surface3: #E5E8F0;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(99, 102, 241, 0.5);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.07);
+  --primary-glow: rgba(99, 102, 241, 0.2);
+  --ai-glow: rgba(124, 58, 237, 0.2);
+  --text: #0F172A;
+  --text-muted: #475569;
+  --text-soft: #94A3B8;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="light"] body::before {
+  background: radial-gradient(ellipse 70% 45% at 50% -15%, rgba(99, 102, 241, 0.04), transparent),
+              radial-gradient(ellipse 50% 35% at 100% 80%, rgba(124, 58, 237, 0.03), transparent);
+}
+html[data-theme="light"] .orb-1 { background: rgba(99, 102, 241, 0.04); }
+html[data-theme="light"] .orb-2 { background: rgba(124, 58, 237, 0.03); }
+
+html[data-theme="light"] .kpi-card {
+  box-shadow: var(--shadow-card);
+}
+html[data-theme="light"] .kpi-card:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: var(--shadow-card-hover);
+}
+html[data-theme="light"] .nav-back:hover { background: rgba(0,0,0,0.05); }
+html[data-theme="light"] .nav-tab:hover { background: rgba(0, 0, 0, 0.05); }
+html[data-theme="light"] .sb-section-toggle:hover { background: rgba(99, 102, 241, 0.05); }
+html[data-theme="light"] .sb-group:hover { background: rgba(99, 102, 241, 0.07); }
+html[data-theme="light"] .sb-item:hover { background: rgba(99, 102, 241, 0.07); }
+
+/* Smooth theme transition (applied only during toggle) */
+html.theme-transitioning,
+html.theme-transitioning * {
+  transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease !important;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html { font-size: 15px; -webkit-font-smoothing: antialiased; }
