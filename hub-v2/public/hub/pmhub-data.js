@@ -3,6 +3,20 @@
  * Abdelhakim Nechniche — Telecom & IT Project Manager
  */
 
+// ── INJECTION SUPABASE (chargé avant le reste) ─────────────────
+(function injectSupabase() {
+  if (document.getElementById('pmhub-supabase-cdn')) return;
+  var cdn = document.createElement('script');
+  cdn.id  = 'pmhub-supabase-cdn';
+  cdn.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+  cdn.onload = function () {
+    var auth = document.createElement('script');
+    auth.src = 'pmhub-supabase.js';
+    document.head.appendChild(auth);
+  };
+  document.head.appendChild(cdn);
+})();
+
 const PMHUB = (() => {
 
   const KEYS = {
@@ -169,6 +183,10 @@ const PMHUB = (() => {
     try {
       localStorage.setItem(key, JSON.stringify(data));
       window.dispatchEvent(new CustomEvent('pmhub:update', { detail: { key } }));
+      // Sync vers Supabase en arrière-plan (non-bloquant)
+      if (window.PMHUB_AUTH && window.PMHUB_AUTH.saveToCloud) {
+        window.PMHUB_AUTH.saveToCloud(key, data);
+      }
       return true;
     } catch(e) { return false; }
   }

@@ -1,35 +1,52 @@
-# PM Hub
+# PM Hub — Monorepo
 
-**Site unique** — Design « AI Project Manager » (dark tech, glassmorphism, Space Grotesk / Inter / JetBrains Mono).
+Trois versions du site dans des sous-dossiers isolés.
 
-- **Dashboard** (portefeuille projets, KPIs, wizard)
-- **Planning Gantt**, **Kanban**, **RAID**, **Ressources**, **Reporting**, **Templates**, **Paramètres**
-- **Assistant IA** (bouton flottant)
+## Structure
 
-## Build & déploiement
+```
+PM Project/
+├── hub-v2/       ← version active (déployée sur Vercel)
+├── hub-v1/       ← version intermédiaire (archivée)
+├── prototype/    ← prototype original ai-pm (archivé)
+├── vercel.json   ← pointe vers hub-v2
+└── .gitignore    ← couvre dist/ et node_modules/ partout
+```
+
+## Site actif — hub-v2
+
+### Build & déploiement
 
 ```bash
+cd hub-v2
 npm install
 npm run build
 ```
 
-Le dossier `dist/` contient le site à publier. La page d’accueil est le dashboard (`index.html`).
+Le dossier `hub-v2/dist/` contient le site à publier.
 
-**Netlify** : Build command = `npm run build`, Publish directory = `dist`.
+**Vercel** : Build command = `cd hub-v2 && npm install && npm run build`, Output = `hub-v2/dist`.
 
-## Préview en local
+### Préview en local
 
 ```bash
+cd hub-v2
 npm run build
 npx serve dist
 ```
 
-**Important :** ne pas utiliser l’option `-s` (single). Avec `-s`, toutes les URLs renvoient à `index.html` et la page **Dashboard projet** ne s’ouvre pas. Utiliser uniquement `npx serve dist`.
+**Important :** ne pas utiliser `-s` (single). Ouvrir http://localhost:3000.
 
-Puis ouvrir http://localhost:3000 et cliquer sur **« Dashboard projet »** (ou sur la carte) pour ouvrir le dashboard dédié au projet.
+### Sources
 
-## Structure
+- `hub-v2/public/hub/` — pages HTML, JS, CSS
+- `hub-v2/public/hub/themes/pmhub-theme.css` — design system
+- `hub-v2/scripts/build-hub.js` — copie vers `dist/` et génère `index.html`
 
-- `public/hub/` — sources du site (HTML, thème, données)
-- `public/hub/themes/pmhub-theme.css` — design system (couleurs, typo, cartes glass, nav, sidebar)
-- `scripts/build-hub.js` — copie le hub vers `dist/` et génère `index.html` à la racine
+## Site archivé — hub-v1
+
+Version intermédiaire, même structure que hub-v2. Build : `cd hub-v1 && npm run build`.
+
+## Prototype — prototype/
+
+Version originale mono-page. Ouvrir `prototype/index.html` directement dans le navigateur.

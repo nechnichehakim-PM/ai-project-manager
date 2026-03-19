@@ -93,6 +93,8 @@
       });
     }
 
+    var userEmail = window.PMHUB_AUTH && window.PMHUB_AUTH._user ? window.PMHUB_AUTH._user.email : '';
+
     var html = '';
     html += '<div class="sb-profile">';
     html += '<div class="sb-avatar" id="sbAvatar">' + (profile.initials || 'AN') + '</div>';
@@ -103,7 +105,14 @@
       var cls = b.indexOf('PMP') >= 0 ? ' g' : (b.indexOf('PRINCE2') >= 0 ? ' y' : '');
       html += '<span class="sb-badge' + cls + '">' + b + '</span>';
     });
-    html += '</div></div>';
+    html += '</div>';
+    if (userEmail) {
+      html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">';
+      html += '<span style="font-size:10px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;" title="' + userEmail + '">🔐 ' + userEmail + '</span>';
+      html += '<button onclick="if(window.PMHUB_AUTH)window.PMHUB_AUTH.signOut()" style="flex-shrink:0;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--danger);cursor:pointer;font-family:var(--font-body);">Quitter</button>';
+      html += '</div>';
+    }
+    html += '</div>';
 
     SIDEBAR_GROUPS.forEach(function(grp) {
       var stored = getSectionOpen(grp.label);
@@ -124,6 +133,7 @@
 
     html += '<div class="sb-section-label sb-section-projects">Projets actifs</div>';
     html += '<div id="sbProjects"></div>';
+
     html += '<div class="sb-footer"><div class="sb-status"><div class="status-dot"></div> Disponible · Orvault, FR</div></div>';
 
     el.innerHTML = html;
@@ -150,4 +160,5 @@
     render();
   }
   window.addEventListener('pmhub:update', render);
+  window.addEventListener('pmhub:synced', render);
 })();
