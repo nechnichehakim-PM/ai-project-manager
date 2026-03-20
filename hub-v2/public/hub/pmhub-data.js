@@ -196,9 +196,22 @@ const PMHUB = (() => {
     } catch(e) { return fallback; }
   }
 
+  var SYNC_TS_KEY = 'pmhub_sync_ts';
+  function getSyncTs() {
+    try { return JSON.parse(localStorage.getItem(SYNC_TS_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function stampLocal(key) {
+    try {
+      var ts = getSyncTs();
+      ts[key] = new Date().toISOString();
+      localStorage.setItem(SYNC_TS_KEY, JSON.stringify(ts));
+    } catch(e) {}
+  }
+
   function save(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
+      stampLocal(key); // horodater la modification locale
       window.dispatchEvent(new CustomEvent('pmhub:update', { detail: { key } }));
       // Sync vers Supabase en arrière-plan (non-bloquant)
       if (window.PMHUB_AUTH && window.PMHUB_AUTH.saveToCloud) {

@@ -66,15 +66,29 @@
   function fetchAllFromCloud(userId) {
     return getClient()
       .from('pmhub_data')
-      .select('key, value')
+      .select('key, value, updated_at')
       .eq('user_id', userId)
       .then(function (r) {
         if (r.error) { console.warn('[PMHub] Sync cloud:', r.error.message); return; }
 
+        // Timestamps des modifications locales (last-write-wins)
+        var localTs = {};
+        try { localTs = JSON.parse(localStorage.getItem('pmhub_sync_ts') || '{}'); } catch(e) {}
+
         var cloudKeys = {};
+        var localNewer = []; // clés où local est plus récent → ré-uploader
+
         (r.data || []).forEach(function (row) {
           cloudKeys[row.key] = true;
-          try { localStorage.setItem(row.key, JSON.stringify(row.value)); } catch (e) {}
+          var cloudTime = row.updated_at || '';
+          var localTime = localTs[row.key]  || '';
+          if (!localTime || cloudTime >= localTime) {
+            // Cloud est plus récent (ou pas de timestamp local) → utiliser cloud
+            try { localStorage.setItem(row.key, JSON.stringify(row.value)); } catch (e) {}
+          } else {
+            // Local est plus récent → garder local, re-synchroniser vers cloud
+            localNewer.push(row.key);
+          }
         });
 
         // Migration : forcer l'écriture des données PMHUB si le cloud est vide
@@ -108,9 +122,10 @@
             }
           });
         } else {
-          // Compte existant : migrer uniquement les clés absentes du cloud
+          // Compte existant : migrer les clés absentes du cloud OU localement plus récentes
           Object.keys(localStorage).forEach(function (key) {
-            if (key.startsWith('pmhub_') && !isExcluded(key) && !cloudKeys[key]) {
+            if (key === 'pmhub_sync_ts') return; // ne pas uploader le meta-timestamp
+            if (key.startsWith('pmhub_') && !isExcluded(key) && (!cloudKeys[key] || localNewer.indexOf(key) >= 0)) {
               try {
                 var val = JSON.parse(localStorage.getItem(key));
                 uploads.push({ user_id: userId, key: key, value: val, updated_at: new Date().toISOString() });
