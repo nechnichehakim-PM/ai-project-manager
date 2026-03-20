@@ -390,19 +390,48 @@ function saveState() {
 }
 
 function finishWizard() {
-  if(projectId) {
-    const pid = parseInt(projectId, 10);
+  let pid;
+
+  if (!projectId) {
+    // Aucun projet existant → on le crée à partir des données du wizard
+    const cadrage = wizardData.cadrage || {};
+    const vision  = wizardData.vision  || {};
+    const charte  = wizardData.charte  || {};
+    const meth    = wizardData.methodology || 'waterfall';
+    const name    = charte.name || cadrage.name || vision.vision || 'Nouveau projet';
+    const year    = new Date().getFullYear();
+    const newProj = PMHUB.addProject({
+      name:        name,
+      ref:         charte.ref  || ('PRJ-' + year + '-' + String(Date.now()).slice(-3)),
+      desc:        cadrage.context || cadrage.objectives || vision.objectives || '',
+      status:      'active',
+      progress:    15,
+      phase:       'Planification',
+      methodology: meth,
+      start:       wizardData.planning?.start || '',
+      end:         wizardData.planning?.end   || '',
+      budget:      cadrage.budget  || charte.budget  || '',
+      sponsor:     cadrage.sponsor || charte.sponsor || '',
+      priority:    charte.priority || 'Normale',
+      type:        'Projet',
+    });
+    pid = newProj.id;
+    projectId = String(pid);
+  } else {
+    pid = parseInt(projectId, 10);
     PMHUB.updateProject(pid, { phase: 'Planification', progress: 15 });
-    if(wizardData.planning) syncPlanningToGantt(pid, wizardData.planning);
-    if(wizardData.raid && (wizardData.raid.risks?.length || wizardData.raid.actions?.length || wizardData.raid.issues?.length || wizardData.raid.decisions?.length)) {
-      const existing = PMHUB.getRaids(pid);
-      ['risks','actions','issues','decisions'].forEach(type => {
-        if(Array.isArray(wizardData.raid[type])) existing[type] = [...(existing[type] || []), ...wizardData.raid[type]];
-      });
-      PMHUB.saveRaids(pid, existing);
-    }
   }
-  showToast('🎉 Projet initialisé ! RACI, RAID et planning sont sauvegardés et synchronisés avec le Gantt.');
+
+  if (wizardData.planning) syncPlanningToGantt(pid, wizardData.planning);
+  if (wizardData.raid && (wizardData.raid.risks?.length || wizardData.raid.actions?.length || wizardData.raid.issues?.length || wizardData.raid.decisions?.length)) {
+    const existing = PMHUB.getRaids(pid);
+    ['risks','actions','issues','decisions'].forEach(type => {
+      if (Array.isArray(wizardData.raid[type])) existing[type] = [...(existing[type] || []), ...wizardData.raid[type]];
+    });
+    PMHUB.saveRaids(pid, existing);
+  }
+
+  showToast('🎉 Projet créé et initialisé ! Redirection vers le dashboard...');
   setTimeout(() => PMHUB.goTo('pm-hub.html'), 2000);
 }
 
