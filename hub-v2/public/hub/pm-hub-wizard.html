@@ -449,43 +449,66 @@ function finishWizard() {
     PMHUB.saveRaids(pid, existing);
   }
 
-  // ── 4. LIVRABLES — WBS (Waterfall) ou Backlog (Agile/Hybride) ──
+  // ── 4. LIVRABLES + KANBAN ────────────────────────────────────
   const now = Date.now();
+  const existingTasks = PMHUB.getGanttTasks(pid) || [];
+  const maxId = Math.max(0, ...existingTasks.map(t => t.id || 0));
+  let nextId = maxId + 1;
+
   if (meth === 'waterfall') {
-    // Phases WBS standard comme livrables
+    // Phases WBS → livrables (page Livrables) + tâches Kanban
     const wbsPhases = [
-      { name:'Charte & Cadrage',          type:'Livrable',    status:'À faire' },
-      { name:'WBS / Planning Gantt',       type:'Livrable',    status:'À faire' },
-      { name:'Architecture technique',     type:'Livrable',    status:'À faire' },
-      { name:'Livrables techniques',       type:'Livrable',    status:'À faire' },
-      { name:'Tests & Recette',            type:'Livrable',    status:'À faire' },
-      { name:'Documentation finale',       type:'Livrable',    status:'À faire' },
-      { name:'Bilan de clôture / REX',     type:'Livrable',    status:'À faire' },
+      { name:'Charte & Cadrage',        owner:'CdP' },
+      { name:'WBS / Planning Gantt',    owner:'CdP' },
+      { name:'Architecture technique',  owner:'TL'  },
+      { name:'Livrables techniques',    owner:'TL'  },
+      { name:'Tests & Recette',         owner:'QA'  },
+      { name:'Documentation finale',    owner:'CdP' },
+      { name:'Bilan de clôture / REX',  owner:'CdP' },
     ];
-    PMHUB.saveDeliverables(pid, wbsPhases.map((d, i) => ({ ...d, id: now + i })));
-  } else if (meth === 'agile' && wizardData.backlog?.length) {
-    // User stories → livrables
-    const stories = wizardData.backlog
-      .filter(it => it.story?.trim())
-      .map((it, i) => ({
-        id:       now + i,
-        name:     it.story.trim(),
-        type:     'User Story',
+    PMHUB.saveDeliverables(pid, wbsPhases.map((d, i) => ({
+      id: now + i, name: d.name, type: 'Livrable', status: 'À faire',
+    })));
+    // Ajouter au Kanban (sans date Gantt, juste pour la board)
+    const kbTasks = wbsPhases.map((d, i) => ({
+      id: nextId + i, name: d.name, type: 'task',
+      kanbanStatus: 'todo', progress: 0, owner: d.owner, deps: [],
+    }));
+    PMHUB.saveGanttTasks(pid, [...existingTasks, ...kbTasks]);
+
+  } else if (meth === 'agile') {
+    // User stories → livrables + Kanban (pas dans le Gantt timeline)
+    const rawStories = (wizardData.backlog || []).filter(it => it.story?.trim());
+    if (rawStories.length) {
+      PMHUB.saveDeliverables(pid, rawStories.map((it, i) => ({
+        id: now + i, name: it.story.trim(),
+        type: 'User Story', priority: it.priority || 'Moyenne',
+        size: it.value || 'M', status: 'À faire',
+      })));
+      // User stories → Kanban board (colonne "À faire")
+      const kbStories = rawStories.map((it, i) => ({
+        id: nextId + i, name: it.story.trim(), type: 'story',
+        kanbanStatus: 'todo', progress: 0,
+        owner: 'DT',
         priority: it.priority || 'Moyenne',
-        size:     it.value    || 'M',
-        status:   'À faire',
+        size: it.value || 'M',
+        deps: [],
       }));
-    if (stories.length) PMHUB.saveDeliverables(pid, stories);
+      PMHUB.saveGanttTasks(pid, [...existingTasks, ...kbStories]);
+    }
+
   } else if (meth === 'hybride') {
-    // Lots hybride comme livrables
+    // Lots → livrables + Kanban
     const lots = (wizardData.backlog_hybrid?.lots || '').split('\n').filter(l => l.trim());
     if (lots.length) {
       PMHUB.saveDeliverables(pid, lots.map((lot, i) => ({
-        id:     now + i,
-        name:   lot.trim(),
-        type:   'Lot',
-        status: 'À faire',
+        id: now + i, name: lot.trim(), type: 'Lot', status: 'À faire',
       })));
+      const kbLots = lots.map((lot, i) => ({
+        id: nextId + i, name: lot.trim(), type: 'task',
+        kanbanStatus: 'todo', progress: 0, owner: 'CdP', deps: [],
+      }));
+      PMHUB.saveGanttTasks(pid, [...existingTasks, ...kbLots]);
     }
   }
 
