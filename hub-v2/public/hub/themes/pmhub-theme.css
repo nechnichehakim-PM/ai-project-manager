@@ -355,6 +355,31 @@ nav {
 .sb-section-label:first-of-type { margin-top: 0; }
 .sb-section-label.sb-section-projects { margin-top: 16px; }
 
+/* Séparateurs de niveau Portefeuille / Projet / Outils */
+.sb-level-sep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  margin: 18px 0 6px;
+}
+.sb-level-sep.first { margin-top: 4px; }
+.sb-level-sep::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.sb-level-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: 0.6;
+}
+[data-theme="light"] .sb-level-label { opacity: 0.5; }
+
 .sb-item {
   display: flex;
   align-items: center;

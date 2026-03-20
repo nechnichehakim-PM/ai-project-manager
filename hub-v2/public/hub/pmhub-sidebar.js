@@ -9,43 +9,70 @@
   if (path === 'index.html') path = 'pm-hub.html';
 
   var STORAGE_KEY = 'pmhub_sidebar_open_';
-  var SIDEBAR_GROUPS = [
-    { label: 'Vue d\'ensemble', links: [
-      { name: 'Dashboard', href: 'pm-hub.html', icon: '🏠' }
-    ]},
-    { label: 'Planning', links: [
-      { name: 'Gantt', href: 'pm-hub-gantt.html', icon: '📅' },
-      { name: 'Kanban', href: 'pm-hub-kanban.html', icon: '📋' }
-    ]},
-    { label: 'RAID & Gouvernance', links: [
-      { name: 'RAID', href: 'pm-hub-raid.html', icon: '⚠️' },
-      { name: 'Gouvernance', href: 'pm-hub-governance.html', icon: '🏛️' }
-    ]},
-    { label: 'Ressources & Budget', links: [
-      { name: 'Ressources', href: 'pm-hub-resources.html', icon: '👥' },
-      { name: 'Budget', href: 'pm-hub-budget.html', icon: '💰' }
-    ]},
-    { label: 'Portefeuille & COMEX', links: [
-      { name: 'Portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' },
-      { name: 'COMEX', href: 'pm-hub-executive.html', icon: '🎯' }
-    ]},
-    { label: 'Centre IA', links: [
-      { name: 'Accueil IA', href: 'pm-hub-ai.html', icon: '🤖' },
-      { name: 'Assistant', href: 'pm-hub-ai-chat.html', icon: '💬' },
-      { name: 'Analyse RAID', href: 'pm-hub-ai-raid.html', icon: '⚠️' },
-      { name: 'Rédacteur PM', href: 'pm-hub-ai-redac.html', icon: '✍️' },
-      { name: 'Briefing', href: 'pm-hub-ai-briefing.html', icon: '📊' },
-      { name: 'Livrables', href: 'pm-hub-ai-livrable.html', icon: '⚡' }
-    ]},
-    { label: 'Documents & Connaissance', links: [
-      { name: 'Rapports', href: 'pm-hub-report.html', icon: '📄' },
-      { name: 'Base de connaissance', href: 'pm-hub-knowledge.html', icon: '📚' },
-      { name: 'Templates', href: 'pm-hub-templates.html', icon: '📐' }
-    ]},
-    { label: 'Configuration', links: [
-      { name: 'Paramètres', href: 'pm-hub-settings.html', icon: '⚙️' }
-    ]}
+
+  // ── Structure : 3 niveaux — Portefeuille / Projet / Outils ──
+  var SIDEBAR_SECTIONS = [
+    {
+      sectionLabel: 'Portefeuille',
+      groups: [
+        { label: 'Tableau de bord', links: [
+          { name: 'Dashboard', href: 'pm-hub.html', icon: '🏠' }
+        ]},
+        { label: 'Portefeuille', links: [
+          { name: 'Vue portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' },
+          { name: 'COMEX',            href: 'pm-hub-executive.html',  icon: '🎯' },
+          { name: 'Transverse',       href: 'pm-hub-transverse.html', icon: '🔀' }
+        ]}
+      ]
+    },
+    {
+      sectionLabel: 'Projet',
+      groups: [
+        { label: 'Projet', links: [
+          { name: 'Synthèse projet', href: 'pm-hub-project.html', icon: '📋' }
+        ]},
+        { label: 'Planification', links: [
+          { name: 'Gantt',   href: 'pm-hub-gantt.html',   icon: '📅' },
+          { name: 'Kanban',  href: 'pm-hub-kanban.html',  icon: '🔲' },
+          { name: 'Wizard',  href: 'pm-hub-wizard.html',  icon: '🧭' }
+        ]},
+        { label: 'Suivi & Contrôle', links: [
+          { name: 'RAID',        href: 'pm-hub-raid.html',       icon: '⚠️' },
+          { name: 'Budget & EVM',href: 'pm-hub-budget.html',     icon: '💰' },
+          { name: 'Ressources',  href: 'pm-hub-resources.html',  icon: '👥' }
+        ]},
+        { label: 'Gouvernance projet', links: [
+          { name: 'Gouvernance', href: 'pm-hub-governance.html', icon: '🏛️' },
+          { name: 'Rapports',    href: 'pm-hub-report.html',     icon: '📄' }
+        ]}
+      ]
+    },
+    {
+      sectionLabel: 'Outils',
+      groups: [
+        { label: 'Centre IA', links: [
+          { name: 'Accueil IA',   href: 'pm-hub-ai.html',          icon: '🤖' },
+          { name: 'Assistant',    href: 'pm-hub-ai-chat.html',      icon: '💬' },
+          { name: 'Analyse RAID', href: 'pm-hub-ai-raid.html',      icon: '⚠️' },
+          { name: 'Rédacteur PM', href: 'pm-hub-ai-redac.html',     icon: '✍️' },
+          { name: 'Briefing',     href: 'pm-hub-ai-briefing.html',  icon: '📊' },
+          { name: 'Livrables IA', href: 'pm-hub-ai-livrable.html',  icon: '⚡' }
+        ]},
+        { label: 'Bibliothèque', links: [
+          { name: 'Templates',          href: 'pm-hub-templates.html', icon: '📐' },
+          { name: 'Base de connaissance',href: 'pm-hub-knowledge.html', icon: '📚' }
+        ]},
+        { label: 'Paramètres', links: [
+          { name: 'Paramètres', href: 'pm-hub-settings.html', icon: '⚙️' }
+        ]}
+      ]
+    }
   ];
+
+  // Aplatir pour les helpers qui travaillent sur une liste de groupes
+  var SIDEBAR_GROUPS = SIDEBAR_SECTIONS.reduce(function(acc, s) {
+    return acc.concat(s.groups);
+  }, []);
 
   function isActive(href) {
     if (!href) return false;
@@ -114,21 +141,28 @@
     }
     html += '</div>';
 
-    SIDEBAR_GROUPS.forEach(function(grp) {
-      var stored = getSectionOpen(grp.label);
-      var isOpen = stored !== null ? stored : groupContainsActive(grp);
-      html += '<div class="sb-section' + (isOpen ? ' open' : '') + '" data-section="' + grp.label.replace(/"/g, '&quot;') + '">';
-      html += '<div class="sb-section-toggle" role="button" tabindex="0" aria-expanded="' + isOpen + '" title="Cliquer pour ' + (isOpen ? 'replier' : 'déplier') + '">';
-      html += '<span class="sb-section-chevron" aria-hidden="true"></span>';
-      html += '<span class="sb-section-label-text">' + grp.label + '</span>';
+    SIDEBAR_SECTIONS.forEach(function(section, si) {
+      // Séparateur de niveau
+      html += '<div class="sb-level-sep' + (si === 0 ? ' first' : '') + '">';
+      html += '<span class="sb-level-label">' + section.sectionLabel.toUpperCase() + '</span>';
       html += '</div>';
-      html += '<div class="sb-section-content">';
-      grp.links.forEach(function(link) {
-        var active = isActive(link.href) ? ' active' : '';
-        var badge = link.href === 'pm-hub-raid.html' && raidCount > 0 ? ' <span class="sb-badge-count red" id="sbRaidCount">' + raidCount + '</span>' : '';
-        html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + (link.href || '#') + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';
+
+      section.groups.forEach(function(grp) {
+        var stored = getSectionOpen(grp.label);
+        var isOpen = stored !== null ? stored : groupContainsActive(grp);
+        html += '<div class="sb-section' + (isOpen ? ' open' : '') + '" data-section="' + grp.label.replace(/"/g, '&quot;') + '">';
+        html += '<div class="sb-section-toggle" role="button" tabindex="0" aria-expanded="' + isOpen + '" title="Cliquer pour ' + (isOpen ? 'replier' : 'déplier') + '">';
+        html += '<span class="sb-section-chevron" aria-hidden="true"></span>';
+        html += '<span class="sb-section-label-text">' + grp.label + '</span>';
+        html += '</div>';
+        html += '<div class="sb-section-content">';
+        grp.links.forEach(function(link) {
+          var active = isActive(link.href) ? ' active' : '';
+          var badge = link.href === 'pm-hub-raid.html' && raidCount > 0 ? ' <span class="sb-badge-count red" id="sbRaidCount">' + raidCount + '</span>' : '';
+          html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + (link.href || '#') + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';
+        });
+        html += '</div></div>';
       });
-      html += '</div></div>';
     });
 
     html += '<div class="sb-section-label sb-section-projects">Projets actifs</div>';
