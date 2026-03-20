@@ -592,8 +592,15 @@ function renderWBS() {
   `;
 }
 
-// ── STEP 4: RACI ──
+// ── STEP 4: RACI (dispatcher selon méthodologie) ──
 function renderRACI() {
+  const meth = wizardData.methodology || 'waterfall';
+  if (meth === 'agile')   return renderRACIAgile();
+  if (meth === 'hybride') return renderRACIHybride();
+  return renderRACIWaterfall();
+}
+
+function renderRACIWaterfall() {
   const resources = PMHUB.getResources();
   const livrables = [
     'Charte Projet', 'WBS / Planning', 'Architecture technique',
@@ -605,7 +612,6 @@ function renderRACI() {
     const key = li + '_' + resources[ri].id;
     return saved[key] !== undefined ? saved[key] : (li===0 && ri===0 ? 'R' : li===0 && ri===1 ? 'A' : li===1 && ri===0 ? 'R' : li===2 && ri===1 ? 'A' : ri===0 ? (li<4?'R':'C') : ri===1 ? 'A' : ri===2 ? 'C' : 'I');
   };
-
   const headers = resources.map(r => `<th style="text-align:center;">${r.id}<br><span style="font-weight:300;color:var(--text-muted)">${r.role.split(' ')[0]}</span></th>`).join('');
   const rows = livrables.map((liv, li) => {
     const cells = resources.map((r, ri) => {
@@ -616,7 +622,6 @@ function renderRACI() {
     }).join('');
     return `<tr><td style="font-weight:600;">${liv}</td>${cells}</tr>`;
   }).join('');
-
   return `
     <div class="wiz-card">
       <div class="wiz-card-header">
@@ -644,15 +649,141 @@ function renderRACI() {
     ${renderStepNav(true, true)}
   `;
 }
-function updateRaciCell(sel) {
-  if (!sel || !sel.dataset) return;
-  const li = parseInt(sel.dataset.li, 10);
-  const ri = parseInt(sel.dataset.ri, 10);
-  const rid = sel.dataset.rid;
-  const val = sel.value;
-  if (!wizardData.raci) wizardData.raci = {};
-  wizardData.raci[li + '_' + rid] = val;
-  saveState();
+
+function renderRACIAgile() {
+  const SCRUM_ROLES = [
+    { id:'PO',  label:'Product Owner',  full:'PO' },
+    { id:'SM',  label:'Scrum Master',   full:'SM' },
+    { id:'DT',  label:'Dev Team',       full:'DT' },
+    { id:'STK', label:'Stakeholders',   full:'STK' },
+  ];
+  const SCRUM_ARTIFACTS = [
+    'Product Backlog',
+    'Sprint Backlog',
+    'Sprint Planning',
+    'Daily Scrum',
+    'Sprint Review',
+    'Rétrospective',
+    'Release / Incrément',
+    'Definition of Done',
+  ];
+  // Standard Scrum accountability (R=Responsable, A=Accountable, C=Consulté, F=Facilitateur, I=Informé)
+  const DEFAULTS = [
+    ['A','C','C','I'],   // Product Backlog
+    ['C','C','A','—'],   // Sprint Backlog
+    ['A','F','R','—'],   // Sprint Planning
+    ['—','F','A','—'],   // Daily Scrum
+    ['A','F','R','C'],   // Sprint Review
+    ['C','A','R','—'],   // Rétrospective
+    ['A','—','R','I'],   // Release
+    ['A','C','R','—'],   // Definition of Done
+  ];
+  const saved = wizardData.raci || {};
+  const getCell = (li, rid) => {
+    const key = li + '_' + rid;
+    if (saved[key] !== undefined) return saved[key];
+    const ri = SCRUM_ROLES.findIndex(r => r.id === rid);
+    return ri >= 0 ? (DEFAULTS[li][ri] || '—') : '—';
+  };
+  const headers = SCRUM_ROLES.map(r => `<th style="text-align:center;">${r.id}<br><span style="font-weight:300;color:var(--text-muted);font-size:8px;">${r.label}</span></th>`).join('');
+  const rows = SCRUM_ARTIFACTS.map((art, li) => {
+    const cells = SCRUM_ROLES.map(r => {
+      const val = getCell(li, r.id);
+      return `<td style="text-align:center;"><select class="raci-select" data-li="${li}" data-ri="${SCRUM_ROLES.indexOf(r)}" data-rid="${r.id}" onchange="updateRaciCell(this)">
+        ${['R','A','C','F','I','—'].map(v=>`<option ${v===val?'selected':''}>${v}</option>`).join('')}
+      </select></td>`;
+    }).join('');
+    return `<tr><td style="font-weight:600;">${art}</td>${cells}</tr>`;
+  }).join('');
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">👥 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Rôles & Responsabilités Scrum</div>
+        <div class="wiz-card-desc"><strong>R</strong>esponsable · <strong>A</strong>ccountable · <strong>C</strong>onsulté · <strong>F</strong>acilitateur · <strong>I</strong>nformé — Matrice Scrum standard.</div>
+      </div>
+      <div style="background:rgba(99,210,180,0.04);border:1px solid rgba(99,210,180,0.12);border-radius:8px;padding:14px 18px;margin-bottom:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.7;">
+        En Scrum, les rôles remplacent la hiérarchie. Le <strong style="color:var(--accent);">Product Owner</strong> est Accountable du backlog et de la valeur. Le <strong style="color:var(--accent);">Scrum Master</strong> facilite les cérémonies. L'<strong style="color:var(--accent);">équipe Dev</strong> est auto-organisée sur la livraison.
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="raci-table">
+          <thead><tr><th>Artifact / Cérémonie</th>${headers}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="raci-badge raci-R">R — Réalise</span>
+        <span class="raci-badge raci-A">A — Garant</span>
+        <span class="raci-badge raci-C">C — Consulté</span>
+        <span class="raci-badge" style="background:rgba(232,201,122,0.1);color:var(--warning);border:1px solid rgba(232,201,122,0.25);">F — Facilite</span>
+        <span class="raci-badge raci-I">I — Informé</span>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">🔄</span>
+        <div class="tip-text"><strong>Scrum Guide :</strong> Il n'y a pas de "chef" en Scrum. Le <strong>PO décide du quoi</strong>, le <strong>SM protège l'équipe</strong>, l'<strong>équipe décide du comment</strong>. Toute tentative de micro-management détruit la vélocité.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
+}
+
+function renderRACIHybride() {
+  const resources = PMHUB.getResources();
+  const livrables = [
+    'Charte / Brief projet',
+    'Backlog maître',
+    'WBS par lot',
+    'Sprint Backlog (lots Agile)',
+    'RAID & Gestion des risques',
+    'Reporting jalons',
+    'Livraison de lot',
+    'Bilan de clôture',
+  ];
+  const saved = wizardData.raci || {};
+  const getCell = (li, ri) => {
+    const key = li + '_' + resources[ri].id;
+    if (saved[key] !== undefined) return saved[key];
+    if (ri === 0) return li < 2 ? 'R' : (li < 5 ? 'R' : 'C');
+    if (ri === 1) return 'A';
+    if (ri === 2) return (li === 2 || li === 3) ? 'R' : 'C';
+    return 'I';
+  };
+  const headers = resources.map(r => `<th style="text-align:center;">${r.id}<br><span style="font-weight:300;color:var(--text-muted)">${r.role.split(' ')[0]}</span></th>`).join('');
+  const rows = livrables.map((liv, li) => {
+    const cells = resources.map((r, ri) => {
+      const val = getCell(li, ri);
+      return `<td style="text-align:center;"><select class="raci-select" data-li="${li}" data-ri="${ri}" data-rid="${r.id}" onchange="updateRaciCell(this)">
+        ${['R','A','C','I','-'].map(v=>`<option ${v===val?'selected':''}>${v}</option>`).join('')}
+      </select></td>`;
+    }).join('');
+    return `<tr><td style="font-weight:600;">${liv}</td>${cells}</tr>`;
+  }).join('');
+  return `
+    <div class="wiz-card">
+      <div class="wiz-card-header">
+        <div class="wiz-card-tag">👥 Étape ${currentStep+1} / ${getSteps().length}</div>
+        <div class="wiz-card-title">Matrice RACI — Mode Hybride</div>
+        <div class="wiz-card-desc"><strong>R</strong>esponsable · <strong>A</strong>ccountable · <strong>C</strong>onsulté · <strong>I</strong>nformé — Lots Waterfall + itérations Agile.</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="raci-table">
+          <thead><tr><th>Livrable / Lot</th>${headers}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="raci-badge raci-R">R — Réalise</span>
+        <span class="raci-badge raci-A">A — Garant (1 seul)</span>
+        <span class="raci-badge raci-C">C — Consulté</span>
+        <span class="raci-badge raci-I">I — Informé</span>
+      </div>
+      <div class="smart-tip">
+        <span class="tip-icon">⚡</span>
+        <div class="tip-text"><strong>Hybride :</strong> Clarifiez <em>qui</em> joue le rôle de Product Owner pour les lots Agile. En hybride, le PM reste Accountable des jalons Waterfall pendant que le PO gère la priorisation du backlog itératif.</div>
+      </div>
+    </div>
+    ${renderStepNav(true, true)}
+  `;
 }
 
 // ── STEP 5: RAID ──
@@ -774,14 +905,50 @@ function renderVision() {
   `;
 }
 // ── AGILE: Product Backlog ──
+function collectBacklogFromDom() {
+  const rowEls = document.querySelectorAll('.backlog-row');
+  if (!rowEls.length) return;
+  wizardData.backlog = Array.from(rowEls).map(row => ({
+    story:    row.querySelector('.backlog-story-input')?.value || '',
+    priority: row.querySelector('.backlog-priority-sel')?.value || 'Moyenne',
+    value:    row.querySelector('.backlog-value-sel')?.value   || 'M',
+  }));
+}
+function addBacklogStory() {
+  collectBacklogFromDom();
+  if (!wizardData.backlog) wizardData.backlog = [];
+  wizardData.backlog.push({ story:'', priority:'Moyenne', value:'M' });
+  saveState();
+  showStep(currentStep);
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.backlog-story-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 80);
+}
+function removeBacklogStory(idx) {
+  collectBacklogFromDom();
+  if (wizardData.backlog) wizardData.backlog.splice(idx, 1);
+  saveState();
+  showStep(currentStep);
+}
 function renderBacklog() {
-  const items = wizardData.backlog || [{ story: 'En tant qu\'utilisateur je veux me connecter afin d\'accéder à mon espace', priority: 'Haute', value: 'M' }];
+  const items = wizardData.backlog || [{ story:'En tant qu\'utilisateur je veux me connecter afin d\'accéder à mon espace', priority:'Haute', value:'M' }];
   const rows = items.map((it, i) => `
-    <div class="milestone-row">
+    <div class="milestone-row backlog-row" style="grid-template-columns:auto 1fr 100px 80px auto;">
       <div class="ms-dot normal"></div>
-      <div style="flex:1;"><input class="form-input" style="font-size:11px;" value="${(it.story||'').replace(/"/g,'&quot;')}" placeholder="User story"/></div>
-      <div><select class="form-select" style="width:100px;"><option ${it.priority==='Haute'?'selected':''}>Haute</option><option ${it.priority==='Moyenne'?'selected':''}>Moyenne</option><option ${it.priority==='Basse'?'selected':''}>Basse</option></select></div>
-      <div><select class="form-select" style="width:80px;"><option ${it.value==='M'?'selected':''}>M</option><option>S</option><option>L</option><option>XL</option></select></div>
+      <div style="flex:1;"><input class="form-input backlog-story-input" style="font-size:11px;" value="${(it.story||'').replace(/"/g,'&quot;')}" placeholder="En tant que [qui] je veux [quoi] afin de [valeur]"/></div>
+      <div><select class="form-select backlog-priority-sel" style="width:100px;">
+        <option ${it.priority==='Haute'?'selected':''}>Haute</option>
+        <option ${it.priority==='Moyenne'?'selected':''}>Moyenne</option>
+        <option ${it.priority==='Basse'?'selected':''}>Basse</option>
+      </select></div>
+      <div><select class="form-select backlog-value-sel" style="width:70px;">
+        <option ${it.value==='S'?'selected':''}>S</option>
+        <option ${it.value==='M'||!it.value?'selected':''}>M</option>
+        <option ${it.value==='L'?'selected':''}>L</option>
+        <option ${it.value==='XL'?'selected':''}>XL</option>
+      </select></div>
+      <button type="button" onclick="removeBacklogStory(${i})" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 4px;" title="Supprimer">✕</button>
     </div>
   `).join('');
   return `
@@ -789,13 +956,17 @@ function renderBacklog() {
       <div class="wiz-card-header">
         <div class="wiz-card-tag">📋 Product Backlog (Scrum)</div>
         <div class="wiz-card-title">User stories priorisées</div>
-        <div class="wiz-card-desc">Liste des fonctionnalités par valeur métier. Priorité = ordre de livraison.</div>
+        <div class="wiz-card-desc">Liste ordonnée des fonctionnalités par valeur métier. La priorité détermine l'ordre de livraison dans les sprints.</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 100px 80px;gap:12px;margin-bottom:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">
-        <span>User story</span><span>Priorité</span><span>Taille</span>
+      <div style="display:grid;grid-template-columns:auto 1fr 100px 70px auto;gap:12px;margin-bottom:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">
+        <span></span><span>User story</span><span>Priorité</span><span>Taille</span><span></span>
       </div>
       ${rows}
-      <button class="add-btn" style="margin-top:12px;" onclick="showToast('Ajout story — à venir')">+ Ajouter une user story</button>
+      <button class="add-btn" style="margin-top:12px;" onclick="addBacklogStory()">+ Ajouter une user story</button>
+      <div class="smart-tip" style="margin-top:18px;">
+        <span class="tip-icon">📋</span>
+        <div class="tip-text"><strong>Scrum :</strong> Taille T-shirt pour l'estimation initiale (S=½j, M=1j, L=2-3j, XL=+3j). Une bonne story = une valeur pour l'utilisateur, livrable en un sprint. Si trop grande : découpez.</div>
+      </div>
       ${renderStepNav(true, true)}
     </div>
   `;
@@ -842,12 +1013,37 @@ function renderSprints() {
   `;
 }
 // ── AGILE: Definition of Done ──
+function collectDodFromDom() {
+  const inputs = document.querySelectorAll('.dod-input');
+  if (!inputs.length) return;
+  wizardData.dod = Array.from(inputs).map(i => i.value).filter(v => v.trim());
+}
+function addDodCriterion() {
+  collectDodFromDom();
+  if (!wizardData.dod) wizardData.dod = ['Code revu', 'Tests passants', 'Documentation à jour', 'Déployable en dev'];
+  wizardData.dod.push('');
+  saveState();
+  showStep(currentStep);
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.dod-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 80);
+}
+function removeDodCriterion(idx) {
+  collectDodFromDom();
+  if (wizardData.dod) wizardData.dod.splice(idx, 1);
+  saveState();
+  showStep(currentStep);
+}
 function renderDefinitionOfDone() {
-  const items = wizardData.dod || ['Code revu', 'Tests passants', 'Documentation à jour', 'Déployable en dev'];
+  const items = wizardData.dod || ['Code revu', 'Tests passants', 'Documentation à jour', 'Déployable en dev', 'Pas de régression (tests automatisés)'];
   const rows = items.map((it, i) => `
-    <div class="wbs-item task">
-      <span class="wbs-item-icon" style="color:var(--accent);">✓</span>
-      <span class="wbs-item-label"><input class="form-input" style="border:none;background:transparent;padding:4px 0;" value="${typeof it==='string'?it:it.label||''}" placeholder="Critère DoD"/></span>
+    <div class="wbs-item task" style="display:flex;align-items:center;gap:10px;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <span class="wbs-item-icon" style="color:var(--accent);">✓</span>
+        <input class="form-input dod-input" style="border:none;background:transparent;padding:4px 0;flex:1;" value="${typeof it==='string'?it:it.label||''}" placeholder="Critère DoD"/>
+      </div>
+      <button type="button" onclick="removeDodCriterion(${i})" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;" title="Supprimer">✕</button>
     </div>
   `).join('');
   return `
@@ -855,10 +1051,14 @@ function renderDefinitionOfDone() {
       <div class="wiz-card-header">
         <div class="wiz-card-tag">✅ Definition of Done (Scrum)</div>
         <div class="wiz-card-title">Critères d'acceptation et de livrabilité</div>
-        <div class="wiz-card-desc">Tout incrément livré en fin de sprint doit respecter ces critères. Partagés par toute l'équipe Scrum.</div>
+        <div class="wiz-card-desc">Tout incrément livré en fin de sprint <strong>doit</strong> respecter ces critères. Définis et approuvés par toute l'équipe Scrum.</div>
       </div>
       <div class="wbs-tree">${rows}</div>
-      <button class="add-btn" onclick="showToast('Ajout critère DoD — à venir')">+ Ajouter un critère</button>
+      <button class="add-btn" style="margin-top:8px;" onclick="addDodCriterion()">+ Ajouter un critère</button>
+      <div class="smart-tip" style="margin-top:18px;">
+        <span class="tip-icon">✅</span>
+        <div class="tip-text"><strong>Scrum Guide :</strong> La DoD est un engagement de qualité, pas une liste de souhaits. Elle évolue à chaque Rétrospective. <strong>Si un incrément ne respecte pas la DoD, il n'est pas "Done"</strong> — peu importe que les fonctionnalités soient codées.</div>
+      </div>
       ${renderStepNav(true, true)}
     </div>
   `;
@@ -896,8 +1096,29 @@ const DEFAULT_MILESTONES = [
   { date:'J+120',label:'Formation utilisateurs',          critical:false },
   { date:'J+150',label:'Clôture & bilan',                 critical:false },
 ];
+const DEFAULT_MILESTONES_AGILE = [
+  { date:'S1',  label:'Sprint 1 — Fondations & Setup',       critical:false },
+  { date:'S2',  label:'Sprint 2 — Premier incrément livrable',critical:false },
+  { date:'S4',  label:'Release 1 — MVP utilisable',          critical:true  },
+  { date:'S6',  label:'Sprint 6 — Fonctionnalités clés',     critical:false },
+  { date:'S8',  label:'Release 2 — Version enrichie',        critical:true  },
+  { date:'S10', label:'Sprint 10 — Stabilisation',           critical:false },
+  { date:'S12', label:'Release finale — v1.0 complète',      critical:true  },
+];
+const DEFAULT_MILESTONES_HYBRIDE = [
+  { date:'J+5',   label:'Kick-off officiel',                  critical:true  },
+  { date:'J+20',  label:'Fin Lot 1 — Cadrage/Architecture',   critical:false },
+  { date:'S2-L2', label:'Sprint 2 Lot 2 — Premier incrément', critical:false },
+  { date:'J+60',  label:'Jalon intermédiaire — MVP Lot 2',    critical:true  },
+  { date:'S6-L2', label:'Release Lot 2 Agile',                critical:true  },
+  { date:'J+120', label:'Lot 3 — Intégration finale',         critical:true  },
+  { date:'J+150', label:'Clôture & bilan',                    critical:false },
+];
+
 function renderPlanning() {
-  const milestones = (wizardData.planning && wizardData.planning.milestones && wizardData.planning.milestones.length) ? wizardData.planning.milestones : DEFAULT_MILESTONES;
+  const meth = wizardData.methodology || 'waterfall';
+  const defaultMs = meth === 'agile' ? DEFAULT_MILESTONES_AGILE : meth === 'hybride' ? DEFAULT_MILESTONES_HYBRIDE : DEFAULT_MILESTONES;
+  const milestones = (wizardData.planning && wizardData.planning.milestones && wizardData.planning.milestones.length) ? wizardData.planning.milestones : defaultMs;
   const rows = milestones.map(m => `
     <div class="milestone-row">
       <div class="ms-dot ${m.critical?'critical':'normal'}"></div>
@@ -919,12 +1140,24 @@ function renderPlanning() {
     </div>
   `).join('');
 
+  const planningTitle = meth === 'agile' ? 'Release Planning & Sprints' : meth === 'hybride' ? 'Planning Hybride — Jalons & Sprints' : 'Planning & Jalons';
+  const planningDesc  = meth === 'agile'
+    ? 'Définissez les releases et les sprints cibles. Les jalons correspondent aux releases produit. Ce planning sera synchronisé avec le Gantt.'
+    : meth === 'hybride'
+    ? 'Combinez jalons Waterfall (lots, phases) et releases Agile (sprints). Chaque jalon peut être une livraison lot ou une release itérative.'
+    : 'Définissez les jalons clés, le chemin critique et les dépendances. Ce planning sera synchronisé avec le Gantt.';
+  const planningTip = meth === 'agile'
+    ? '<strong>Release Planning :</strong> Planifiez en releases de 3-4 sprints. Ne planifiez pas plus de 2 releases à l\'avance — le backlog va évoluer. Le Gantt Agile montre les releases, pas les tâches individuelles.'
+    : meth === 'hybride'
+    ? '<strong>Hybride :</strong> Les jalons J+ correspondent aux livrables Waterfall. Les jalons S correspond aux releases de sprints Agile. Gardez la granularité adaptée à chaque lot.'
+    : '<strong>Chemin critique :</strong> Les jalons rouges ne peuvent pas être dépassés sans impact sur la date de fin. Protégez-les en priorité avec des buffers dédiés.';
+
   return `
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">📅 Étape ${currentStep+1} / ${getSteps().length}</div>
-        <div class="wiz-card-title">Planning & Jalons</div>
-        <div class="wiz-card-desc">Définissez les jalons clés, le chemin critique et les dépendances. Ce planning sera synchronisé avec le Gantt.</div>
+        <div class="wiz-card-title">${planningTitle}</div>
+        <div class="wiz-card-desc">${planningDesc}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px;">
         <div class="form-group">
@@ -956,14 +1189,14 @@ function renderPlanning() {
         </div>
         `}
       </div>
-      <div style="margin-bottom:16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">Jalons clés</div>
+      <div style="margin-bottom:16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">${meth === 'agile' ? 'Releases & Sprints cibles' : 'Jalons clés'}</div>
       <div style="margin-bottom:8px;display:grid;grid-template-columns:auto 1fr 120px 140px;gap:12px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding-bottom:10px;border-bottom:1px solid var(--border);">
-        <span></span><span>Jalon</span><span>Timing</span><span>Statut</span>
+        <span></span><span>${meth === 'agile' ? 'Release / Sprint Goal' : 'Jalon'}</span><span>Timing</span><span>Statut</span>
       </div>
       ${rows}
       <div class="smart-tip">
         <span class="tip-icon">📅</span>
-        <div class="tip-text"><strong>Chemin critique :</strong> Les jalons rouges ne peuvent pas être dépassés sans impact sur la date de fin. Protégez-les en priorité avec des buffers dédiés.</div>
+        <div class="tip-text">${planningTip}</div>
       </div>
     </div>
     ${renderStepNav(true, true)}
@@ -972,12 +1205,50 @@ function renderPlanning() {
 
 // ── STEP 7: GOUVERNANCE ──
 function renderGouvernance() {
-  const comites = [
-    { nom:'Comité de Pilotage (COPIL)', freq:'Mensuel', participants:'Sponsor, PM, Directions métier', objectif:'Décisions stratégiques, arbitrages budget/délai' },
-    { nom:'Comité Projet (COPROJ)',     freq:'Bimensuel', participants:'PM, Chefs d\'équipe, Experts', objectif:'Avancement, résolution des blocages opérationnels' },
-    { nom:'Point d\'équipe (Daily/Weekly)', freq:'Hebdomadaire', participants:'Équipe projet complète', objectif:'Avancement tâches, blocages, synchronisation' },
-    { nom:'Revue de Phase',            freq:'Par phase', participants:'PM, Sponsor, Parties prenantes', objectif:'Validation des livrables de phase avant passage au suivant' },
-  ];
+  const meth = wizardData.methodology || 'waterfall';
+  let govTitle, govDesc, comites, kpiPlaceholder, reportingOptions, escaladeOptions, govTip;
+
+  if (meth === 'agile') {
+    govTitle = 'Gouvernance Scrum';
+    govDesc = 'En Scrum, la gouvernance est incarnée par les cérémonies — pas de COPIL, pas de rapports PDF. Des démos régulières, de la transparence et une amélioration continue continue.';
+    comites = [
+      { nom:'Sprint Review (Démo)', freq:'Fin de sprint', participants:'PO, Dev Team, Stakeholders', objectif:'Inspecter l\'incrément livré et adapter le backlog selon le feedback stakeholder' },
+      { nom:'Rétrospective', freq:'Fin de sprint', participants:'Scrum Master, Dev Team, PO', objectif:'Amélioration continue du process, des pratiques et de la dynamique d\'équipe' },
+      { nom:'Sprint Planning', freq:'Début de sprint', participants:'PO, Scrum Master, Dev Team', objectif:'Sélectionner les items du backlog, définir l\'objectif du sprint (Sprint Goal)' },
+      { nom:'Release Planning', freq:'Par release (~3 sprints)', participants:'PO, Dev Team, Stakeholders', objectif:'Aligner les releases sur la roadmap produit et les objectifs business' },
+    ];
+    reportingOptions = ['Burndown chart (par sprint)','Velocity chart (évolution)','Sprint Review recording','Product Backlog dashboard PM Hub'];
+    escaladeOptions = ['SM → PO → Stakeholders (fin de sprint)','Impediment board → SM → PO (48h max)','Protocole personnalisé'];
+    kpiPlaceholder = '• Vélocité moyenne (story points / sprint)\n• Burndown du sprint\n• Taux de stories complétées vs planifiées\n• Satisfaction équipe (NPS interne)\n• Lead time & cycle time';
+    govTip = '<strong>Scrum :</strong> La Sprint Review remplace le COPIL. Invitez les stakeholders à chaque démo — c\'est votre mécanisme de validation le plus puissant. Une démo fonctionnelle parle mieux qu\'un rapport PDF de 40 slides.';
+  } else if (meth === 'hybride') {
+    govTitle = 'Gouvernance Hybride';
+    govDesc = 'Combinez la rigueur des comités Waterfall pour les jalons stratégiques et la fluidité Scrum pour les itérations. Chaque mode a sa gouvernance propre — synchronisez-les.';
+    comites = [
+      { nom:'Comité de Pilotage (COPIL)', freq:'Par lot / phase', participants:'Sponsor, PM, Directions métier', objectif:'Validation des lots, arbitrages budget/délai, décisions stratégiques' },
+      { nom:'Sprint Review (lots Agile)', freq:'Fin de sprint', participants:'PM/PO, Dev Team, Métier', objectif:'Démo des itérations Agile, feedback et ajustement du backlog itératif' },
+      { nom:'Comité Projet (COPROJ)', freq:'Bimensuel', participants:'PM, Chefs d\'équipe, Experts', objectif:'Coordination Waterfall + Agile, suivi des dépendances entre lots' },
+      { nom:'Rétrospective Hybride', freq:'Par sprint / lot', participants:'PM, Équipe Agile', objectif:'Amélioration du process itératif et ajustement de la planification globale' },
+    ];
+    reportingOptions = ['Dashboard jalons + burndown','Rapport PDF mensuel hybride','Email hebdo + sprint board','COPIL deck + Sprint Review recording'];
+    escaladeOptions = ['PM → Sponsor → Direction (48h max)','SM → PO → COPIL (fin de sprint)','Protocole personnalisé'];
+    kpiPlaceholder = '• Taux d\'avancement jalons vs planning\n• Vélocité des lots Agile (story points)\n• Consommation budget vs prévision\n• Nb risques ouverts\n• Satisfaction équipe (NPS interne)';
+    govTip = '<strong>Hybride :</strong> Le COPIL cadre les jalons Waterfall. La Sprint Review gère les livrables Agile. Synchronisez les deux au moins une fois par mois pour éviter les divergences entre le planning prédictif et les itérations.';
+  } else {
+    govTitle = 'Plan de Gouvernance';
+    govDesc = 'Définissez les instances de pilotage, les canaux de reporting, le processus d\'escalade et les KPIs de suivi.';
+    comites = [
+      { nom:'Comité de Pilotage (COPIL)', freq:'Mensuel', participants:'Sponsor, PM, Directions métier', objectif:'Décisions stratégiques, arbitrages budget/délai' },
+      { nom:'Comité Projet (COPROJ)',     freq:'Bimensuel', participants:'PM, Chefs d\'équipe, Experts', objectif:'Avancement, résolution des blocages opérationnels' },
+      { nom:'Point d\'équipe (Daily/Weekly)', freq:'Hebdomadaire', participants:'Équipe projet complète', objectif:'Avancement tâches, blocages, synchronisation' },
+      { nom:'Revue de Phase',            freq:'Par phase', participants:'PM, Sponsor, Parties prenantes', objectif:'Validation des livrables de phase avant passage au suivant' },
+    ];
+    reportingOptions = ['Email hebdomadaire + dashboard Power BI','Rapport PDF mensuel','Dashboard temps réel (Jira / PM Hub)','Présentation COPIL mensuelle'];
+    escaladeOptions = ['PM → Sponsor → Direction (48h max)','PM → Manager → COPIL (72h)','Protocole personnalisé'];
+    kpiPlaceholder = '• Taux d\'avancement vs planning\n• Consommation budget vs prévision\n• Nb risques ouverts\n• Satisfaction équipe (NPS interne)\n• Délais livrables vs jalons';
+    govTip = '<strong>Governance = visibilité.</strong> Sans reporting régulier, les problèmes s\'accumulent en silence. Un COPIL mensuel avec un dashboard Power BI clair vaut mieux qu\'une réunion de crise.';
+  }
+
   const rows = comites.map(c => `
     <tr>
       <td style="font-weight:600;">${c.nom}</td>
@@ -991,8 +1262,8 @@ function renderGouvernance() {
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">🏛️ Étape ${currentStep+1} / ${getSteps().length}</div>
-        <div class="wiz-card-title">Plan de Gouvernance</div>
-        <div class="wiz-card-desc">Définissez les instances de pilotage, les canaux de reporting, le processus d'escalade et les KPIs de suivi.</div>
+        <div class="wiz-card-title">${govTitle}</div>
+        <div class="wiz-card-desc">${govDesc}</div>
       </div>
       <div style="margin-bottom:24px;">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Instances de gouvernance</div>
@@ -1005,28 +1276,23 @@ function renderGouvernance() {
         <div class="form-group">
           <label class="form-label">Canal de reporting principal</label>
           <select class="form-select" id="gov_reporting">
-            <option>Email hebdomadaire + dashboard Power BI</option>
-            <option>Rapport PDF mensuel</option>
-            <option>Dashboard temps réel (Jira / PM Hub)</option>
-            <option>Présentation COPIL mensuelle</option>
+            ${reportingOptions.map(o => `<option>${o}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Processus d'escalade</label>
           <select class="form-select" id="gov_escalade">
-            <option>PM → Sponsor → Direction (48h max)</option>
-            <option>PM → Manager → COPIL (72h)</option>
-            <option>Protocole personnalisé</option>
+            ${escaladeOptions.map(o => `<option>${o}</option>`).join('')}
           </select>
         </div>
         <div class="form-group full">
           <label class="form-label">KPIs de suivi (indicateurs)</label>
-          <textarea class="form-textarea" id="gov_kpis" placeholder="• Taux d'avancement vs planning&#10;• Consommation budget vs prévision&#10;• Nb risques ouverts&#10;• Satisfaction équipe (NPS interne)&#10;• Délais livrables vs jalons"></textarea>
+          <textarea class="form-textarea" id="gov_kpis" placeholder="${kpiPlaceholder}">${wizardData.gouvernance?.kpis||''}</textarea>
         </div>
       </div>
       <div class="smart-tip">
         <span class="tip-icon">🏛️</span>
-        <div class="tip-text"><strong>Governance = visibilité.</strong> Sans reporting régulier, les problèmes s'accumulent en silence. Un COPIL mensuel avec un dashboard Power BI clair vaut mieux qu'une réunion de crise.</div>
+        <div class="tip-text">${govTip}</div>
       </div>
     </div>
 
@@ -1100,6 +1366,35 @@ function saveAndNext() {
     collectRaciFromDom();
   } else if(step.id === 'raid') {
     persistRaidFromWizard();
+  } else if(step.id === 'vision') {
+    wizardData.vision = {
+      vision:      getValue('v_vision'),
+      personas:    getValue('v_personas'),
+      objectives:  getValue('v_objectives'),
+    };
+  } else if(step.id === 'backlog') {
+    collectBacklogFromDom();
+  } else if(step.id === 'sprints') {
+    wizardData.sprints = {
+      duration: getValue('spr_duration'),
+      daily:    getValue('spr_daily'),
+      planning: getValue('spr_planning'),
+      review:   getValue('spr_review'),
+      retro:    getValue('spr_retro'),
+    };
+  } else if(step.id === 'definition_of_done') {
+    collectDodFromDom();
+  } else if(step.id === 'backlog_hybrid') {
+    wizardData.backlog_hybrid = {
+      lots:       getValue('bh_lots'),
+      milestones: getValue('bh_milestones'),
+    };
+  } else if(step.id === 'gouvernance') {
+    wizardData.gouvernance = {
+      reporting: getValue('gov_reporting'),
+      escalade:  getValue('gov_escalade'),
+      kpis:      getValue('gov_kpis'),
+    };
   } else if(step.id === 'planning') {
     const meth = wizardData.methodology || 'waterfall';
     wizardData.planning = {
