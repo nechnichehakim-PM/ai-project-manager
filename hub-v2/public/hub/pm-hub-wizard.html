@@ -391,19 +391,19 @@ function saveState() {
 
 function finishWizard() {
   let pid;
+  const meth    = wizardData.methodology || 'waterfall';
+  const cadrage = wizardData.cadrage || {};
+  const vision  = wizardData.vision  || {};
+  const charte  = wizardData.charte  || {};
 
+  // ── 1. CRÉER OU METTRE À JOUR LE PROJET ──────────────────────
   if (!projectId) {
-    // Aucun projet existant → on le crée à partir des données du wizard
-    const cadrage = wizardData.cadrage || {};
-    const vision  = wizardData.vision  || {};
-    const charte  = wizardData.charte  || {};
-    const meth    = wizardData.methodology || 'waterfall';
-    const name    = charte.name || cadrage.name || vision.vision || 'Nouveau projet';
-    const year    = new Date().getFullYear();
+    const name = charte.name || cadrage.name || vision.vision || 'Nouveau projet';
+    const year = new Date().getFullYear();
     const newProj = PMHUB.addProject({
       name:        name,
       ref:         charte.ref  || ('PRJ-' + year + '-' + String(Date.now()).slice(-3)),
-      desc:        cadrage.context || cadrage.objectives || vision.objectives || '',
+      desc:        [cadrage.context, cadrage.objectives, vision.objectives].filter(Boolean).join('\n\n') || '',
       status:      'active',
       progress:    15,
       phase:       'Planification',
@@ -414,15 +414,33 @@ function finishWizard() {
       sponsor:     cadrage.sponsor || charte.sponsor || '',
       priority:    charte.priority || 'Normale',
       type:        'Projet',
+      in_scope:    cadrage.in_scope    || '',
+      out_scope:   cadrage.out_scope   || '',
+      success:     cadrage.success     || '',
+      constraints: cadrage.constraints || '',
     });
     pid = newProj.id;
     projectId = String(pid);
   } else {
     pid = parseInt(projectId, 10);
-    PMHUB.updateProject(pid, { phase: 'Planification', progress: 15 });
+    PMHUB.updateProject(pid, {
+      phase:       'Planification',
+      progress:    15,
+      methodology: meth,
+      desc:        [cadrage.context, cadrage.objectives, vision.objectives].filter(Boolean).join('\n\n') || undefined,
+      budget:      cadrage.budget  || charte.budget  || undefined,
+      sponsor:     cadrage.sponsor || charte.sponsor || undefined,
+      in_scope:    cadrage.in_scope    || undefined,
+      out_scope:   cadrage.out_scope   || undefined,
+      success:     cadrage.success     || undefined,
+      constraints: cadrage.constraints || undefined,
+    });
   }
 
+  // ── 2. GANTT — jalons de planning ────────────────────────────
   if (wizardData.planning) syncPlanningToGantt(pid, wizardData.planning);
+
+  // ── 3. RAID ──────────────────────────────────────────────────
   if (wizardData.raid && (wizardData.raid.risks?.length || wizardData.raid.actions?.length || wizardData.raid.issues?.length || wizardData.raid.decisions?.length)) {
     const existing = PMHUB.getRaids(pid);
     ['risks','actions','issues','decisions'].forEach(type => {
@@ -431,7 +449,84 @@ function finishWizard() {
     PMHUB.saveRaids(pid, existing);
   }
 
-  showToast('🎉 Projet créé et initialisé ! Redirection vers le dashboard...');
+  // ── 4. LIVRABLES — WBS (Waterfall) ou Backlog (Agile/Hybride) ──
+  const now = Date.now();
+  if (meth === 'waterfall') {
+    // Phases WBS standard comme livrables
+    const wbsPhases = [
+      { name:'Charte & Cadrage',          type:'Livrable',    status:'À faire' },
+      { name:'WBS / Planning Gantt',       type:'Livrable',    status:'À faire' },
+      { name:'Architecture technique',     type:'Livrable',    status:'À faire' },
+      { name:'Livrables techniques',       type:'Livrable',    status:'À faire' },
+      { name:'Tests & Recette',            type:'Livrable',    status:'À faire' },
+      { name:'Documentation finale',       type:'Livrable',    status:'À faire' },
+      { name:'Bilan de clôture / REX',     type:'Livrable',    status:'À faire' },
+    ];
+    PMHUB.saveDeliverables(pid, wbsPhases.map((d, i) => ({ ...d, id: now + i })));
+  } else if (meth === 'agile' && wizardData.backlog?.length) {
+    // User stories → livrables
+    const stories = wizardData.backlog
+      .filter(it => it.story?.trim())
+      .map((it, i) => ({
+        id:       now + i,
+        name:     it.story.trim(),
+        type:     'User Story',
+        priority: it.priority || 'Moyenne',
+        size:     it.value    || 'M',
+        status:   'À faire',
+      }));
+    if (stories.length) PMHUB.saveDeliverables(pid, stories);
+  } else if (meth === 'hybride') {
+    // Lots hybride comme livrables
+    const lots = (wizardData.backlog_hybrid?.lots || '').split('\n').filter(l => l.trim());
+    if (lots.length) {
+      PMHUB.saveDeliverables(pid, lots.map((lot, i) => ({
+        id:     now + i,
+        name:   lot.trim(),
+        type:   'Lot',
+        status: 'À faire',
+      })));
+    }
+  }
+
+  // ── 5. PARTIES PRENANTES — depuis RACI ───────────────────────
+  if (meth === 'agile') {
+    // Rôles Scrum fixes
+    const scrumRoles = [
+      { id: now+'PO',  name:'Product Owner',  role:'Product Owner',  type:'Interne' },
+      { id: now+'SM',  name:'Scrum Master',   role:'Scrum Master',   type:'Interne' },
+      { id: now+'DT',  name:'Dev Team',       role:'Développement',  type:'Interne' },
+      { id: now+'STK', name:'Stakeholders',   role:'Parties prenantes', type:'Client' },
+    ];
+    PMHUB.saveStakeholders(pid, scrumRoles);
+  } else {
+    // Ressources projet → stakeholders
+    const resources = PMHUB.getResources();
+    if (resources.length) {
+      PMHUB.saveStakeholders(pid, resources.map(r => ({
+        id:   now + r.id,
+        name: r.id,
+        role: r.role,
+        type: 'Interne',
+      })));
+    }
+  }
+
+  // ── 6. TEMPLATES — DoD, Sprints, Gouvernance ─────────────────
+  if (wizardData.dod?.length) {
+    PMHUB.saveTemplate(pid, 'definition_of_done', { items: wizardData.dod });
+  }
+  if (wizardData.sprints && Object.keys(wizardData.sprints).length) {
+    PMHUB.saveTemplate(pid, 'sprints_config', wizardData.sprints);
+  }
+  if (wizardData.gouvernance && Object.keys(wizardData.gouvernance).length) {
+    PMHUB.saveTemplate(pid, 'gouvernance', wizardData.gouvernance);
+  }
+  if (wizardData.vision && Object.keys(wizardData.vision).length) {
+    PMHUB.saveTemplate(pid, 'product_vision', wizardData.vision);
+  }
+
+  showToast('🎉 Projet créé et initialisé ! Toutes les données sont synchronisées.');
   setTimeout(() => PMHUB.goTo('pm-hub.html'), 2000);
 }
 
