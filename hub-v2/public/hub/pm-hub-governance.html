@@ -4,56 +4,610 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PM Hub — Gouvernance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
 <script src="pmhub-sidebar.js"></script>
 <script src="pmhub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;opacity:.35;}
+nav{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;}
+.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;min-height:0;}
+
+/* ── TOP BAR ─────────────────────────────────────────── */
+.gov-bar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
+.gov-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:240px;outline:none;cursor:pointer;}
+.gov-bar select:focus{border-color:var(--accent);}
+.gov-badge{font-family:'DM Mono',monospace;font-size:9px;padding:3px 9px;border-radius:20px;}
+
+/* ── KPI STRIP ───────────────────────────────────────── */
+.gov-kpis{display:flex;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
+.gkpi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 6px;border-right:1px solid var(--border);cursor:default;transition:background .15s;min-width:0;}
+.gkpi:last-child{border-right:none;}
+.gkpi:hover{background:var(--surface2);}
+.gkpi-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1;white-space:nowrap;}
+.gkpi-lbl{font-family:'DM Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-top:2px;text-align:center;}
+
+/* ── SCROLL ──────────────────────────────────────────── */
+.gov-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;padding-bottom:90px;min-height:0;}
+.gov-scroll::-webkit-scrollbar{width:5px;}
+.gov-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+
+/* ── TABS ────────────────────────────────────────────── */
+.tabs-row{display:flex;gap:3px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+.gtab{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .2s;margin-bottom:-1px;white-space:nowrap;}
+.gtab:hover{color:var(--text);}
+.gtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.gtab-count{display:inline-block;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:5px;vertical-align:middle;}
+
+/* ── SECTION HEADER ──────────────────────────────────── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);}
+.sec-btn{display:flex;align-items:center;gap:5px;background:var(--accent);color:#060a0d;padding:6px 13px;border-radius:5px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;}
+.sec-btn:hover{opacity:.85;}
+.sec-btn.secondary{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.sec-btn.secondary:hover{border-color:var(--accent);color:var(--text);}
+
+/* ── TABLES ──────────────────────────────────────────── */
+.gov-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:20px;}
+.gov-table{width:100%;border-collapse:collapse;min-width:700px;}
+.gov-table th{font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:left;white-space:nowrap;}
+.gov-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
+.gov-table tr:last-child td{border-bottom:none;}
+.gov-table tr:hover td{background:var(--surface2);}
+
+/* Committee types */
+.com-type{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.06em;white-space:nowrap;}
+.com-copil{background:rgba(124,58,237,.12);color:#a78bfa;border:1px solid rgba(124,58,237,.25);}
+.com-coproj{background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+.com-revue{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.com-kickoff{background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.2);}
+.com-cloture{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+/* Status badges */
+.st-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:3px;white-space:nowrap;cursor:pointer;}
+.st-planifie{background:rgba(122,184,232,.1);color:var(--accent3);border:1px solid rgba(122,184,232,.2);}
+.st-tenu{background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.15);}
+.st-annule{background:rgba(239,68,68,.09);color:var(--danger);border:1px solid rgba(239,68,68,.18);}
+.st-open{background:rgba(239,68,68,.08);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.st-progress{background:rgba(122,184,232,.08);color:var(--accent3);border:1px solid rgba(122,184,232,.2);}
+.st-watch{background:rgba(245,158,11,.08);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.st-closed{background:rgba(34,197,94,.06);color:var(--accent);border:1px solid rgba(99,210,180,.15);}
+/* Inline edit */
+.g-input{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:100%;min-width:50px;}
+.g-textarea{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;resize:vertical;width:100%;min-height:44px;}
+.g-select{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;width:100%;}
+.g-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:10px;transition:all .15s;flex-shrink:0;}
+.g-btn:hover{border-color:var(--accent);color:var(--accent);}
+.g-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.g-btn.save{background:var(--accent);border-color:var(--accent);color:#060a0d;font-weight:700;}
+.g-btns{display:flex;gap:4px;}
+/* Overdue */
+.g-date-late{color:var(--danger);}
+.g-overdue{font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.12);color:var(--danger);margin-left:5px;}
+
+/* ── RACI MATRIX ─────────────────────────────────────── */
+.raci-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:16px;}
+.raci-table{border-collapse:collapse;}
+.raci-table th{font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:8px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--surface2);text-align:center;white-space:nowrap;}
+.raci-table th.del-col{text-align:left;min-width:180px;position:sticky;left:0;z-index:2;background:var(--surface2);}
+.raci-table td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;}
+.raci-table td:last-child,.raci-table th:last-child{border-right:none;}
+.raci-table tr:last-child td{border-bottom:none;}
+.raci-del-cell{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;padding:9px 12px;min-width:180px;position:sticky;left:0;background:var(--surface);z-index:1;}
+.raci-del-cell:hover{background:var(--surface2);}
+.raci-cell{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;user-select:none;}
+.raci-cell:hover{background:var(--surface2);}
+.raci-R{background:rgba(34,197,94,.15)!important;color:var(--success);font-weight:700;}
+.raci-A{background:rgba(99,210,180,.15)!important;color:var(--accent);font-weight:700;}
+.raci-C{background:rgba(245,158,11,.12)!important;color:var(--accent2);font-weight:700;}
+.raci-I{background:rgba(122,184,232,.12)!important;color:var(--accent3);font-weight:700;}
+.raci-cell-label{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.05em;}
+.raci-empty{color:var(--surface3);font-size:16px;}
+.raci-res-id{font-family:'DM Mono',monospace;font-size:9px;}
+.raci-res-name{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.raci-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;}
+.raci-leg-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-soft);}
+.raci-leg-badge{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.add-del-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);}
+.add-del-input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;flex:1;transition:border-color .2s;}
+.add-del-input:focus{border-color:var(--accent);}
+.add-del-btn{background:var(--accent);color:#060a0d;padding:6px 12px;border-radius:5px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface2);border:1px solid rgba(99,210,180,.3);border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 24px rgba(99,210,180,.3);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.empty-state{text-align:center;padding:48px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);font-size:11px;line-height:1.8;}
+@media print{nav,.gov-bar,.gov-kpis,.tabs-row,.sec-btn,.ai-float-btn{display:none!important;}.main-col{height:auto;overflow:visible;}.gov-scroll{overflow:visible;}}
+</style>
 </head>
 <body>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
+
 <nav>
-  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
-  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <a href="pm-hub.html" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
   <div class="nav-context" id="nav-context"></div>
-  <div class="nav-links">
-    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
-    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  <div style="display:flex;gap:8px;">
+    <button onclick="window.print()" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);background:transparent;border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;">🖨 Imprimer</button>
+    <a href="pm-hub-settings.html" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;border-radius:5px;" title="Paramètres">⚙</a>
   </div>
 </nav>
-<a href="pm-hub-ai.html?from=Gouvernance" class="ai-float-btn" title="Centre IA">🤖</a>
+
+<a href="pm-hub-ai.html?from=Gouvernance" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="toast" id="toast"></div>
+
 <div class="layout">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
-  <main class="main">
-    <div class="hero-bar">
-      <div class="hero-left">
-        <span class="hero-badge">PMO</span>
-        <h1 class="hero-title">Gouvernance</h1>
-        <p class="hero-sub">Comités, décisions, actions et suivi des arbitrages.</p>
-      </div>
+  <div class="main-col">
+
+    <!-- TOP BAR -->
+    <div class="gov-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0;">Projet :</span>
+      <select id="projectSelect" onchange="switchProject(parseInt(this.value))"></select>
+      <span class="gov-badge" id="projectBadge"></span>
     </div>
-    <div class="section-title-row"><h2 class="section-title">Décisions récentes</h2></div>
-    <div class="exec-list" id="govDecisions"></div>
-    <div class="section-title-row"><h2 class="section-title">Actions en attente</h2></div>
-    <div class="exec-list" id="govActions"></div>
-  </main>
+
+    <!-- KPI STRIP -->
+    <div class="gov-kpis">
+      <div class="gkpi"><span class="gkpi-val" id="k_com" style="color:#a78bfa">—</span><span class="gkpi-lbl">Comités</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_tenus" style="color:var(--success)">—</span><span class="gkpi-lbl">Tenus</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_dec" style="color:var(--accent)">—</span><span class="gkpi-lbl">Décisions</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_act" style="color:var(--accent2)">—</span><span class="gkpi-lbl">Actions ouvertes</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_late" style="color:var(--danger)">—</span><span class="gkpi-lbl">En retard</span></div>
+    </div>
+
+    <!-- SCROLL -->
+    <div class="gov-scroll" id="govScroll">
+
+      <!-- TABS -->
+      <div class="tabs-row">
+        <div class="gtab active" id="tab-comites"   onclick="setTab('comites')">Comités<span class="gtab-count" id="tc-comites" style="background:rgba(124,58,237,.12);color:#a78bfa;"></span></div>
+        <div class="gtab"        id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="gtab-count" id="tc-decisions" style="background:rgba(99,210,180,.1);color:var(--accent);"></span></div>
+        <div class="gtab"        id="tab-actions"   onclick="setTab('actions')">Actions<span class="gtab-count" id="tc-actions" style="background:rgba(245,158,11,.1);color:var(--accent2);"></span></div>
+        <div class="gtab"        id="tab-raci"      onclick="setTab('raci')">RACI</div>
+      </div>
+
+      <!-- TAB CONTENT -->
+      <div id="tabContent"></div>
+
+    </div>
+  </div>
 </div>
+
 <script>
-(function(){
-  var decisions = [], actions = [];
-  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
-    var r = PMHUB.getRaids(p.id);
-    (r.decisions || []).forEach(function(d){ decisions.push({ project: p.name, desc: d.desc, status: d.status }); });
-    (r.actions || []).filter(function(a){ return a.status !== 'closed'; }).forEach(function(a){ actions.push({ project: p.name, desc: a.desc, owner: a.owner, due: a.due }); });
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+var currentProject = null;
+var currentTab = 'comites';
+
+var COM_TYPES  = ['COPIL','COPROJ','Revue technique','Revue qualité','Kick-off','Clôture','Autre'];
+var COM_STATUS = { planifie:'Planifié', tenu:'Tenu', annule:'Annulé' };
+var COM_CYCLE  = { planifie:'tenu', tenu:'annule', annule:'planifie' };
+var ACT_CYCLE  = { open:'progress', progress:'watch', watch:'closed', closed:'open' };
+var DEC_CYCLE  = { open:'closed', closed:'open' };
+
+var SEED_COMMITTEES = [
+  { id:1, type:'Kick-off',        date:'2026-01-05', participants:'CdP, MOA, DSI, Équipe', agenda:'Lancement officiel — objectifs, planning, organisation', cr:'Charte signée. Planning approuvé. Équipe constituée.',      status:'tenu'     },
+  { id:2, type:'COPIL',           date:'2026-02-12', participants:'Direction, CdP, MOA',   agenda:'Point avancement M1-M2 — jalons, budget, risques',       cr:'Avancement conforme. Risque RR-001 escaladé à la direction.', status:'tenu'     },
+  { id:3, type:'COPROJ',          date:'2026-03-18', participants:'CdP, Équipe technique', agenda:'Revue technique phase 2 — architecture, déploiement',     cr:'',                                                           status:'planifie' },
+  { id:4, type:'COPIL',           date:'2026-04-15', participants:'Direction, CdP, MOA',   agenda:'Bilan Q1 — arbitrages budget et périmètre',               cr:'',                                                           status:'planifie' },
+];
+var SEED_RACI_ROWS = [
+  { id:1, label:'Initialisation & Cadrage'    },
+  { id:2, label:'Planification détaillée'     },
+  { id:3, label:'Développement / Exécution'   },
+  { id:4, label:'Tests & Validation'          },
+  { id:5, label:'Déploiement & Mise en prod.' },
+  { id:6, label:'Clôture & REX'               },
+];
+
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+function getCommittees() {
+  try { var r = JSON.parse(localStorage.getItem('pmhub_committees_' + currentProject)); return r || JSON.parse(JSON.stringify(SEED_COMMITTEES)); }
+  catch(e) { return JSON.parse(JSON.stringify(SEED_COMMITTEES)); }
+}
+function saveCommittees(d) { localStorage.setItem('pmhub_committees_' + currentProject, JSON.stringify(d)); }
+
+function getRaciData() {
+  try { var r = JSON.parse(localStorage.getItem('pmhub_raci_' + currentProject)); return r || { rows: JSON.parse(JSON.stringify(SEED_RACI_ROWS)), cells: {} }; }
+  catch(e) { return { rows: JSON.parse(JSON.stringify(SEED_RACI_ROWS)), cells: {} }; }
+}
+function saveRaci(d) { localStorage.setItem('pmhub_raci_' + currentProject, JSON.stringify(d)); }
+
+function getRaidData() {
+  return (typeof PMHUB !== 'undefined') ? PMHUB.getRaids(currentProject) : { actions:[], decisions:[] };
+}
+function saveRaidData(d) { if (typeof PMHUB !== 'undefined') PMHUB.saveRaids(currentProject, d); }
+
+function getResources() {
+  return (typeof PMHUB !== 'undefined' && PMHUB.getResources) ? PMHUB.getResources() : [];
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d || d === '—') return '—';
+  var ms = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  var p = d.split('-');
+  return parseInt(p[2]) + ' ' + ms[parseInt(p[1])-1] + ' ' + p[0];
+}
+function isOverdue(item) {
+  if (!item.due || item.due === '—') return false;
+  return new Date(item.due) < new Date() && item.status !== 'closed' && item.status !== 'obsolete';
+}
+function daysLate(item) { return Math.round((new Date() - new Date(item.due)) / 86400000); }
+function comTypeClass(t) {
+  var m = { COPIL:'com-copil', COPROJ:'com-coproj', 'Revue technique':'com-revue', 'Revue qualité':'com-revue', 'Kick-off':'com-kickoff', Clôture:'com-cloture' };
+  return m[t] || 'com-revue';
+}
+function statusLabel(s) { var m={open:'Ouvert',progress:'En cours',watch:'Surveillance',closed:'Clôturé'}; return m[s]||s; }
+function statusClass(s) { var m={open:'st-open',progress:'st-progress',watch:'st-watch',closed:'st-closed'}; return m[s]||'st-open'; }
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(function() { t.classList.remove('show'); }, 2400);
+}
+
+// ══════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════
+function updateKPIs() {
+  var coms  = getCommittees();
+  var raid  = getRaidData();
+  var acts  = raid.actions  || [];
+  var decs  = raid.decisions || [];
+  var tenus = coms.filter(function(c) { return c.status === 'tenu'; }).length;
+  var openA = acts.filter(function(a) { return a.status !== 'closed'; }).length;
+  var late  = acts.filter(function(a) { return isOverdue(a); }).length;
+  document.getElementById('k_com').textContent   = coms.length;
+  document.getElementById('k_tenus').textContent = tenus;
+  document.getElementById('k_dec').textContent   = decs.length;
+  document.getElementById('k_act').textContent   = openA;
+  document.getElementById('k_late').textContent  = late;
+  document.getElementById('k_late').style.color  = late > 0 ? 'var(--danger)' : 'var(--success)';
+  document.getElementById('tc-comites').textContent   = coms.length;
+  document.getElementById('tc-decisions').textContent = decs.length;
+  document.getElementById('tc-actions').textContent   = openA;
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 1 — COMITÉS
+// ══════════════════════════════════════════════════════
+function renderComites() {
+  var coms = getCommittees();
+  var rows = coms.map(function(c) { return buildComRow(c); }).join('');
+  var html =
+    '<div class="sec-hdr"><span class="sec-title">Registre des comités</span><button class="sec-btn" onclick="addCom()">＋ Ajouter</button></div>' +
+    '<div class="gov-table-wrap"><table class="gov-table">' +
+    '<thead><tr><th style="width:105px">Type</th><th style="width:110px">Date</th><th style="min-width:140px">Participants</th><th style="min-width:200px">Ordre du jour</th><th style="min-width:200px">Compte-rendu</th><th style="width:90px">Statut</th><th style="width:70px"></th></tr></thead>' +
+    '<tbody id="comTbody">' + rows + '</tbody>' +
+    '</table></div>';
+  return html;
+}
+
+function buildComRow(c) {
+  var stClass = { planifie:'st-planifie', tenu:'st-tenu', annule:'st-annule' }[c.status] || 'st-planifie';
+  var stLbl   = COM_STATUS[c.status] || c.status;
+  return '<tr data-comid="' + c.id + '">' +
+    '<td><span class="com-type ' + comTypeClass(c.type) + '">' + c.type + '</span></td>' +
+    '<td style="white-space:nowrap;">' + fmtDate(c.date) + '</td>' +
+    '<td style="font-size:10px;color:var(--text-soft);">' + (c.participants||'—').replace(/</g,'&lt;') + '</td>' +
+    '<td style="font-size:10px;">' + (c.agenda||'—').replace(/</g,'&lt;') + '</td>' +
+    '<td style="font-size:10px;color:var(--text-muted);">' + (c.cr ? c.cr.replace(/</g,'&lt;').slice(0,120) + (c.cr.length>120?'…':'') : '<span style="color:var(--surface3)">Non renseigné</span>') + '</td>' +
+    '<td><span class="st-badge ' + stClass + '" onclick="cycleCom(' + c.id + ')" title="Clic pour changer">' + stLbl + '</span></td>' +
+    '<td><div class="g-btns"><button class="g-btn" onclick="editCom(' + c.id + ')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteCom(' + c.id + ')" title="Supprimer">🗑️</button></div></td>' +
+  '</tr>';
+}
+
+function editCom(id) {
+  var coms = getCommittees();
+  var c    = coms.find(function(x) { return x.id === id; });
+  if (!c) return;
+  var row  = document.querySelector('tr[data-comid="' + id + '"]');
+  if (!row) return;
+  row.innerHTML =
+    '<td><select class="g-select" id="ec_type">' + COM_TYPES.map(function(t) { return '<option' + (c.type===t?' selected':'') + '>' + t + '</option>'; }).join('') + '</select></td>' +
+    '<td><input class="g-input" id="ec_date" type="date" value="' + (c.date||'') + '"></td>' +
+    '<td><input class="g-input" id="ec_part" value="' + (c.participants||'').replace(/"/g,'&quot;') + '" placeholder="CdP, MOA…"></td>' +
+    '<td><textarea class="g-textarea" id="ec_agenda">' + (c.agenda||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ec_cr">' + (c.cr||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="ec_status">' +
+      Object.keys(COM_STATUS).map(function(k) { return '<option value="' + k + '"' + (c.status===k?' selected':'') + '>' + COM_STATUS[k] + '</option>'; }).join('') +
+    '</select></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveCom(' + id + ')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveCom(id) {
+  var coms = getCommittees();
+  var idx  = coms.findIndex(function(x) { return x.id === id; });
+  if (idx === -1) return;
+  coms[idx].type         = document.getElementById('ec_type')?.value || coms[idx].type;
+  coms[idx].date         = document.getElementById('ec_date')?.value || '';
+  coms[idx].participants = document.getElementById('ec_part')?.value.trim() || '';
+  coms[idx].agenda       = document.getElementById('ec_agenda')?.value.trim() || '';
+  coms[idx].cr           = document.getElementById('ec_cr')?.value.trim() || '';
+  coms[idx].status       = document.getElementById('ec_status')?.value || 'planifie';
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Comité mis à jour');
+}
+
+function addCom() {
+  var coms = getCommittees();
+  var today = new Date().toISOString().split('T')[0];
+  coms.push({ id: Date.now(), type:'COPIL', date:today, participants:'', agenda:'', cr:'', status:'planifie' });
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  editCom(coms[coms.length-1].id);
+}
+
+function deleteCom(id) {
+  if (!confirm('Supprimer ce comité ?')) return;
+  var coms = getCommittees().filter(function(c) { return c.id !== id; });
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Comité supprimé');
+}
+
+function cycleCom(id) {
+  var coms = getCommittees();
+  var c    = coms.find(function(x) { return x.id === id; });
+  if (!c) return;
+  c.status = COM_CYCLE[c.status] || 'planifie';
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 2 — DÉCISIONS
+// ══════════════════════════════════════════════════════
+function renderDecisions() {
+  var raid = getRaidData();
+  var decs = raid.decisions || [];
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des décisions</span></div>';
+  if (!decs.length) return html + '<div class="empty-state">📋<br>Aucune décision enregistrée.<br>Ajoutez des décisions depuis l\'onglet RAID du projet.</div>';
+  var rows = decs.map(function(d) {
+    var od = isOverdue(d);
+    return '<tr>' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (d.desc||'').replace(/</g,'&lt;') + '</div>' +
+        (d.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + d.mitigation.replace(/</g,'&lt;').slice(0,100) + '</div>' : '') +
+      '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (d.owner||'—') + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(d.status) + '" onclick="cycleDec(' + d.id + ')" title="Clic pour changer">' + statusLabel(d.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od ? '⚠ ' : '') + fmtDate(d.due) + (od ? '<span class="g-overdue">+'+daysLate(d)+'j</span>' : '') + '</td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Contexte</th><th style="width:120px">Décideur</th><th style="width:110px">Statut</th><th style="width:110px">Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function cycleDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return x.id === id; });
+  if (!d) return;
+  d.status = DEC_CYCLE[d.status] || 'open';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 3 — ACTIONS
+// ══════════════════════════════════════════════════════
+function renderActions() {
+  var raid  = getRaidData();
+  var items = (raid.actions || []).sort(function(a,b) {
+    var aOD = isOverdue(a) ? 0 : 1;
+    var bOD = isOverdue(b) ? 0 : 1;
+    return aOD - bOD;
   });
-  document.getElementById('govDecisions').innerHTML = decisions.length ? decisions.slice(0, 10).map(function(d){
-    return '<div class="exec-row"><span class="exec-row-name">' + d.project + '</span><span class="exec-row-desc">' + (d.desc || '—') + '</span><span class="exec-row-rag">' + (d.status === 'closed' ? 'Clôturé' : 'Ouvert') + '</span></div>';
-  }).join('') : '<p class="exec-empty">Aucune décision</p>';
-  document.getElementById('govActions').innerHTML = actions.length ? actions.slice(0, 10).map(function(a){
-    return '<div class="exec-row"><span class="exec-row-name">' + a.project + '</span><span class="exec-row-desc">' + (a.desc || '—') + '</span><span class="exec-row-pct">' + (a.owner || '—') + ' · ' + (a.due || '—') + '</span></div>';
-  }).join('') : '<p class="exec-empty">Aucune action ouverte</p>';
-})();
+  var html = '<div class="sec-hdr"><span class="sec-title">Actions de gouvernance</span></div>';
+  if (!items.length) return html + '<div class="empty-state">✅<br>Aucune action en cours.<br>Ajoutez des actions depuis l\'onglet RAID du projet.</div>';
+  var rows = items.map(function(a) {
+    var od  = isOverdue(a);
+    var sev = a.severity || 'medium';
+    var sevColor = { critical:'var(--danger)', high:'#f09090', medium:'var(--accent2)', low:'var(--success)' }[sev] || 'var(--accent2)';
+    return '<tr class="' + (a.status==='closed'?'":"") + '">' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (a.desc||'').replace(/</g,'&lt;') + '</div>' +
+        (a.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + a.mitigation.replace(/</g,'&lt;').slice(0,80) + '</div>' : '') +
+      '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + sevColor + ';">' + (sev.charAt(0).toUpperCase()+sev.slice(1)) + '</span></td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (a.owner||'—') + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(a.status) + '" onclick="cycleAct(' + a.id + ')" title="Clic pour changer">' + statusLabel(a.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od?'⚠ ':'') + fmtDate(a.due) + (od?'<span class="g-overdue">+'+daysLate(a)+'j</span>':'') + '</td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Plan</th><th style="width:90px">Priorité</th><th style="width:120px">Responsable</th><th style="width:110px">Statut</th><th style="width:120px">Échéance</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function cycleAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return x.id === id; });
+  if (!a) return;
+  a.status = ACT_CYCLE[a.status] || 'open';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 4 — RACI
+// ══════════════════════════════════════════════════════
+var RACI_CYCLE = { '':'R', R:'A', A:'C', C:'I', I:'' };
+var RACI_COLORS = {
+  R: { bg:'rgba(34,197,94,.15)',  color:'var(--success)' },
+  A: { bg:'rgba(99,210,180,.15)', color:'var(--accent)'  },
+  C: { bg:'rgba(245,158,11,.12)', color:'var(--accent2)' },
+  I: { bg:'rgba(122,184,232,.12)',color:'var(--accent3)' },
+};
+
+function renderRaci() {
+  var data = getRaciData();
+  var res  = getResources();
+  if (!res.length) {
+    return '<div class="empty-state">👥<br>Aucun membre d\'équipe défini.<br>Ajoutez des ressources sur la page Ressources pour construire le RACI.</div>';
+  }
+
+  var legend =
+    '<div class="raci-legend">' +
+    '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);margin-right:4px;">Cliquer sur une cellule pour assigner :</span>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(34,197,94,.15);color:var(--success);">R</div>Responsable — exécute</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(99,210,180,.15);color:var(--accent);">A</div>Accountable — valide &amp; rend compte</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(245,158,11,.12);color:var(--accent2);">C</div>Consulté — donne son avis</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(122,184,232,.12);color:var(--accent3);">I</div>Informé — reçoit l\'information</div>' +
+    '</div>';
+
+  var thead = '<thead><tr><th class="del-col">Livrable / Phase</th>' +
+    res.map(function(r) {
+      return '<th><div class="raci-res-id" style="color:' + (r.color||'var(--accent)') + ';">' + (r.id||'?') + '</div><div class="raci-res-name">' + (r.name||'').split(' ')[0] + '</div></th>';
+    }).join('') +
+    '</tr></thead>';
+
+  var tbody = data.rows.map(function(row) {
+    var cells = res.map(function(r) {
+      var key = row.id + '_' + r.id;
+      var val = data.cells[key] || '';
+      var style = val ? 'background:' + RACI_COLORS[val].bg + ';' : '';
+      var color = val ? RACI_COLORS[val].color : '';
+      return '<td style="' + style + '">' +
+        '<div class="raci-cell" onclick="toggleRaci(' + row.id + ',\'' + r.id + '\')" title="' + (r.name||r.id) + '">' +
+          (val ? '<span class="raci-cell-label" style="color:' + color + ';">' + val + '</span>' : '<span class="raci-empty">·</span>') +
+        '</div>' +
+      '</td>';
+    }).join('');
+    return '<tr>' +
+      '<td style="padding:0;"><div class="raci-del-cell">' + row.label.replace(/</g,'&lt;') + '</div></td>' +
+      cells +
+    '</tr>';
+  }).join('');
+
+  var addRow =
+    '<div class="add-del-row">' +
+      '<input class="add-del-input" id="newDelInput" placeholder="Nouveau livrable ou phase…" onkeydown="if(event.key===\'Enter\')addRaciRow()">' +
+      '<button class="add-del-btn" onclick="addRaciRow()">＋ Ajouter</button>' +
+    '</div>';
+
+  return legend +
+    '<div class="sec-hdr"><span class="sec-title">Matrice RACI — ' + data.rows.length + ' livrables · ' + res.length + ' membres</span>' +
+    '<button class="sec-btn secondary" onclick="resetRaci()">↺ Réinitialiser</button></div>' +
+    '<div class="raci-wrap"><table class="raci-table">' + thead + '<tbody>' + tbody + '</tbody></table>' + addRow + '</div>';
+}
+
+function toggleRaci(rowId, resId) {
+  var data = getRaciData();
+  var key  = rowId + '_' + resId;
+  var cur  = data.cells[key] || '';
+  var next = RACI_CYCLE[cur];
+  if (next === '') { delete data.cells[key]; }
+  else { data.cells[key] = next; }
+  saveRaci(data);
+  renderCurrent();
+}
+
+function addRaciRow() {
+  var inp   = document.getElementById('newDelInput');
+  var label = inp ? inp.value.trim() : '';
+  if (!label) return;
+  var data  = getRaciData();
+  var maxId = data.rows.reduce(function(m, r) { return Math.max(m, r.id||0); }, 0);
+  data.rows.push({ id: maxId + 1, label: label });
+  saveRaci(data);
+  renderCurrent();
+  showToast('✓ Livrable ajouté');
+}
+
+function resetRaci() {
+  if (!confirm('Réinitialiser la matrice RACI (supprimer toutes les assignations) ?')) return;
+  var data = getRaciData();
+  data.cells = {};
+  saveRaci(data);
+  renderCurrent();
+  showToast('↺ RACI réinitialisé');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER DISPATCH
+// ══════════════════════════════════════════════════════
+function renderCurrent() {
+  updateKPIs();
+  var tc = document.getElementById('tabContent');
+  if (!tc) return;
+  if      (currentTab === 'comites')   tc.innerHTML = renderComites();
+  else if (currentTab === 'decisions') tc.innerHTML = renderDecisions();
+  else if (currentTab === 'actions')   tc.innerHTML = renderActions();
+  else if (currentTab === 'raci')      tc.innerHTML = renderRaci();
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.gtab').forEach(function(t) { t.classList.remove('active'); });
+  var el = document.getElementById('tab-' + tab);
+  if (el) el.classList.add('active');
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// PROJECT SWITCH
+// ══════════════════════════════════════════════════════
+function loadProjects() {
+  var projects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
+  var sel = document.getElementById('projectSelect');
+  sel.innerHTML = '';
+  if (!projects.length) { sel.innerHTML = '<option>Aucun projet</option>'; return; }
+  var paramId = typeof PMHUB !== 'undefined' ? PMHUB.getParam('project') : null;
+  projects.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
+    if (String(p.id) === String(paramId)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  switchProject(parseInt(sel.value));
+}
+
+function switchProject(id) {
+  currentProject = id;
+  var p = typeof PMHUB !== 'undefined' ? PMHUB.getProjectById(id) : null;
+  var badge = document.getElementById('projectBadge');
+  if (p && badge) {
+    var labels = {active:'En cours',risk:'À risque',hold:'En attente',closed:'Clôturé'};
+    var bg     = {active:'rgba(99,210,180,.1)',risk:'rgba(239,68,68,.12)',hold:'rgba(245,158,11,.1)',closed:'rgba(107,120,133,.1)'};
+    var clr    = {active:'var(--accent)',risk:'var(--danger)',hold:'var(--accent2)',closed:'var(--text-muted)'};
+    badge.textContent  = labels[p.status] || p.status;
+    badge.style.cssText = 'background:' + (bg[p.status]||'transparent') + ';color:' + (clr[p.status]||'var(--text-muted)') + ';border:1px solid ' + (clr[p.status]||'var(--border)') + '44;font-family:\'DM Mono\',monospace;font-size:9px;padding:3px 9px;border-radius:20px;';
+  }
+  var ab = document.getElementById('aiFloatBtn');
+  if (ab) ab.href = 'pm-hub-ai.html?from=Gouvernance&project=' + id;
+  renderCurrent();
+}
+
+// ── BOOT ──
+if (typeof PMHUB !== 'undefined') {
+  loadProjects();
+} else {
+  document.getElementById('projectSelect').innerHTML = '<option>Chargez le hub</option>';
+}
 </script>
 </body>
 </html>
