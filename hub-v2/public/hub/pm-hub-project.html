@@ -421,6 +421,97 @@ function initProjectDashboard() {
       ...(raids.issues||[]).slice(0,1).map(i=>({ type:'i', label:i.desc||i.title||'Issue', badge:i.status||'' })),
     ].slice(0,5);
 
+    // Gouvernance
+    const gouvernanceRows = [
+      { label: 'Commanditaire', val: project.sponsor },
+      { label: 'Client', val: project.client },
+      { label: 'Phase', val: project.phase || project.currentPhase },
+      { label: 'Priorité', val: project.priority },
+      { label: 'Méthodologie', val: project.methodology },
+      { label: 'Type', val: project.type },
+    ].filter(r => r.val && r.val !== '');
+    const gouvernanceHtml = gouvernanceRows.length ? gouvernanceRows.map((r,i,a) =>
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;' + (i<a.length-1?'border-bottom:1px solid rgba(255,255,255,0.05)':'') + '">' +
+      '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + r.label + '</span>' +
+      '<span style="font-size:13px;font-weight:600;">' + String(r.val).replace(/</g,'&lt;') + '</span></div>'
+    ).join('') : '<div style="color:var(--text-muted);font-family:\'DM Mono\',monospace;font-size:11px;padding:12px 0;">Données non renseignées. <a href="' + wizardUrl + '" style="color:var(--accent);">Compléter →</a></div>';
+
+    // Périmètre & Objectifs
+    const scope = project.scope || {};
+    const inScope = Array.isArray(scope.inScope) ? scope.inScope : (scope.inScope ? [scope.inScope] : []);
+    const outScope = Array.isArray(scope.outScope) ? scope.outScope : (scope.outScope ? [scope.outScope] : []);
+    const objectives = Array.isArray(project.objectives) ? project.objectives : (project.objective ? [project.objective] : []);
+    const constraints = Array.isArray(scope.constraints) ? scope.constraints : (scope.constraints ? [scope.constraints] : []);
+    const hasScope = inScope.length || outScope.length || objectives.length || constraints.length;
+    const dotStyle = 'display:flex;gap:8px;font-size:12px;margin-bottom:4px;line-height:1.5;';
+    const sLbl = (t, c) => '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;color:' + c + ';text-transform:uppercase;margin-bottom:6px;margin-top:10px;">' + t + '</div>';
+    const perimetreHtml = hasScope ?
+      (objectives.length ? sLbl('Objectifs','var(--accent3)') + objectives.map(o=>'<div style="'+dotStyle+'"><span style="color:var(--accent3);flex-shrink:0;">▸</span><span>'+String(o).replace(/</g,'&lt;')+'</span></div>').join('') : '') +
+      (inScope.length ? sLbl('Dans le périmètre','var(--success)') + inScope.map(s=>'<div style="'+dotStyle+'"><span style="color:var(--success);flex-shrink:0;">✓</span><span>'+String(s).replace(/</g,'&lt;')+'</span></div>').join('') : '') +
+      (outScope.length ? sLbl('Hors périmètre','var(--danger)') + outScope.map(s=>'<div style="'+dotStyle+'"><span style="color:var(--danger);flex-shrink:0;">✗</span><span>'+String(s).replace(/</g,'&lt;')+'</span></div>').join('') : '') +
+      (constraints.length ? sLbl('Contraintes','var(--warning)') + constraints.map(c=>'<div style="'+dotStyle+'"><span style="color:var(--warning);flex-shrink:0;">⚡</span><span>'+String(c).replace(/</g,'&lt;')+'</span></div>').join('') : '')
+      : '<div style="font-size:12px;color:var(--text-muted);line-height:1.7;">' + (project.desc||'Aucune description renseignée.').replace(/</g,'&lt;').replace(/\n/g,'<br>').slice(0,350) + ((project.desc||'').length>350?'…':'') + '</div>' +
+        '<div style="margin-top:14px;"><a href="' + wizardUrl + '" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent);">Définir le périmètre dans le Wizard →</a></div>';
+
+    // Milestones from Gantt tasks
+    const ganttTasks = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(projectId) : [];
+    const milestones = ganttTasks.filter(t => t.milestone || t.is_milestone || t.type === 'milestone')
+      .sort((a,b) => new Date(a.end||a.start||'') - new Date(b.end||b.start||''));
+    const regularTasks = ganttTasks.filter(t => !(t.milestone || t.is_milestone || t.type === 'milestone'));
+    const doneTasks = regularTasks.filter(t => (t.progress||0) >= 100 || t.status === 'done' || t.status === 'completed');
+    const inProgressTasks = regularTasks.filter(t => (t.progress||0) > 0 && (t.progress||0) < 100);
+    const notStartedTasks = regularTasks.filter(t => (t.progress||0) === 0 && t.status !== 'done' && t.status !== 'completed');
+
+    const milestonesHtml = milestones.length ? milestones.slice(0,6).map(m => {
+      const mDate = m.end ? new Date(m.end) : (m.start ? new Date(m.start) : null);
+      const isPast = mDate && mDate < today;
+      const isDone = (m.progress||0) >= 100 || m.status === 'done' || m.status === 'completed';
+      const isOverdueM = isPast && !isDone;
+      const mIcon = isDone ? '✅' : isOverdueM ? '🔴' : '🔵';
+      const mColor = isDone ? 'var(--success)' : isOverdueM ? 'var(--danger)' : 'var(--accent3)';
+      const mDateStr = mDate ? mDate.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">' +
+        '<span style="font-size:15px;flex-shrink:0;">' + mIcon + '</span>' +
+        '<div style="flex:1;"><div style="font-size:12px;font-weight:600;">' + (m.name||m.text||'Jalon').replace(/</g,'&lt;') + '</div>' +
+        (m.phase ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">Phase : '+m.phase+'</div>' : '') + '</div>' +
+        '<div style="text-align:right;flex-shrink:0;"><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + mColor + ';">' + mDateStr + '</div>' +
+        (isOverdueM ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--danger);">En retard</div>' : '') + '</div></div>';
+    }).join('') :
+      '<div style="text-align:center;padding:28px 0;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);"><div style="font-size:28px;margin-bottom:10px;">🏁</div><div>Aucun jalon défini</div><a href="' + ganttUrl + '" style="color:var(--accent);font-size:10px;display:block;margin-top:8px;">Créer des jalons dans le Gantt →</a></div>';
+
+    const taskBreakdownHtml = regularTasks.length ?
+      '<div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;">' +
+      '<div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;text-align:center;">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-size:22px;font-weight:600;color:var(--success);">' + doneTasks.length + '</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);">Terminées</div></div>' +
+      '<div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;text-align:center;">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-size:22px;font-weight:600;color:var(--accent3);">' + inProgressTasks.length + '</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);">En cours</div></div>' +
+      '<div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;text-align:center;">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-size:22px;font-weight:600;color:var(--text-muted);">' + notStartedTasks.length + '</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);">À démarrer</div></div>' +
+      '<div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;text-align:center;">' +
+        '<div style="font-family:\'Cormorant Garamond\',serif;font-size:22px;font-weight:600;color:var(--accent);">' + regularTasks.length + '</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);">Total</div></div>' +
+      '</div>' : '';
+
+    // Open actions (sorted by due date)
+    const openActions = (raids.actions||[])
+      .filter(a => a.status !== 'closed' && a.status !== 'done' && a.status !== 'completed')
+      .sort((a,b) => { if (!a.dueDate && !b.dueDate) return 0; if (!a.dueDate) return 1; if (!b.dueDate) return -1; return new Date(a.dueDate) - new Date(b.dueDate); })
+      .slice(0,6);
+    const openActionsHtml = openActions.length ? openActions.map(a => {
+      const dDate = a.dueDate ? new Date(a.dueDate) : null;
+      const isOverdueA = dDate && dDate < today;
+      const dStr = dDate ? dDate.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '—';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + (isOverdueA?'var(--danger)':'var(--accent2)') + ';flex-shrink:0;display:inline-block;"></span>' +
+        '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (a.desc||a.title||'Action').replace(/</g,'&lt;').slice(0,70) + '</div>' +
+        (a.owner ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">👤 '+String(a.owner).replace(/</g,'&lt;')+'</div>' : '') + '</div>' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (isOverdueA?'var(--danger)':'var(--text-muted)') + ';flex-shrink:0;white-space:nowrap;">' + (isOverdueA?'⚠ ':'') + dStr + '</div></div>';
+    }).join('') :
+      '<div style="text-align:center;padding:28px 0;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);"><div style="font-size:28px;margin-bottom:10px;">✅</div><div>Aucune action en cours</div></div>';
+
     document.getElementById('projectContent').innerHTML = `
 <!-- PROJECT HEADER -->
 <div class="proj-header">
@@ -485,6 +576,24 @@ function initProjectDashboard() {
   </div>
 </div>
 
+<!-- ROW GOUVERNANCE + PÉRIMÈTRE -->
+<div class="grid-2" style="margin-bottom:18px;">
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Gouvernance</div>
+      <div class="chart-sub">Fiche projet · <a href="${wizardUrl}" style="color:var(--accent);text-decoration:none;">Modifier →</a></div>
+    </div>
+    ${gouvernanceHtml}
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Périmètre & Objectifs</div>
+      <div class="chart-sub">${hasScope ? 'Périmètre défini' : 'Non défini — voir description'}</div>
+    </div>
+    ${perimetreHtml}
+  </div>
+</div>
+
 <!-- ROW 1: RAID + Budget -->
 <div class="grid-2" style="margin-bottom:18px;">
   <div class="chart-card">
@@ -510,6 +619,25 @@ function initProjectDashboard() {
       </div>
       <div style="font-size:12px;color:var(--text-muted);line-height:1.7;">${(project.desc||'Aucune description renseignée.').replace(/\n/g,'<br>').slice(0,220)}${(project.desc||'').length>220?'…':''}</div>
     </div>
+  </div>
+</div>
+
+<!-- ROW JALONS + ACTIONS PRIORITAIRES -->
+<div class="grid-2" style="margin-bottom:18px;">
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Jalons clés</div>
+      <div class="chart-sub">${milestones.length} jalon${milestones.length!==1?'s':''} · <a href="${ganttUrl}" style="color:var(--accent);text-decoration:none;">Voir Gantt →</a></div>
+    </div>
+    ${milestonesHtml}
+    ${taskBreakdownHtml}
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Actions prioritaires</div>
+      <div class="chart-sub">${openActions.length} en cours · <a href="${raidUrl}" style="color:var(--accent);text-decoration:none;">Voir RAID →</a></div>
+    </div>
+    ${openActionsHtml}
   </div>
 </div>
 
