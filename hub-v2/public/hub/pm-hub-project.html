@@ -52,8 +52,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .status-badge.closed{background:rgba(107,120,133,0.1);color:var(--text-muted);border:1px solid rgba(107,120,133,0.25);}
 .status-badge.risk{background:rgba(224,112,112,0.1);color:var(--danger);border:1px solid rgba(224,112,112,0.25);}
 
+/* HEALTH RAG BADGE */
+.health-rag-badge { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.08em; padding:5px 12px; border-radius:20px; font-weight:600; }
+.health-rag-badge.rag-green { background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.25); }
+.health-rag-badge.rag-amber { background:rgba(245,158,11,.12); color:var(--warning); border:1px solid rgba(245,158,11,.25); }
+.health-rag-badge.rag-red   { background:rgba(239,68,68,.12);  color:var(--danger);  border:1px solid rgba(239,68,68,.25); }
+
 /* KPI STRIP */
-.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px;}
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px;}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 24px;position:relative;overflow:hidden;}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
 .kpi.g::before{background:var(--accent);}
@@ -228,209 +234,331 @@ function initProjectDashboard() {
       return new URLSearchParams(window.location.search).get(name);
     }
     const projectId = getParam('project');
-    const dashboardUrl = 'index.html';
     const projectContentEl = document.getElementById('projectContent');
     if (!projectContentEl) return;
     if (!projectId) {
-      window.location.href = dashboardUrl;
+      const projs = PMHUB.getProjects().filter(p => p.status !== 'archived');
+      projectContentEl.innerHTML = `
+        <div style="max-width:540px;margin:60px auto;text-align:center;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:16px;">Aucun projet sélectionné</div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;margin-bottom:8px;">Choisissez un projet</h2>
+          <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:28px;">Sélectionnez un projet pour afficher son tableau de bord.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${projs.map(p => `<a href="pm-hub-project.html?project=${encodeURIComponent(p.id)}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"><span style="font-size:22px;">${p.icon||'📁'}</span><div style="flex:1;text-align:left;"><div style="font-weight:700;font-size:14px;">${p.name}</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;">${p.ref} · ${p.status}</div></div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);">${p.progress||0}%</span></a>`).join('')}
+            ${projs.length === 0 ? '<p style="color:var(--text-muted);font-family:DM Mono,monospace;font-size:11px;">Aucun projet actif. <a href="pm-hub-wizard.html" style="color:var(--accent);">Créez votre premier projet →</a></p>' : ''}
+          </div>
+          <a href="pm-hub.html" style="display:inline-block;margin-top:20px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;">← Retour au portfolio</a>
+        </div>
+      `;
       return;
     }
     const project = PMHUB.getProjectById(projectId);
     if (!project) {
-      projectContentEl.innerHTML = '<div class="wiz-card" style="text-align:center;padding:48px;"><p style="margin-bottom:16px;">Projet introuvable.</p><a href="' + dashboardUrl + '" class="proj-btn primary">Retour au dashboard</a></div>';
+      projectContentEl.innerHTML = '<div class="wiz-card" style="text-align:center;padding:48px;"><p style="margin-bottom:16px;">Projet introuvable.</p><a href="pm-hub.html" class="proj-btn primary">Retour au dashboard</a></div>';
       return;
     }
 
     const raids = PMHUB.getRaids(projectId);
-  const resources = PMHUB.getResources();
-  const budgetData = PMHUB.getBudget && PMHUB.getBudget(projectId);
-  const statusLabel = { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' };
-  const statusClass = { active:'active', hold:'hold', closed:'closed', risk:'risk' };
+    const resources = PMHUB.getResources();
+    const budgetData = PMHUB.getBudget && PMHUB.getBudget(projectId);
+    const statusLabel = { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque' };
+    const statusClass = { active:'active', hold:'hold', closed:'closed', risk:'risk' };
 
-  function formatDate(d) {
-    if (!d) return '—';
-    const [y,m,day] = d.split('-');
-    const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-    return day + ' ' + M[parseInt(m)-1] + ' ' + y;
-  }
+    function formatDate(d) {
+      if (!d) return '—';
+      const [y,m,day] = d.split('-');
+      const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+      return day + ' ' + M[parseInt(m)-1] + ' ' + y;
+    }
 
-  const progress = project.progress || 0;
-  const progressColor = project.status === 'risk' ? 'var(--danger)' : project.status === 'closed' ? 'var(--text-muted)' : 'var(--accent)';
-  const raidCount = (raids.risks||[]).length + (raids.actions||[]).length + (raids.issues||[]).length;
-  const raidItems = [
-    ...(raids.risks||[]).slice(0,3).map(r => ({ type:'r', label: r.desc || r.title || 'Risque' })),
-    ...(raids.actions||[]).slice(0,2).map(a => ({ type:'a', label: a.desc || a.title || 'Action' })),
-    ...(raids.issues||[]).slice(0,2).map(i => ({ type:'i', label: i.desc || i.title || 'Issue' })),
-    ...(raids.decisions||[]).slice(0,1).map(d => ({ type:'d', label: d.desc || d.title || 'Décision' })),
-  ].slice(0,5);
+    const progress = project.progress || 0;
+    const progressColor = project.status === 'risk' ? 'var(--danger)' : project.status === 'closed' ? 'var(--text-muted)' : 'var(--accent)';
 
-  const teamIds = project.team || [];
-  const teamMembers = teamIds.map(id => resources.find(r => r.id === id)).filter(Boolean);
-  if (teamMembers.length === 0 && teamIds.length) {
-    teamIds.forEach(id => teamMembers.push({ id, name: id, role: 'Membre équipe', color: project.color || 'var(--accent)' }));
-  }
+    const teamIds = project.team || [];
+    const teamMembers = teamIds.map(id => resources.find(r => r.id === id)).filter(Boolean);
+    if (teamMembers.length === 0 && teamIds.length) {
+      teamIds.forEach(id => teamMembers.push({ id, name: id, role: 'Membre équipe', color: project.color || 'var(--accent)' }));
+    }
 
-  const raidUrl = 'pm-hub-raid.html?project=' + projectId;
-  const ganttUrl = 'pm-hub-gantt.html?project=' + projectId;
-  const templatesUrl = 'pm-hub-templates.html?project=' + projectId;
-  const wizardUrl = 'pm-hub-wizard.html?project=' + projectId;
+    const raidUrl = 'pm-hub-raid.html?project=' + projectId;
+    const ganttUrl = 'pm-hub-gantt.html?project=' + projectId;
+    const templatesUrl = 'pm-hub-templates.html?project=' + projectId;
+    const wizardUrl = 'pm-hub-wizard.html?project=' + projectId;
 
-  var sbProjName = document.getElementById('sbProjName');
-  var sbProjNameText = document.getElementById('sbProjNameText');
-  if (sbProjName) sbProjName.href = 'pm-hub-project.html?project=' + projectId;
-  if (sbProjNameText) sbProjNameText.textContent = project.name.length > 20 ? project.name.slice(0,19) + '…' : project.name;
-  const ab = document.getElementById('aiFloatBtn');
-  if (ab) ab.href = 'pm-hub-ai.html?from=Dashboard%20projet&project=' + projectId;
+    var sbProjName = document.getElementById('sbProjName');
+    var sbProjNameText = document.getElementById('sbProjNameText');
+    if (sbProjName) sbProjName.href = 'pm-hub-project.html?project=' + projectId;
+    if (sbProjNameText) sbProjNameText.textContent = project.name.length > 20 ? project.name.slice(0,19) + '…' : project.name;
+    const ab = document.getElementById('aiFloatBtn');
+    if (ab) ab.href = 'pm-hub-ai.html?from=Dashboard%20projet&project=' + projectId;
 
-  const nextMilestone = project.end ? { label: 'Fin projet', date: formatDate(project.end), critical: true } : null;
+    // Health
+    const health = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(projectId) : { score: 0, rag: 'amber', openRisks: 0 };
 
-  // Donut SVG for progress
-  const donutR = 48;
-  const donutStroke = 12;
-  const circumference = 2 * Math.PI * (donutR - donutStroke/2);
-  const progressOffset = circumference - (progress / 100) * circumference;
-  const donutSvg = `
-    <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
-      <circle cx="60" cy="60" r="${donutR - donutStroke/2}" fill="none" stroke="var(--surface2)" stroke-width="${donutStroke}"/>
-      <circle cx="60" cy="60" r="${donutR - donutStroke/2}" fill="none" stroke="${progressColor}" stroke-width="${donutStroke}" stroke-dasharray="${circumference}" stroke-dashoffset="${progressOffset}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
-    </svg>`;
+    // Days left
+    const today = new Date(); today.setHours(0,0,0,0);
+    const endDate = project.end ? new Date(project.end) : null;
+    const daysLeft = endDate ? Math.round((endDate - today) / 86400000) : null;
 
-  document.getElementById('projectContent').innerHTML = `
-    <div class="proj-header">
-      <div class="proj-header-left">
-        <div class="proj-icon-wrap">${project.icon || '📁'}</div>
-        <div class="proj-meta">
-          <div class="proj-ref">${project.ref} · ${project.type}</div>
-          <h1 class="proj-name">${project.name}</h1>
-          <div class="proj-type">${project.methodology ? (typeof PMHUB.getMethodology==='function' ? PMHUB.getMethodology(project.methodology).label : project.methodology) + ' · ' : ''} ${project.client ? 'Client : ' + project.client : ''} ${project.client && project.start ? ' · ' : ''} ${project.start ? 'Début : ' + formatDate(project.start) : ''}</div>
-          <div class="proj-progress-wrap">
-            <div class="proj-progress-header">
-              <span>Avancement</span>
-              <span style="color:${progressColor}">${progress}%</span>
-            </div>
-            <div class="proj-progress-bar">
-              <div class="proj-progress-fill" style="width:${progress}%;background:${progressColor}"></div>
-            </div>
+    // Critical risks
+    const criticalRisks = (raids.risks||[]).filter(r => r.severity === 'critical' && r.status !== 'closed').length;
+
+    // Budget
+    const budgetPlanned = budgetData && budgetData.planned ? Number(budgetData.planned) : 0;
+    const budgetConsumed = budgetData && budgetData.consumed ? Number(budgetData.consumed) : 0;
+    const budgetPct = budgetPlanned > 0 ? Math.min(100, Math.round((budgetConsumed / budgetPlanned) * 100)) : (project.budget ? '—' : 0);
+    const budgetConsumedStr = budgetPlanned > 0 ? budgetConsumed.toLocaleString('fr-FR') + ' / ' + budgetPlanned.toLocaleString('fr-FR') + ' ' + (budgetData.currency || '€') : (project.budget || 'Non renseigné');
+    const budgetCardSub = budgetPlanned > 0 ? `${budgetPct}% consommé · ${(budgetPlanned - budgetConsumed).toLocaleString('fr-FR')} ${budgetData.currency||'€'} restant` : 'Budget non détaillé';
+
+    // RAID total
+    const raidTotal = (raids.risks||[]).length + (raids.actions||[]).length + (raids.issues||[]).length + (raids.decisions||[]).length;
+
+    // RAID chart (horizontal bars)
+    const raidSections = [
+      { label: 'Risques',    count: (raids.risks||[]).length,     open: (raids.risks||[]).filter(r=>r.status!=='closed').length,    color: 'var(--danger)',   icon: '⚠' },
+      { label: 'Actions',   count: (raids.actions||[]).length,   open: (raids.actions||[]).filter(a=>a.status!=='closed').length,  color: 'var(--accent2)',  icon: '✅' },
+      { label: 'Issues',    count: (raids.issues||[]).length,    open: (raids.issues||[]).filter(i=>i.status!=='closed').length,   color: 'var(--warning)',  icon: '🔴' },
+      { label: 'Décisions', count: (raids.decisions||[]).length, open: (raids.decisions||[]).filter(d=>d.status!=='closed').length, color: 'var(--accent)',  icon: '📋' },
+    ];
+    const raidMax = Math.max(...raidSections.map(s => s.count), 1);
+    const raidChartHtml = '<div style="display:flex;flex-direction:column;gap:10px;">' + raidSections.map(s => {
+      const pct = Math.round((s.count / raidMax) * 100);
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;margin-bottom:5px;">
+          <span>${s.icon} ${s.label}</span>
+          <span style="color:${s.color};font-weight:700;">${s.open} ouvert${s.open>1?'s':''} / ${s.count}</span>
+        </div>
+        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${s.color};border-radius:3px;transition:width .8s ease;"></div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+
+    // Risk severity chips
+    const sevCfg = [
+      { key: 'critical', label: 'Critiques', color: 'var(--danger)',   bg: 'rgba(239,68,68,.12)' },
+      { key: 'high',     label: 'Élevés',   color: '#E07050',          bg: 'rgba(224,112,80,.12)' },
+      { key: 'medium',   label: 'Moyens',   color: 'var(--warning)',   bg: 'rgba(245,158,11,.12)' },
+      { key: 'low',      label: 'Faibles',  color: 'var(--success)',   bg: 'rgba(34,197,94,.12)' },
+    ];
+    const riskSevHtml = sevCfg.map(s => {
+      const n = (raids.risks||[]).filter(r => r.severity === s.key && r.status !== 'closed').length;
+      return `<div style="background:${s.bg};border:1px solid ${s.color}44;border-radius:6px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;color:${s.color};"><strong style="font-size:14px;display:block;">${n}</strong>${s.label}</div>`;
+    }).join('');
+
+    // Budget chart
+    const budgetChartHtml = budgetPlanned > 0 ? (() => {
+      const pct = Math.min(100, Math.round((budgetConsumed / budgetPlanned) * 100));
+      const barColor = pct > 90 ? 'var(--danger)' : pct > 75 ? 'var(--warning)' : 'var(--success)';
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;margin-bottom:8px;color:var(--text-muted);">
+          <span>Consommé</span><span style="color:${barColor};font-weight:700;">${pct}%</span>
+        </div>
+        <div style="height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${barColor};border-radius:5px;transition:width .8s ease;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:8px;">
+          <span>${budgetConsumed.toLocaleString('fr-FR')} ${budgetData.currency||'€'} consommés</span>
+          <span>${budgetPlanned.toLocaleString('fr-FR')} ${budgetData.currency||'€'} planifiés</span>
+        </div>
+      </div>`;
+    })() : `<div style="text-align:center;padding:28px 0;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">
+      <div style="font-size:24px;margin-bottom:8px;">💰</div>
+      <div>Budget non détaillé</div>
+      <a href="pm-hub-transverse.html?project=${projectId}" style="color:var(--accent);font-size:10px;display:block;margin-top:6px;">Renseigner →</a>
+    </div>`;
+
+    // Timeline
+    const timelineHtml = (() => {
+      if (!project.start && !project.end) return '<div style="text-align:center;padding:20px;color:var(--text-muted);font-family:DM Mono,monospace;font-size:11px;">Dates non renseignées.</div>';
+      const startD = project.start ? new Date(project.start) : null;
+      const endD = project.end ? new Date(project.end) : null;
+      const nowD = new Date(); nowD.setHours(0,0,0,0);
+      let progressPct = 0;
+      if (startD && endD) {
+        const total = endD - startD;
+        const elapsed = nowD - startD;
+        progressPct = total > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / total) * 100))) : 0;
+      }
+      const fmtShort = d => d ? new Date(d).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : '—';
+      const daysTotal = startD && endD ? Math.round((endD - startD)/86400000) : null;
+      const daysElapsed = startD ? Math.round((nowD - startD)/86400000) : null;
+      return `
+        <div style="margin-bottom:8px;">
+          <div style="position:relative;height:8px;background:var(--surface2);border-radius:4px;overflow:visible;margin:20px 4px;">
+            <div style="position:absolute;left:0;top:0;width:${progressPct}%;height:100%;background:linear-gradient(90deg,var(--accent3),var(--accent));border-radius:4px;"></div>
+            <div style="position:absolute;top:50%;transform:translate(-50%,-50%);left:${progressPct}%;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 8px rgba(99,210,180,.5);" title="Aujourd'hui"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:14px;">
+            <span>📅 ${fmtShort(project.start)}</span>
+            <span style="color:var(--accent);">● Aujourd'hui (J+${daysElapsed||0})</span>
+            <span>🏁 ${fmtShort(project.end)}</span>
           </div>
         </div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
-        <span class="status-badge ${statusClass[project.status]}">${statusLabel[project.status]}</span>
-        <div class="proj-header-actions">
-          <a class="proj-btn primary" href="${wizardUrl}">🧭 Wizard</a>
-          <a class="proj-btn" href="${templatesUrl}">📋 Templates</a>
-          <a class="proj-btn" href="${ganttUrl}">📅 Gantt</a>
-          <a class="proj-btn" href="pm-hub-kanban.html?project=${projectId}">📋 Kanban</a>
-          <a class="proj-btn" href="${raidUrl}">⚠️ RAID</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="kpi-strip">
-      <div class="kpi g">
-        <div class="kpi-label">Avancement</div>
-        <div class="kpi-val">${progress}%</div>
-        <div class="kpi-sub">Progression globale</div>
-      </div>
-      <div class="kpi y">
-        <div class="kpi-label">Budget</div>
-        <div class="kpi-val">${(budgetData && (budgetData.planned || budgetData.consumed)) ? (budgetData.consumed || 0).toLocaleString('fr-FR') + ' / ' + (budgetData.planned || 0).toLocaleString('fr-FR') + ' ' + (budgetData.currency || '€') : (project.budget || '—')}</div>
-        <div class="kpi-sub">${(budgetData && budgetData.planned) ? 'Consommé / Prévu' : project.budget ? '€ planifié' : 'Renseignez dans Pilotage'}</div>
-      </div>
-      <div class="kpi r">
-        <div class="kpi-label">Points RAID</div>
-        <div class="kpi-val">${raidCount}</div>
-        <div class="kpi-sub">Risques · Actions · Issues</div>
-      </div>
-      <div class="kpi b">
-        <div class="kpi-label">Prochaine échéance</div>
-        <div class="kpi-val">${nextMilestone ? nextMilestone.date.split(' ')[0] : '—'}</div>
-        <div class="kpi-sub">${nextMilestone ? nextMilestone.label : 'Aucun jalon'}</div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Suivi avancement</div>
-          <div class="chart-sub">Progression du projet</div>
-        </div>
-        <div class="donut-avancement">
-          <div>${donutSvg}</div>
-          <div class="donut-center">
-            <div class="val" style="color:${progressColor}">${progress}%</div>
-            <div class="lbl">complété</div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Durée totale</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--accent3);">${daysTotal||'—'}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">jours</div>
           </div>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Résumé & objectifs</div>
-          <div class="chart-sub">Contexte et livrables</div>
-        </div>
-        <div class="summary-box">${(project.desc || 'Aucune description renseignée.').replace(/\n/g, '<br>')}</div>
-      </div>
-    </div>
+          <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Écoulés</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--accent);">${daysElapsed||0}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">jours</div>
+          </div>
+          <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Restants</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${daysLeft<0?'var(--danger)':daysLeft<=14?'var(--warning)':'var(--success)'};">${daysLeft!=null?Math.abs(daysLeft):'—'}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">${daysLeft!=null&&daysLeft<0?'jours de retard':'jours'}</div>
+          </div>
+        </div>`;
+    })();
 
-    <div class="grid-2">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">RAID — Résumé</div>
-          <div class="chart-sub">Risques, actions, issues, décisions</div>
-        </div>
-        <div class="raid-list">
-          ${raidItems.length ? raidItems.map(item => `
-            <div class="raid-row">
-              <span class="raid-dot ${item.type}"></span>
-              <span class="raid-text">${item.label.length > 50 ? item.label.slice(0,49)+'…' : item.label}</span>
-            </div>
-          `).join('') : '<div class="raid-row"><span class="raid-text" style="color:var(--text-muted);">Aucun point RAID pour ce projet.</span></div>'}
-        </div>
-        <div class="raid-more"><a href="${raidUrl}">Voir tout le RAID →</a></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Équipe projet</div>
-          <div class="chart-sub">Ressources assignées — ajoutez ou retirez des membres</div>
-        </div>
-        <div class="team-list">
-          ${teamMembers.length ? teamMembers.map(r => `
-            <div class="team-item">
-              <div class="team-item-left">
-                <div class="team-avatar" style="background:${(r.color||project.color||'var(--accent)')}33;color:${r.color||project.color||'var(--accent)'};border:2px solid ${(r.color||project.color||'var(--accent)')}66;">${r.id}</div>
-                <div>
-                  <div class="team-name">${r.name}</div>
-                  <div class="team-role">${r.role || 'Membre'}</div>
-                </div>
-              </div>
-              <div class="team-item-actions">
-                <button type="button" class="btn-remove-res" onclick="removeResourceFromProject('${projectId}','${(r.id||'').replace(/'/g,"\\'")}')" title="Retirer du projet">Retirer</button>
-              </div>
-            </div>
-          `).join('') : '<div class="team-item"><span style="color:var(--text-muted);">Aucune ressource assignée. Cliquez sur Ajouter une ressource.</span></div>'}
-        </div>
-        <div class="add-resource-wrap">
-          <button type="button" class="add-resource-btn" onclick="openAddResourceModal('${projectId}')">＋ Ajouter une ressource</button>
-        </div>
-      </div>
-    </div>
+    // Recent RAID items with badge
+    const recentRaidItems = [
+      ...(raids.risks||[]).slice(0,2).map(r=>({ type:'r', label:r.desc||r.title||'Risque', badge:r.severity||'' })),
+      ...(raids.actions||[]).slice(0,2).map(a=>({ type:'a', label:a.desc||a.title||'Action', badge:a.status||'' })),
+      ...(raids.issues||[]).slice(0,1).map(i=>({ type:'i', label:i.desc||i.title||'Issue', badge:i.status||'' })),
+    ].slice(0,5);
 
-    <div class="chart-card" style="margin-bottom:24px;">
-      <div class="chart-card-header">
-        <div class="chart-title">Accès rapides</div>
-        <div class="chart-sub">Outils de pilotage pour ce projet</div>
-      </div>
-      <div class="quick-links">
-        <a class="quick-link" href="${wizardUrl}">🧭 PM Wizard</a>
-        <a class="quick-link" href="${templatesUrl}">📋 Templates</a>
-        <a class="quick-link" href="${ganttUrl}">📅 Planning Gantt</a>
-        <a class="quick-link" href="pm-hub-kanban.html?project=${projectId}">📋 Kanban</a>
-        <a class="quick-link" href="${raidUrl}">⚠️ RAID Log</a>
-        <a class="quick-link" href="pm-hub-transverse.html?project=${projectId}">🎯 Pilotage (Stakeholders, Budget, REX)</a>
-        <a class="quick-link" href="pm-hub-ai.html">🤖 Assistant IA</a>
+    document.getElementById('projectContent').innerHTML = `
+<!-- PROJECT HEADER -->
+<div class="proj-header">
+  <div class="proj-header-left">
+    <div class="proj-icon-wrap" style="background:${project.color||'var(--accent)'}18;border-color:${project.color||'var(--accent)'}33;">${project.icon||'📁'}</div>
+    <div class="proj-meta">
+      <div class="proj-ref">${project.ref} · ${project.type}${project.methodology ? ' · '+(typeof PMHUB.getMethodology==='function'?PMHUB.getMethodology(project.methodology).shortLabel||project.methodology:project.methodology) : ''}</div>
+      <h1 class="proj-name">${project.name}</h1>
+      <div class="proj-type">${project.client?'Client : '+project.client+' · ':''}${project.start?'Début : '+formatDate(project.start)+'  ·  ':''}Fin prévue : ${formatDate(project.end)}</div>
+      <div class="proj-progress-wrap">
+        <div class="proj-progress-header">
+          <span>Avancement global</span>
+          <span style="color:${progressColor};font-weight:700;">${progress}%</span>
+        </div>
+        <div class="proj-progress-bar">
+          <div class="proj-progress-fill" style="width:${progress}%;background:${progressColor}"></div>
+        </div>
       </div>
     </div>
-  `;
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="status-badge ${statusClass[project.status]||'active'}">${statusLabel[project.status]||project.status}</span>
+      <span class="health-rag-badge rag-${health.rag}">${health.rag==='green'?'● Santé bonne':health.rag==='amber'?'● Attention':'● Critique'} · ${health.score}/100</span>
+    </div>
+    <div class="proj-header-actions">
+      <a class="proj-btn primary" href="${wizardUrl}">🧭 Wizard</a>
+      <a class="proj-btn" href="${ganttUrl}">📅 Gantt</a>
+      <a class="proj-btn" href="pm-hub-kanban.html?project=${projectId}">🗂 Kanban</a>
+      <a class="proj-btn" href="${raidUrl}">⚠️ RAID</a>
+      <a class="proj-btn" href="${templatesUrl}">📋 Templates</a>
+    </div>
+  </div>
+</div>
+
+<!-- KPI STRIP (5 KPIs) -->
+<div class="kpi-strip">
+  <div class="kpi g">
+    <div class="kpi-label">Avancement</div>
+    <div class="kpi-val">${progress}%</div>
+    <div class="kpi-sub">Progression globale</div>
+  </div>
+  <div class="kpi b">
+    <div class="kpi-label">Jours restants</div>
+    <div class="kpi-val">${daysLeft >= 0 ? daysLeft : '–'}</div>
+    <div class="kpi-sub">${daysLeft < 0 ? 'Délai dépassé de '+Math.abs(daysLeft)+'j' : daysLeft === 0 ? "Échéance aujourd'hui" : 'avant la fin prévue'}</div>
+  </div>
+  <div class="kpi r">
+    <div class="kpi-label">Risques critiques</div>
+    <div class="kpi-val">${criticalRisks}</div>
+    <div class="kpi-sub">${criticalRisks > 0 ? 'À traiter en urgence' : 'Aucun risque critique'}</div>
+  </div>
+  <div class="kpi y">
+    <div class="kpi-label">Budget consommé</div>
+    <div class="kpi-val">${budgetPct}%</div>
+    <div class="kpi-sub">${budgetConsumedStr}</div>
+  </div>
+  <div class="kpi g">
+    <div class="kpi-label">Score santé</div>
+    <div class="kpi-val" style="color:${health.rag==='green'?'var(--success)':health.rag==='amber'?'var(--warning)':'var(--danger)'}">${health.score}</div>
+    <div class="kpi-sub">Indice global /100</div>
+  </div>
+</div>
+
+<!-- ROW 1: RAID + Budget -->
+<div class="grid-2" style="margin-bottom:18px;">
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">RAID — Répartition</div>
+      <div class="chart-sub">${raidTotal} points · <a href="${raidUrl}" style="color:var(--accent);text-decoration:none;">Voir tout →</a></div>
+    </div>
+    ${raidChartHtml}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Sévérité des risques</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">${riskSevHtml}</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Budget</div>
+      <div class="chart-sub">${budgetCardSub}</div>
+    </div>
+    ${budgetChartHtml}
+    <div style="margin-top:20px;">
+      <div class="chart-card-header" style="border:none;padding:0;margin-bottom:12px;">
+        <div class="chart-title" style="font-size:13px;">Description du projet</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.7;">${(project.desc||'Aucune description renseignée.').replace(/\n/g,'<br>').slice(0,220)}${(project.desc||'').length>220?'…':''}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 2: Timeline + Équipe -->
+<div class="grid-2">
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Timeline projet</div>
+      <div class="chart-sub">Du ${formatDate(project.start||project.end)} au ${formatDate(project.end)}</div>
+    </div>
+    ${timelineHtml}
+    <div style="margin-top:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Points RAID récents</div>
+      <div class="raid-list">
+        ${recentRaidItems.length ? recentRaidItems.map(item=>`
+          <div class="raid-row">
+            <span class="raid-dot ${item.type}"></span>
+            <span class="raid-text" style="font-size:12px;">${item.label.length>55?item.label.slice(0,54)+'…':item.label}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">${item.badge}</span>
+          </div>`).join('') : '<div class="raid-row"><span class="raid-text" style="color:var(--text-muted);">Aucun point RAID.</span></div>'}
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div class="chart-title">Équipe projet</div>
+      <div class="chart-sub">${teamMembers.length} membre${teamMembers.length>1?'s':''} assigné${teamMembers.length>1?'s':''}</div>
+    </div>
+    <div class="team-list">
+      ${teamMembers.length ? teamMembers.map(r=>`
+        <div class="team-item">
+          <div class="team-item-left">
+            <div class="team-avatar" style="background:${(r.color||project.color||'var(--accent)')}33;color:${r.color||project.color||'var(--accent)'};border:2px solid ${(r.color||project.color||'var(--accent)')}66;">${r.id}</div>
+            <div>
+              <div class="team-name">${r.name}</div>
+              <div class="team-role">${r.role||'Membre'}</div>
+            </div>
+          </div>
+          <div class="team-item-actions">
+            <button type="button" class="btn-remove-res" onclick="removeResourceFromProject('${projectId}','${(r.id||'').replace(/'/g,"\\'")}')">Retirer</button>
+          </div>
+        </div>`).join('') : '<div class="team-item"><span style="color:var(--text-muted);font-size:12px;">Aucune ressource assignée.</span></div>'}
+    </div>
+    <div class="add-resource-wrap">
+      <button type="button" class="add-resource-btn" onclick="openAddResourceModal('${projectId}')">＋ Ajouter une ressource</button>
+    </div>
+  </div>
+</div>
+    `;
   } catch (err) {
     console.error('Erreur chargement dashboard projet:', err);
     var el = document.getElementById('projectContent');
