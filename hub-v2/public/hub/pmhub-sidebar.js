@@ -16,7 +16,8 @@
       sectionLabel: 'Portefeuille',
       groups: [
         { label: 'Tableau de bord', links: [
-          { name: 'Dashboard', href: 'pm-hub.html', icon: '🏠' }
+          { name: 'Dashboard',      href: 'pm-hub.html',        icon: '🏠' },
+          { name: 'Nouveau projet', href: 'pm-hub-wizard.html', icon: '🧭' }
         ]},
         { label: 'Portefeuille', links: [
           { name: 'Vue portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' },
@@ -33,8 +34,7 @@
         ]},
         { label: 'Planification', links: [
           { name: 'Gantt',   href: 'pm-hub-gantt.html',   icon: '📅' },
-          { name: 'Kanban',  href: 'pm-hub-kanban.html',  icon: '🔲' },
-          { name: 'Wizard',  href: 'pm-hub-wizard.html',  icon: '🧭' }
+          { name: 'Kanban',  href: 'pm-hub-kanban.html',  icon: '🔲' }
         ]},
         { label: 'Suivi & Contrôle', links: [
           { name: 'RAID',        href: 'pm-hub-raid.html',       icon: '⚠️' },

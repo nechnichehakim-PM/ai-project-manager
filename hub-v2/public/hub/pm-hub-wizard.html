@@ -219,6 +219,72 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   .form-grid{grid-template-columns:1fr;}
   .stepper{gap:4px;}
 }
+
+/* AI WIZARD PANEL */
+.ai-wizard-panel{
+  background:linear-gradient(135deg,rgba(99,210,180,0.06) 0%,rgba(122,184,232,0.04) 100%);
+  border:1px solid rgba(99,210,180,0.22);border-radius:14px;
+  padding:28px 32px;margin-bottom:28px;position:relative;overflow:hidden;
+}
+.ai-wizard-panel::before{
+  content:'';position:absolute;top:0;right:0;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(99,210,180,0.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.ai-panel-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.ai-panel-icon{font-size:28px;flex-shrink:0;}
+.ai-panel-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:3px;}
+.ai-panel-subtitle{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;}
+.ai-desc-input{
+  width:100%;background:var(--surface2);border:1px solid rgba(99,210,180,0.25);
+  border-radius:8px;padding:14px 18px;color:var(--text);resize:vertical;min-height:80px;
+  font-family:'DM Mono',monospace;font-size:12px;line-height:1.7;outline:none;
+  transition:border-color .2s;
+}
+.ai-desc-input:focus{border-color:var(--accent);}
+.ai-desc-input::placeholder{color:var(--text-muted);}
+.ai-generate-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,var(--accent),#5bcbff);
+  color:#060a0d;border:none;border-radius:8px;
+  padding:12px 24px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;
+  margin-top:14px;
+}
+.ai-generate-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,210,180,0.3);}
+.ai-generate-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.ai-loader{display:none;align-items:center;gap:12px;margin-top:16px;
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);}
+.ai-loader.visible{display:flex;}
+.ai-spinner{width:18px;height:18px;border:2px solid rgba(99,210,180,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-result-badge{
+  display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+  background:rgba(99,210,180,0.1);border:1px solid rgba(99,210,180,0.25);
+  border-radius:6px;padding:6px 14px;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);
+}
+.ai-enrich-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(99,210,180,0.08);border:1px solid rgba(99,210,180,0.2);
+  border-radius:6px;padding:6px 14px;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.ai-enrich-btn:hover{background:rgba(99,210,180,0.15);border-color:var(--accent);}
+/* AI FLOATING BUTTON */
+.ai-float-btn{
+  position:fixed;bottom:32px;right:32px;z-index:500;
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,var(--accent),#5bcbff);
+  color:#060a0d;border:none;border-radius:50px;
+  padding:13px 20px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:0.06em;cursor:pointer;
+  box-shadow:0 8px 24px rgba(99,210,180,0.35);
+  transition:all .2s;
+}
+.ai-float-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(99,210,180,0.45);}
+.ai-float-btn.hidden{display:none;}
 </style>
 </head>
 <body>
@@ -232,6 +298,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
     <a href="pm-hub-settings.html" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;">⚙</a>
   </div>
 </nav>
+
+<!-- FLOATING AI BUTTON — visible on steps > 0 -->
+<button class="ai-float-btn hidden" id="aiFloatBtn" onclick="showStep(0)" title="Utiliser l'IA pour pré-remplir le wizard">
+  ✨ Générer avec l'IA
+</button>
 
 <div class="page">
 
@@ -266,7 +337,27 @@ function getSteps() {
 function renderMethodologyChoice() {
   const methods = PMHUB.getMethodologies();
   const current = wizardData.methodology || (project && project.methodology) || '';
+  const aiDesc  = wizardData._aiDesc || '';
+  const aiFilled = wizardData._aiFilled ? true : false;
   return `
+    <div class="ai-wizard-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-icon">🤖</div>
+        <div>
+          <div class="ai-panel-title">Générateur IA — Wizard express</div>
+          <div class="ai-panel-subtitle">Décrivez votre projet en quelques mots.<br>L'IA pré-remplira toutes les étapes : cadrage, backlog, risques, planning et gouvernance.</div>
+        </div>
+      </div>
+      <textarea class="ai-desc-input" id="aiProjectDesc" placeholder="Ex : Déploiement d'une plateforme e-commerce B2B pour un client Télécom, 6 mois, équipe de 5 personnes, budget 80k€. Objectifs : automatiser les commandes et réduire les délais de livraison de 30%...">${aiDesc}</textarea>
+      <button class="ai-generate-btn" id="aiGenerateBtn" onclick="generateWizardWithAI()">
+        <span>✨</span> Générer le projet avec l'IA
+      </button>
+      <div class="ai-loader" id="aiLoader">
+        <div class="ai-spinner"></div>
+        <span id="aiLoaderText">Analyse de votre projet en cours…</span>
+      </div>
+      ${aiFilled ? '<div class="ai-result-badge"><span>✅</span> Wizard pré-rempli par l\'IA — vérifiez et ajustez chaque étape</div>' : ''}
+    </div>
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">🔄 Étape 1 — Choix du mode de gestion</div>
@@ -305,6 +396,168 @@ function saveMethodologyAndNext() {
   saveState();
   nextStep();
 }
+
+// ── AI WIZARD GENERATOR ──────────────────────────────────────────
+async function generateWizardWithAI() {
+  const descEl = document.getElementById('aiProjectDesc');
+  const btn    = document.getElementById('aiGenerateBtn');
+  const loader = document.getElementById('aiLoader');
+  const desc   = (descEl ? descEl.value : '').trim();
+  if (!desc || desc.length < 10) {
+    showToast('Décrivez votre projet en au moins quelques mots avant de générer.'); return;
+  }
+  if (!window.PMHUB || !PMHUB.callAI) {
+    showToast('Module IA non disponible — vérifiez les paramètres API.'); return;
+  }
+
+  wizardData._aiDesc = desc;
+  if (btn)    { btn.disabled = true; btn.textContent = '⏳ Génération…'; }
+  if (loader) { loader.classList.add('visible'); }
+
+  // Detect methodology hint from description
+  const descLow = desc.toLowerCase();
+  const methHint = descLow.includes('agile') || descLow.includes('scrum') || descLow.includes('sprint') ? 'agile'
+    : descLow.includes('hybride') || descLow.includes('hybrid') ? 'hybride'
+    : 'waterfall';
+
+  const LOADER_STEPS = [
+    'Analyse de votre projet en cours…',
+    'Extraction du cadrage et des objectifs…',
+    'Identification des risques potentiels…',
+    'Génération du planning et des jalons…',
+    'Finalisation du wizard…',
+  ];
+  let loaderStep = 0;
+  const loaderInterval = setInterval(() => {
+    loaderStep = (loaderStep + 1) % LOADER_STEPS.length;
+    const el = document.getElementById('aiLoaderText');
+    if (el) el.textContent = LOADER_STEPS[loaderStep];
+  }, 1800);
+
+  const systemPrompt = `Tu es un expert en gestion de projet (PMP, PRINCE2, Scrum). Tu génères des données structurées en JSON pour initialiser un wizard de création de projet. Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans explication.`;
+
+  const userPrompt = `Description du projet :
+"${desc}"
+
+Méthodologie probable : ${methHint}
+
+Génère un objet JSON avec EXACTEMENT cette structure (adapte les valeurs au projet décrit) :
+{
+  "methodology": "${methHint}",
+  "cadrage": {
+    "name": "Nom officiel du projet",
+    "context": "Contexte et problématique (2-3 phrases)",
+    "objectives": "1. Objectif SMART 1\\n2. Objectif SMART 2\\n3. Objectif SMART 3",
+    "sponsor": "Nom du sponsor probable",
+    "budget": "Budget estimé",
+    "in_scope": "Ce qui est inclus dans le projet",
+    "out_scope": "Ce qui est hors périmètre",
+    "success": "Critères de succès mesurables",
+    "constraints": "Contraintes clés (délai, budget, technique)"
+  },
+  "charte": {
+    "name": "Nom officiel",
+    "ref": "PRJ-2026-001",
+    "sponsor": "Sponsor",
+    "budget": "Budget",
+    "priority": "Haute"
+  },
+  "vision": {
+    "vision": "Vision produit en 1 phrase",
+    "objectives": "Objectifs business détaillés",
+    "users": "Utilisateurs cibles",
+    "kpis": "KPIs de succès"
+  },
+  "backlog": [
+    { "story": "En tant que [rôle], je veux [action] afin de [bénéfice]", "priority": "Haute", "value": "L" },
+    { "story": "En tant que [rôle], je veux [action] afin de [bénéfice]", "priority": "Haute", "value": "M" },
+    { "story": "En tant que [rôle], je veux [action] afin de [bénéfice]", "priority": "Moyenne", "value": "M" },
+    { "story": "En tant que [rôle], je veux [action] afin de [bénéfice]", "priority": "Moyenne", "value": "S" },
+    { "story": "En tant que [rôle], je veux [action] afin de [bénéfice]", "priority": "Faible", "value": "S" }
+  ],
+  "dod": [
+    "Code revu par un pair",
+    "Tests unitaires passés (>80% couverture)",
+    "Documentation mise à jour",
+    "Déployé en environnement de recette",
+    "Validé par le Product Owner"
+  ],
+  "sprints": {
+    "nb_sprints": 6,
+    "sprint_duration": 2,
+    "start": "${new Date(Date.now()+7*86400000).toISOString().slice(0,10)}"
+  },
+  "raid": {
+    "risks": [
+      { "title": "Risque 1 lié au projet", "probability": "Élevée", "impact": "Fort", "plan": "Plan de mitigation", "status": "open" },
+      { "title": "Risque 2 lié au projet", "probability": "Moyenne", "impact": "Moyen", "plan": "Plan de mitigation", "status": "open" },
+      { "title": "Risque 3 lié au projet", "probability": "Faible", "impact": "Fort", "plan": "Plan de mitigation", "status": "open" }
+    ],
+    "actions": [],
+    "issues": [],
+    "decisions": []
+  },
+  "planning": {
+    "start": "${new Date(Date.now()+7*86400000).toISOString().slice(0,10)}",
+    "end": "${new Date(Date.now()+180*86400000).toISOString().slice(0,10)}",
+    "milestones": [
+      { "name": "Lancement du projet", "date": "${new Date(Date.now()+7*86400000).toISOString().slice(0,10)}", "type": "normal" },
+      { "name": "Fin de cadrage", "date": "${new Date(Date.now()+30*86400000).toISOString().slice(0,10)}", "type": "normal" },
+      { "name": "Livraison MVP", "date": "${new Date(Date.now()+120*86400000).toISOString().slice(0,10)}", "type": "critical" },
+      { "name": "Clôture projet", "date": "${new Date(Date.now()+180*86400000).toISOString().slice(0,10)}", "type": "critical" }
+    ]
+  },
+  "gouvernance": {
+    "reviews": [
+      { "type": "COPIL", "freq": "Mensuel", "participants": "Direction, Sponsor, CdP", "livrables": "Tableau de bord, avancement" },
+      { "type": "COPROJ", "freq": "Hebdomadaire", "participants": "Équipe projet", "livrables": "Points d'avancement" }
+    ]
+  },
+  "backlog_hybrid": {
+    "lots": "Lot 1 — Cadrage et architecture\\nLot 2 — Développement itératif\\nLot 3 — Tests et recette\\nLot 4 — Déploiement et formation"
+  }
+}`;
+
+  try {
+    const raw = await PMHUB.callAI(systemPrompt, userPrompt);
+    clearInterval(loaderInterval);
+
+    // Extract JSON from response (strip potential markdown fences)
+    let jsonStr = raw.trim();
+    if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/^```[a-z]*\n?/,'').replace(/```$/,'').trim();
+    }
+    const parsed = JSON.parse(jsonStr);
+
+    // Merge into wizardData
+    if (parsed.methodology) wizardData.methodology = parsed.methodology;
+    if (parsed.cadrage)     wizardData.cadrage     = parsed.cadrage;
+    if (parsed.charte)      wizardData.charte      = parsed.charte;
+    if (parsed.vision)      wizardData.vision      = parsed.vision;
+    if (Array.isArray(parsed.backlog) && parsed.backlog.length) wizardData.backlog = parsed.backlog;
+    if (Array.isArray(parsed.dod)     && parsed.dod.length)     wizardData.dod    = parsed.dod;
+    if (parsed.sprints)     wizardData.sprints     = parsed.sprints;
+    if (parsed.raid)        wizardData.raid        = parsed.raid;
+    if (parsed.planning)    wizardData.planning    = parsed.planning;
+    if (parsed.gouvernance) wizardData.gouvernance = parsed.gouvernance;
+    if (parsed.backlog_hybrid) wizardData.backlog_hybrid = parsed.backlog_hybrid;
+
+    wizardData._aiFilled = true;
+    saveState();
+
+    showToast('✅ Wizard pré-rempli par l\'IA ! Vérifiez et ajustez chaque étape.');
+    // Re-render step 0 to show the success badge + auto-select methodology
+    showStep(0);
+
+  } catch (err) {
+    clearInterval(loaderInterval);
+    console.error('[AI Wizard]', err);
+    showToast('Erreur IA : ' + (err.message || err) + '. Vérifiez votre clé API dans Paramètres.');
+    if (btn)    { btn.disabled = false; btn.innerHTML = '<span>✨</span> Générer le projet avec l\'IA'; }
+    if (loader) { loader.classList.remove('visible'); }
+  }
+}
+
 function onMethodologyCardClick(e) {
   const card = e.target.closest('.methodology-card');
   if(card) {
@@ -376,6 +629,9 @@ function showStep(idx) {
   renderStepper();
   saveState();
   window.scrollTo({top:0,behavior:'smooth'});
+  // Show/hide floating AI button
+  const fab = document.getElementById('aiFloatBtn');
+  if (fab) fab.classList.toggle('hidden', idx === 0);
 }
 
 function jumpTo(idx) {
@@ -557,7 +813,9 @@ function finishWizard() {
 function renderCadrage() {
   const d = wizardData.cadrage || {};
   const pname = project ? project.name : '';
+  const aiNotice = wizardData._aiFilled ? `<div class="ai-result-badge" style="margin-bottom:16px;"><span>🤖</span> Pré-rempli par l'IA — vérifiez et ajustez les valeurs</div>` : '';
   return `
+    ${aiNotice}
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">🎯 Étape ${currentStep+1} / ${getSteps().length}</div>
@@ -954,11 +1212,11 @@ function renderRAID() {
   const rows = flat.length ? flat.map(r => `
     <div class="raid-row" data-raid-id="${r.id}" data-raid-type="${r.typeKey}">
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:3px;">${(r.desc || r.label || '').substring(0, 80)}${(r.desc || r.label || '').length > 80 ? '…' : ''}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Owner: ${r.owner || '—'} · ${(r.mitigation || '—').substring(0, 50)}</div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:3px;">${(r.title || r.desc || r.label || '').substring(0, 80)}${(r.title || r.desc || r.label || '').length > 80 ? '…' : ''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Owner: ${r.owner || '—'} · ${(r.plan || r.mitigation || '—').substring(0, 50)}</div>
       </div>
       <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);">${r.typeLabel}</span></div>
-      <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);">${r.proba || '—'}</span></div>
+      <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);">${r.proba || r.probability || '—'}</span></div>
       <div><span class="severity-badge sev-${r.sev}">${r.impact === '—' ? r.typeLabel : r.impact}</span></div>
       <div><button type="button" onclick="showToast('Éditez le RAID depuis la page RAID du projet')" style="font-family:'DM Mono',monospace;font-size:9px;padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;">Voir</button></div>
     </div>
@@ -966,7 +1224,9 @@ function renderRAID() {
     <div style="padding:24px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;">Aucun élément RAID pour l’instant. Ajoutez des risques, actions, issues ou décisions ci‑dessous.</div>
   `;
 
+  const aiNoticeRaid = wizardData._aiFilled ? `<div class="ai-result-badge" style="margin-bottom:16px;"><span>🤖</span> Risques pré-identifiés par l'IA — complétez et ajustez</div>` : '';
   return `
+    ${aiNoticeRaid}
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">⚠️ Étape ${currentStep+1} / ${getSteps().length}</div>
@@ -1026,7 +1286,9 @@ function addRaidItemWizard(typeLabel) {
 // ── AGILE: Vision & Produit ──
 function renderVision() {
   const d = wizardData.vision || wizardData.cadrage || {};
+  const aiNotice = wizardData._aiFilled ? `<div class="ai-result-badge" style="margin-bottom:16px;"><span>🤖</span> Pré-rempli par l'IA — vérifiez et ajustez les valeurs</div>` : '';
   return `
+    ${aiNotice}
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">🎯 Vision produit (Scrum)</div>
@@ -1098,7 +1360,9 @@ function renderBacklog() {
       <button type="button" onclick="removeBacklogStory(${i})" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 4px;" title="Supprimer">✕</button>
     </div>
   `).join('');
+  const aiNoticeBacklog = wizardData._aiFilled ? `<div class="ai-result-badge" style="margin-bottom:16px;"><span>🤖</span> Pré-rempli par l'IA — vérifiez et affinez les stories</div>` : '';
   return `
+    ${aiNoticeBacklog}
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">📋 Product Backlog (Scrum)</div>
@@ -1266,12 +1530,15 @@ function renderPlanning() {
   const meth = wizardData.methodology || 'waterfall';
   const defaultMs = meth === 'agile' ? DEFAULT_MILESTONES_AGILE : meth === 'hybride' ? DEFAULT_MILESTONES_HYBRIDE : DEFAULT_MILESTONES;
   const milestones = (wizardData.planning && wizardData.planning.milestones && wizardData.planning.milestones.length) ? wizardData.planning.milestones : defaultMs;
-  const rows = milestones.map(m => `
+  const rows = milestones.map(m => {
+    const msLabel = m.label || m.name || '';
+    const isCrit  = m.critical || m.type === 'critical';
+    return `
     <div class="milestone-row">
-      <div class="ms-dot ${m.critical?'critical':'normal'}"></div>
+      <div class="ms-dot ${isCrit?'critical':'normal'}"></div>
       <div>
-        <div style="font-size:12px;font-weight:${m.critical?'700':'400'};">${m.label}</div>
-        ${m.critical ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--danger);margin-top:2px;">JALON CRITIQUE</div>' : ''}
+        <div style="font-size:12px;font-weight:${isCrit?'700':'400'};">${msLabel}</div>
+        ${isCrit ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--danger);margin-top:2px;">JALON CRITIQUE</div>' : ''}
       </div>
       <div>
         <input class="form-input pl-ms-date" style="width:120px;font-size:11px;" placeholder="${m.date}" value="${(m.date||'').toString()}"/>
@@ -1299,7 +1566,9 @@ function renderPlanning() {
     ? '<strong>Hybride :</strong> Les jalons J+ correspondent aux livrables Waterfall. Les jalons S correspond aux releases de sprints Agile. Gardez la granularité adaptée à chaque lot.'
     : '<strong>Chemin critique :</strong> Les jalons rouges ne peuvent pas être dépassés sans impact sur la date de fin. Protégez-les en priorité avec des buffers dédiés.';
 
+  const aiNoticePlan = wizardData._aiFilled ? `<div class="ai-result-badge" style="margin-bottom:16px;"><span>🤖</span> Planning généré par l'IA — ajustez les dates selon votre calendrier</div>` : '';
   return `
+    ${aiNoticePlan}
     <div class="wiz-card">
       <div class="wiz-card-header">
         <div class="wiz-card-tag">📅 Étape ${currentStep+1} / ${getSteps().length}</div>
