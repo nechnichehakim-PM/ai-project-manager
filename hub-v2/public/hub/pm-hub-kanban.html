@@ -24,8 +24,8 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .nav-links a:hover{color:var(--text);background:var(--surface2);}
 
 /* LAYOUT */
-.layout{display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0;overflow:hidden;position:relative;z-index:1;}
-.inner-col{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;}
+.inner-col{display:flex;flex-direction:column;overflow:hidden;height:100%;}
 
 /* KANBAN BAR */
 .kanban-bar{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}

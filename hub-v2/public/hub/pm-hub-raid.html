@@ -19,8 +19,8 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
 
 /* LAYOUT */
-.layout{display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0;overflow:hidden;position:relative;z-index:1;}
-.main-col{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;}
+.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;}
 
 /* TOP BAR */
 .raid-bar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
@@ -127,6 +127,7 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .rr-score-wrap{display:flex;flex-direction:column;gap:3px;align-items:flex-start;}
 .rr-score-val{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;}
 .rr-score-action{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);}
+.rr-score-opp{font-family:'DM Mono',monospace;font-size:8px;color:var(--success);}
 .rr-response{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);line-height:1.4;max-width:180px;}
 .rr-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);}
 .rr-status{display:inline-block;padding:3px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;cursor:pointer;transition:opacity .15s;}
@@ -283,7 +284,13 @@ html[data-theme="light"] .rr-table tr:hover td,.raid-table tr:hover td{backgroun
           </div>
           <div class="legend-block">
             <div class="legend-block-title">Score de risque</div>
-            <div class="legend-formula"><strong>Score = Prob% × Impact%</strong><br>Seuil : 0,30<br>≥ 0,30 → plan d'action requis<br>&lt; 0,30 → surveillance seulement</div>
+            <div class="legend-formula">
+              <strong>Score = Prob% × Impact%</strong><br>
+              Seuil : 0,30<br><br>
+              <span style="color:var(--danger)">▲ Menace :</span> score ≥ 0,30 → plan d'action requis<br>
+              <span style="color:var(--success)">▼ Opportunité :</span> score ≥ 0,30 → exploiter activement<br>
+              Pour les opportunités, <em>Probabilité</em> = chance d'occurrence, <em>Impact</em> = bénéfice potentiel
+            </div>
           </div>
           <div class="legend-block">
             <div class="legend-block-title">Statut</div>
@@ -578,19 +585,42 @@ function renderRegister() {
 }
 
 function buildRRViewRow(r) {
-  const score  = calcScore(r.probability, r.impact);
-  const slevel = scoreLevel(score);
-  const slbl   = scoreLbl(score);
-  const action = score >= 0.30 ? '⚠ Plan requis' : '● Surveiller';
+  const score    = calcScore(r.probability, r.impact);
+  const slevel   = scoreLevel(score);
+  const slbl     = scoreLbl(score);
+  const isThreat = r.to !== 'opportunity';
+  // Threats: high score = dangerous → action required
+  // Opportunities: high score = great potential → exploit actively
+  const scoreNote = isThreat
+    ? (score >= 0.30 ? '⚠ Plan d\'action requis' : '● Surveiller')
+    : (score >= 0.30 ? '💡 Exploiter activement' : score >= 0.10 ? '💡 À surveiller' : '💡 Potentiel faible');
+  const scoreCls = isThreat ? slevel : (score >= 0.30 ? 'low opp-high' : 'low');
+  const scoreStyle = !isThreat ? 'background:rgba(34,197,94,.12);color:var(--success);border-color:rgba(34,197,94,.22);' : '';
   return `<tr data-rrid="${r.id}" class="${r.status==='obsolete'?'obsolete':''}">
     <td><span class="rr-id">${r.id}</span></td>
     <td><span class="rr-cat">${r.category||'—'}</span></td>
-    <td><div class="rr-desc">${(r.description||'').replace(/</g,'&lt;')}</div>${r.trigger?`<div class="rr-trigger">⚡ ${r.trigger.replace(/</g,'&lt;')}</div>`:''}</td>
-    <td><span class="rr-to ${r.to}">${r.to==='threat'?'▲ Menace':'▼ Opport.'}</span></td>
-    <td><span class="rr-level ${r.probability}">${PROB_LABELS[r.probability]||r.probability}</span></td>
-    <td><span class="rr-level ${r.impact}">${PROB_LABELS[r.impact]||r.impact}</span></td>
-    <td><div class="rr-score-wrap"><span class="rr-level ${slevel}">${slbl} (${score.toFixed(2)})</span><span class="rr-score-action">${action}</span></div></td>
-    <td><div class="rr-response">${(r.responsePlan||'—').replace(/</g,'&lt;')}</div></td>
+    <td>
+      <div class="rr-desc">${(r.description||'').replace(/</g,'&lt;')}</div>
+      ${r.trigger?`<div class="rr-trigger">⚡ ${r.trigger.replace(/</g,'&lt;')}</div>`:''}
+    </td>
+    <td><span class="rr-to ${r.to}">${isThreat?'▲ Menace':'▼ Opport.'}</span></td>
+    <td>
+      <span class="rr-level ${r.probability}">${PROB_LABELS[r.probability]||r.probability}</span>
+      ${!isThreat?'<div style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--success);margin-top:2px;">Occurrence</div>':''}
+    </td>
+    <td>
+      <span class="rr-level ${r.impact}">${PROB_LABELS[r.impact]||r.impact}</span>
+      ${!isThreat?'<div style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--success);margin-top:2px;">Bénéfice</div>':''}
+    </td>
+    <td>
+      <div class="rr-score-wrap">
+        <span class="rr-level ${isThreat?slevel:'low'}" style="${scoreStyle}">${slbl} (${score.toFixed(2)})</span>
+        <span class="${isThreat?'rr-score-action':'rr-score-opp'}">${scoreNote}</span>
+      </div>
+    </td>
+    <td>
+      <div class="rr-response">${(r.responsePlan||'—').replace(/</g,'&lt;')}</div>
+    </td>
     <td><span class="rr-owner">${r.riskOwner||'—'}</span></td>
     <td><span class="rr-status ${r.status}" onclick="cycleRRStatus('${r.id}')" title="Clic pour changer">${rrStatusLabel(r.status)}</span></td>
     <td><div class="rr-actions">
