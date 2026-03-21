@@ -38,7 +38,7 @@
         ]},
         { label: 'Suivi & Contrôle', links: [
           { name: 'RAID',        href: 'pm-hub-raid.html',       icon: '⚠️' },
-          { name: 'Budget & EVM',href: 'pm-hub-budget.html',     icon: '💰' },
+          { name: 'Finance',     href: 'pm-hub-budget.html',     icon: '💰' },
           { name: 'Ressources',  href: 'pm-hub-resources.html',  icon: '👥' }
         ]},
         { label: 'Gouvernance projet', links: [
