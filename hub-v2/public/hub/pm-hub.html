@@ -344,16 +344,6 @@ function renderProjects(list) {
     `;
     grid.appendChild(card);
   });
-  // Nouvelle carte
-  const nc = document.createElement('div');
-  nc.className = 'new-card';
-  nc.onclick = openModal;
-  nc.innerHTML = `
-    <div class="new-card-icon">＋</div>
-    <div class="new-card-label">Nouveau projet</div>
-    <div class="new-card-sub">Créer et initialiser<br>via le PM Wizard</div>
-  `;
-  grid.appendChild(nc);
 }
 
 function goTemplates(id, e) { e.stopPropagation(); PMHUB.goTo('pm-hub-templates.html',{project:id}); }
