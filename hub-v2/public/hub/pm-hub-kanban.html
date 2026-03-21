@@ -120,6 +120,18 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 /* Empty state */
 .kanban-empty{padding:24px 12px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;opacity:.6;}
 
+/* METHODOLOGY GUARD */
+.meth-guard{position:absolute;inset:0;z-index:50;background:var(--bg);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:40px;}
+.meth-guard-icon{font-size:52px;}
+.meth-guard-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;}
+.meth-guard-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);max-width:500px;line-height:1.75;}
+.meth-guard-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:center;}
+.meth-guard-btn{padding:10px 20px;border-radius:7px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;text-decoration:none;transition:opacity .2s;display:inline-block;}
+.meth-guard-btn.primary{background:var(--accent);color:#080c10;border:1px solid var(--accent);font-weight:700;}
+.meth-guard-btn.secondary{background:transparent;color:var(--text-soft);border:1px solid var(--border);}
+.meth-guard-btn:hover{opacity:.8;}
+html[data-theme="light"] .meth-guard-btn.secondary{color:var(--text-muted);}
+
 /* Toast */
 .toast-k{position:fixed;bottom:24px;right:24px;z-index:400;background:var(--surface2);border:1px solid rgba(99,210,180,.35);border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
 .toast-k.show{transform:translateY(0);opacity:1;}
@@ -191,9 +203,22 @@ html[data-theme="light"] .kanban-col{background:var(--surface2);}
       </div>
     </div>
 
-    <!-- BOARD -->
-    <div class="kanban-scroll">
-      <div class="kanban-board" id="kanbanBoard"></div>
+    <!-- BOARD (position:relative pour la guard) -->
+    <div style="flex:1;overflow:hidden;position:relative;">
+      <!-- METHODOLOGY GUARD -->
+      <div id="methGuard" style="display:none;" class="meth-guard">
+        <div class="meth-guard-icon">📋</div>
+        <div class="meth-guard-title">Kanban non disponible</div>
+        <div class="meth-guard-sub" id="methGuardMsg">Ce projet utilise la méthodologie Waterfall. Le Kanban est conçu pour les approches Agile et Hybrides. Utilisez le Gantt pour planifier vos tâches en mode prédictif.</div>
+        <div class="meth-guard-actions">
+          <a href="#" id="methGuardGantt" class="meth-guard-btn primary">📅 Ouvrir le Gantt</a>
+          <a href="#" id="methGuardRaid"  class="meth-guard-btn secondary">⚠ Voir le RAID</a>
+          <a href="pm-hub.html"           class="meth-guard-btn secondary">← Portfolio</a>
+        </div>
+      </div>
+      <div class="kanban-scroll">
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </div>
     </div>
 
   </div>
@@ -548,21 +573,30 @@ function showToast(msg) {
 // PROJECT LOAD
 // ══════════════════════════════════════════════════════
 function loadProjects() {
-  const projects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
+  const allProjects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
+  // Prefer agile/hybride projects, but show all if none qualify
+  const eligible = allProjects.filter(p => p.methodology === 'agile' || p.methodology === 'hybride');
+  const list = eligible.length ? eligible : allProjects;
   const sel = document.getElementById('projectSelect');
   sel.innerHTML = '';
-  if (!projects.length) {
+  if (!allProjects.length) {
     sel.innerHTML = '<option>Aucun projet — créez-en un sur l\'accueil</option>';
     return;
   }
   const paramId = PMHUB.getParam('project');
-  projects.forEach(p => {
+  // Show all projects in selector (guard handles the rest)
+  allProjects.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
     opt.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
     if (String(p.id) === String(paramId)) opt.selected = true;
     sel.appendChild(opt);
   });
+  // Pre-select first eligible project if URL param not found among eligible
+  const paramInEligible = eligible.some(p => String(p.id) === String(paramId));
+  if (!paramInEligible && eligible.length) {
+    sel.value = eligible[0].id;
+  }
   activeProjectId = parseInt(sel.value);
   switchProject(activeProjectId);
 }
@@ -582,6 +616,20 @@ function switchProject(id) {
   if (lg) lg.href = 'pm-hub-gantt.html?project=' + id;
   const ab = document.getElementById('aiFloatBtn');
   if (ab) ab.href = 'pm-hub-ai.html?from=Kanban&project=' + id;
+
+  // Methodology guard — Kanban = Agile + Hybride only
+  const guard = document.getElementById('methGuard');
+  const isWaterfall = p && p.methodology === 'waterfall';
+  if (guard) guard.style.display = isWaterfall ? 'flex' : 'none';
+  if (isWaterfall) {
+    const methLabel = 'Waterfall';
+    const gg = document.getElementById('methGuardGantt');
+    const gr = document.getElementById('methGuardRaid');
+    if (gg) gg.href = 'pm-hub-gantt.html?project=' + id;
+    if (gr) gr.href = 'pm-hub-raid.html?project=' + id;
+    const gm = document.getElementById('methGuardMsg');
+    if (gm && p) gm.innerHTML = 'Le projet <strong>' + p.name + '</strong> utilise la méthodologie <strong>' + methLabel + '</strong>. Le Kanban est réservé aux approches Agile et Hybrides. Pour ce projet, utilisez le <strong>Gantt</strong> pour planifier vos tâches en mode prédictif.';
+  }
 
   filterOwner = ''; filterOverdue = false; searchQuery = '';
   const si = document.getElementById('searchInput'); if(si) si.value = '';
