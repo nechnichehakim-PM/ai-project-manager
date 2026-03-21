@@ -7,6 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.chat-modes { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+.cmode { background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'DM Mono',monospace; font-size:10px; padding:5px 12px; border-radius:20px; cursor:pointer; transition:all .2s; }
+.cmode:hover { border-color:var(--accent); color:var(--accent); }
+.cmode.active { background:var(--accent); border-color:var(--accent); color:#0B0F19; font-weight:500; }
+.ctx-data { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.ctx-chip { display:flex; align-items:center; gap:5px; background:var(--glass); border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); }
+.ctx-chip-val { font-size:12px; font-weight:600; color:var(--text); margin-right:2px; }
+.chat-clear { background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'DM Mono',monospace; font-size:9px; padding:4px 10px; border-radius:6px; cursor:pointer; transition:all .2s; }
+.chat-clear:hover { border-color:var(--danger); color:var(--danger); }
+</style>
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
 <script src="pmhub-sidebar.js"></script>
@@ -31,6 +42,12 @@
       <div class="ph-tag">Assistant PM</div>
       <div class="ph-h1">Votre <em>assistant</em> de projet</div>
       <div class="ph-sub">Connaît vos projets, RAID et équipe. Posez n'importe quelle question.</div>
+      <div class="chat-modes">
+        <button class="cmode active" data-mode="quick" onclick="setMode(this)">⚡ Question rapide</button>
+        <button class="cmode" data-mode="deep" onclick="setMode(this)">🔍 Analyse approfondie</button>
+        <button class="cmode" data-mode="copil" onclick="setMode(this)">🎯 Préparation COPIL</button>
+      </div>
+      <div class="ctx-data" id="ctxData"></div>
     </div>
     <div class="chat-body" id="chatBody">
       <div class="chat-welcome" id="chatWelcome">
@@ -52,11 +69,38 @@
         <textarea class="chat-ta" id="chatInput" placeholder="Posez votre question PM…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendChat()">➤</button>
       </div>
-      <div class="chat-hint">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="chat-hint">Entrée pour envoyer · Shift+Entrée pour nouvelle ligne</div>
+        <button class="chat-clear" onclick="clearChat()">🗑 Effacer la conversation</button>
+      </div>
     </div>
   </main>
 </div>
 <div id="toast"></div>
 <script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  function loadCtxData() {
+    if (typeof PMHUB === 'undefined') return;
+    var projs = PMHUB.getProjects ? PMHUB.getProjects() : [];
+    var active = projs.filter(function(p) { return p.status === 'active'; });
+    var res = PMHUB.getResources ? PMHUB.getResources() : [];
+    var raid = active.length && PMHUB.getRaids ? PMHUB.getRaids(active[0].id) : null;
+    var risks = raid ? (raid.risks || []).filter(function(r) { return r.status !== 'closed'; }).length : 0;
+    var c = document.getElementById('ctxData');
+    if (!c) return;
+    c.innerHTML = [
+      ['📁', active.length, 'projets actifs'],
+      ['⚠️', risks, 'risques ouverts'],
+      ['👥', res.length, 'membres équipe']
+    ].map(function(x) {
+      return '<div class="ctx-chip"><span class="ctx-chip-val">' + x[1] + '</span>' + x[0] + ' ' + x[2] + '</div>';
+    }).join('');
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadCtxData);
+  } else { loadCtxData(); }
+})();
+</script>
 </body>
 </html>

@@ -417,6 +417,57 @@
   }
   window.copyEl = copyEl;
   window.copyBriefing = copyBriefing;
+  window._toast = toast;
+
+  // —— CHAT : mode selector + clear ——
+  window.setMode = function(el) {
+    document.querySelectorAll('.cmode').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+    var placeholders = {
+      quick: 'Posez votre question PM…',
+      deep: 'Décrivez la situation à analyser en détail…',
+      copil: 'Quel projet ou sujet préparer pour le COPIL ?'
+    };
+    var ta = document.getElementById('chatInput');
+    if (ta) ta.placeholder = placeholders[el.dataset.mode] || placeholders.quick;
+  };
+  window.clearChat = function() {
+    var body = document.getElementById('chatBody');
+    var welcome = document.getElementById('chatWelcome');
+    if (body) {
+      var msgs = body.querySelectorAll('.msg');
+      msgs.forEach(function(m) { m.remove(); });
+    }
+    chatHistory = [];
+    if (welcome) welcome.style.display = '';
+    toast('Conversation effacée');
+  };
+
+  // —— BRIEFING : export PDF ——
+  window.exportBriefingPDF = function() {
+    var sections = {
+      bR: 'Résumé exécutif',
+      bA: 'Avancement par projet',
+      bP: "Points d'attention & risques",
+      bAc: 'Actions prioritaires'
+    };
+    var hasContent = Object.keys(sections).some(function(id) {
+      var el = document.getElementById(id);
+      return el && el.textContent && !el.classList.contains('loading');
+    });
+    if (!hasContent) { toast('Générez le briefing d\'abord.', 'err'); return; }
+    var today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    var styles = '*{margin:0;padding:0;box-sizing:border-box;}body{font-family:"Segoe UI",system-ui,sans-serif;background:#fff;color:#111;padding:32px;line-height:1.6;}.hdr{margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #eee;}.hdr-title{font-size:22px;font-weight:700;}.hdr-meta{font-size:11px;color:#666;margin-top:6px;}.section{margin-bottom:24px;page-break-inside:avoid;}.sec-title{font-size:13px;font-weight:600;color:#333;text-transform:uppercase;letter-spacing:.05em;border-left:3px solid #63D2B4;padding-left:10px;margin-bottom:10px;}.sec-body{font-size:13px;white-space:pre-wrap;color:#222;}';
+    var content = Object.keys(sections).map(function(id) {
+      var el = document.getElementById(id);
+      var text = el ? el.textContent : '';
+      return '<div class="section"><div class="sec-title">' + sections[id] + '</div><div class="sec-body">' + text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+    }).join('');
+    var doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Briefing hebdomadaire</title><style>' + styles + '</style></head><body><div class="hdr"><h1 class="hdr-title">Briefing hebdomadaire</h1><div class="hdr-meta">PM Hub · ' + today + '</div></div>' + content + '<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>';
+    var win = window.open('', '_blank', 'width=900,height=700');
+    if (win) { win.document.write(doc); win.document.close(); }
+    else toast('Autorisez les popups pour exporter en PDF.', 'err');
+  };
 
   // —— LIVRABLES ——
   var LIV_P = {

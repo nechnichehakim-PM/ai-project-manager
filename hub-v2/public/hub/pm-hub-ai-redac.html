@@ -7,6 +7,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.word-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); padding:2px 8px; background:var(--glass); border:1px solid var(--border); border-radius:4px; }
+.recent-docs { margin-top:16px; }
+.recent-docs-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+.rdoc-list { display:flex; flex-direction:column; gap:4px; }
+.rdoc-item { display:flex; align-items:center; gap:10px; background:var(--glass); border:1px solid var(--border); border-radius:6px; padding:8px 12px; cursor:pointer; transition:border-color .2s; }
+.rdoc-item:hover { border-color:var(--accent); }
+.rdoc-icon { font-size:14px; flex-shrink:0; }
+.rdoc-info { flex:1; min-width:0; }
+.rdoc-name { font-family:'DM Mono',monospace; font-size:10px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rdoc-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); margin-top:1px; }
+.rdoc-preview { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+</style>
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
 <script src="pmhub-sidebar.js"></script>
@@ -58,6 +71,7 @@
         <div class="rcard-hdr">
           <div class="rcard-lbl" id="redacLbl">Document généré</div>
           <div class="rcard-acts">
+            <span class="word-count" id="wordCount"></span>
             <button class="btn-s" onclick="copyEl('redacBody')">📋 Copier</button>
             <button class="btn-s" onclick="exportRedacPDF()">⬇ Télécharger PDF</button>
             <button class="btn-s" onclick="genRedac()">🔄</button>
@@ -65,10 +79,87 @@
         </div>
         <div class="rcard-body" id="redacBody"></div>
       </div>
+      <div class="recent-docs" id="recentDocs" style="display:none;">
+        <div class="recent-docs-title">Documents récents</div>
+        <div class="rdoc-list" id="rdocList"></div>
+      </div>
     </div>
   </main>
 </div>
 <div id="toast"></div>
 <script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  var RDOC_KEY = 'pmhub_redac_history';
+  var DOC_ICONS = { 'email-copil':'📧', statut:'📊', escalade:'🚨', 'cr-reunion':'📝', 'kick-off':'🚀', cloture:'🏁' };
+
+  function loadHistory() {
+    try { return JSON.parse(sessionStorage.getItem(RDOC_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveToHistory(type, label, text) {
+    var h = loadHistory();
+    h.unshift({ type: type, label: label, preview: text.slice(0, 80), ts: Date.now() });
+    if (h.length > 5) h = h.slice(0, 5);
+    try { sessionStorage.setItem(RDOC_KEY, JSON.stringify(h)); } catch(e) {}
+    renderHistory();
+  }
+  function renderHistory() {
+    var h = loadHistory();
+    var wrap = document.getElementById('recentDocs');
+    var list = document.getElementById('rdocList');
+    if (!wrap || !list) return;
+    if (!h.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = h.map(function(d, i) {
+      var ago = Math.round((Date.now() - d.ts) / 60000);
+      var agoStr = ago < 1 ? 'à l\'instant' : ago + ' min';
+      return '<div class="rdoc-item" onclick="restoreDoc(' + i + ')"><div class="rdoc-icon">' + (DOC_ICONS[d.type] || '📄') + '</div><div class="rdoc-info"><div class="rdoc-name">' + d.label + '</div><div class="rdoc-meta">' + agoStr + '</div></div><div class="rdoc-preview">' + d.preview.replace(/</g,'&lt;') + '…</div></div>';
+    }).join('');
+  }
+  window.restoreDoc = function(i) {
+    var h = loadHistory();
+    if (!h[i]) return;
+    var body = document.getElementById('redacBody');
+    var lbl = document.getElementById('redacLbl');
+    var res = document.getElementById('redacRes');
+    if (body) { body.className = 'rcard-body'; body.textContent = '(Document précédent — aperçu non disponible, régénérez pour le texte complet)'; }
+    if (lbl) lbl.textContent = h[i].label;
+    if (res) res.classList.add('show');
+  };
+
+  function updateWordCount() {
+    var body = document.getElementById('redacBody');
+    var wc = document.getElementById('wordCount');
+    if (!body || !wc) return;
+    var text = body.textContent.trim();
+    if (!text || body.classList.contains('loading')) { wc.textContent = ''; return; }
+    var words = text.split(/\s+/).filter(Boolean).length;
+    var chars = text.length;
+    wc.textContent = words + ' mots · ' + chars + ' car.';
+  }
+
+  // Intercept genRedac to save history and update word count
+  var _orig = window.genRedac;
+  if (_orig) {
+    window.genRedac = async function() {
+      await _orig();
+      updateWordCount();
+      var lbl = document.getElementById('redacLbl');
+      var body = document.getElementById('redacBody');
+      var sel = document.querySelector('#redacOpts .selected');
+      var type = sel && sel.dataset ? sel.dataset.t : 'email-copil';
+      var label = lbl ? lbl.textContent : 'Document';
+      var text = body ? body.textContent : '';
+      if (text && !body.classList.contains('loading') && text.indexOf('Erreur:') !== 0) {
+        saveToHistory(type, label, text);
+      }
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderHistory);
+  } else { renderHistory(); }
+})();
+</script>
 </body>
 </html>
