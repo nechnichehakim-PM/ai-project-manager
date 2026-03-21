@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PM Hub — RAID Log</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
@@ -12,496 +12,985 @@
 <script src="pmhub-mini-chat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;opacity:.35;}
+nav{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
 
-nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
-.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
-.nav-links{display:flex;gap:6px;align-items:center;}
-.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
-.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
-.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0;position:relative;z-index:1;}
+.main-col{display:flex;flex-direction:column;height:calc(100vh - 65px);overflow:hidden;}
 
-.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;}
-.sidebar{position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
-.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
-.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;}
-.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
-.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
-.sb-item-icon{font-size:15px;width:18px;text-align:center;}
+/* TOP BAR */
+.raid-bar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
+.raid-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:240px;outline:none;cursor:pointer;transition:border-color .2s;}
+.raid-bar select:focus{border-color:var(--accent);}
+.rb-badge{font-family:'DM Mono',monospace;font-size:9px;padding:3px 9px;border-radius:20px;}
 
-.main{padding:40px 48px;position:relative;z-index:1;}
+/* KPI STRIP */
+.raid-kpis{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
+.rkpi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;border-right:1px solid var(--border);transition:background .15s;cursor:default;}
+.rkpi:last-child{border-right:none;}
+.rkpi:hover{background:var(--surface2);}
+.rkpi-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1;}
+.rkpi-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-top:2px;}
 
-.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
-.page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
-.page-h1 em{font-style:italic;color:var(--danger);}
-.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:40px;}
+/* SCROLL CONTAINER */
+.raid-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;}
+.raid-scroll::-webkit-scrollbar{width:5px;}
+.raid-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
 
-/* PROJECT SELECTOR */
-.project-selector{display:flex;align-items:center;gap:12px;margin-bottom:32px;flex-wrap:wrap;}
-.proj-sel-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
-.proj-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:7px 16px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
-.proj-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,0.06);}
-.proj-chip:hover{border-color:rgba(99,210,180,0.3);color:var(--text);}
+/* RISK MATRIX */
+.risk-matrix-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.risk-matrix-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.risk-matrix-inner{display:flex;gap:12px;align-items:flex-end;}
+.matrix-y-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.12em;text-transform:uppercase;padding-bottom:24px;}
+.matrix-grid-wrap{flex:1;}
+.matrix-grid{display:grid;grid-template-columns:60px repeat(3,1fr);grid-template-rows:repeat(3,60px) 24px;gap:3px;}
+.matrix-cell{border-radius:6px;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:3px;padding:4px;position:relative;overflow:hidden;}
+.matrix-cell.green{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25);}
+.matrix-cell.amber{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.2);}
+.matrix-cell.red{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2);}
+.matrix-row-lbl{display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.matrix-col-lbls{display:contents;}
+.matrix-col-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);text-align:center;display:flex;align-items:center;justify-content:center;}
+.matrix-dot{font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.12);color:var(--text);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;cursor:default;}
+.matrix-dot.threat{background:rgba(239,68,68,.18);color:var(--danger);}
+.matrix-dot.opportunity{background:rgba(34,197,94,.15);color:var(--success);}
+.matrix-x-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;text-align:center;margin-top:8px;margin-left:63px;}
 
-/* KPI */
-.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px;}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.kpi.red::before{background:var(--danger);}
-.kpi.yellow::before{background:var(--accent2);}
-.kpi.blue::before{background:var(--accent3);}
-.kpi.green::before{background:var(--accent);}
-.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
-.kpi-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;line-height:1;}
-.kpi.red .kpi-val{color:var(--danger);}
-.kpi.yellow .kpi-val{color:var(--accent2);}
-.kpi.blue .kpi-val{color:var(--accent3);}
-.kpi.green .kpi-val{color:var(--accent);}
+/* LEGEND */
+.legend-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;overflow:hidden;}
+.legend-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;border-bottom:1px solid transparent;transition:border-color .2s;}
+.legend-header:hover{background:var(--surface2);}
+.legend-header.open{border-bottom-color:var(--border);}
+.legend-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);}
+.legend-toggle{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.legend-body{display:none;padding:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.legend-body.open{display:grid;}
+.legend-block{display:flex;flex-direction:column;gap:8px;}
+.legend-block-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:6px;}
+.legend-row{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);}
+.lb-badge{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600;flex-shrink:0;}
+.lb-threat{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);}
+.lb-opp{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25);}
+.lb-low{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.25);}
+.lb-med{background:rgba(245,158,11,.12);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.lb-high{background:rgba(239,68,68,.14);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+.lb-current{background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+.lb-obsolete{background:rgba(107,120,133,.1);color:var(--text-muted);border:1px solid var(--border);}
+.lb-residual{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.legend-formula{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);background:var(--surface2);padding:8px 12px;border-radius:6px;border-left:2px solid var(--accent);}
+.legend-formula strong{color:var(--text);}
 
 /* TABS */
-.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;}
-.tab{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .2s;margin-bottom:-1px;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.tab-count{display:inline-block;background:rgba(224,112,112,0.15);color:var(--danger);font-size:8px;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;}
-.tab-count.y{background:rgba(232,201,122,0.12);color:var(--accent2);}
-.tab-count.b{background:rgba(122,184,232,0.12);color:var(--accent3);}
-.tab-count.g{background:rgba(99,210,180,0.1);color:var(--accent);}
+.tabs-row{display:flex;gap:3px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.rtab{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .2s;margin-bottom:-1px;white-space:nowrap;}
+.rtab:hover{color:var(--text);}
+.rtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.rtab-count{display:inline-block;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:5px;vertical-align:middle;}
 
 /* TOOLBAR */
-.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-.add-btn{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:9px 18px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;margin-left:auto;}
-.add-btn:hover{background:#7fe0c8;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.tb-search{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:160px;transition:border-color .2s;}
+.tb-search:focus{border-color:var(--accent);}
+.tb-sel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;}
+.tb-sel:focus{border-color:var(--accent);}
+.tb-toggle{font-family:'DM Mono',monospace;font-size:10px;padding:6px 11px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.tb-toggle:hover{color:var(--danger);border-color:rgba(239,68,68,.4);}
+.tb-toggle.active{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.4);}
+.tb-add{display:flex;align-items:center;gap:6px;background:var(--accent);color:#060a0d;padding:7px 16px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;margin-left:auto;}
+.tb-add:hover{opacity:.88;}
 
-/* TABLE */
+/* ════════════════════════════════
+   RISK REGISTER TABLE
+   ════════════════════════════════ */
+.rr-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+.rr-table{width:100%;border-collapse:collapse;min-width:1100px;}
+.rr-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:left;white-space:nowrap;}
+.rr-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;vertical-align:middle;}
+.rr-table tr:last-child td{border-bottom:none;}
+.rr-table tr:hover td{background:var(--surface2);}
+.rr-table tr.obsolete td{opacity:.45;}
+.rr-id{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);white-space:nowrap;}
+.rr-cat{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text-soft);white-space:nowrap;}
+.rr-desc{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:var(--text);line-height:1.3;}
+.rr-trigger{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:3px;line-height:1.4;}
+.rr-to{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.04em;white-space:nowrap;}
+.rr-to.threat{background:rgba(239,68,68,.14);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+.rr-to.opportunity{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.22);}
+.rr-level{display:inline-block;padding:3px 9px;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.04em;white-space:nowrap;}
+.rr-level.low{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.22);}
+.rr-level.medium{background:rgba(245,158,11,.12);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.rr-level.high{background:rgba(239,68,68,.14);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+.rr-score-wrap{display:flex;flex-direction:column;gap:3px;align-items:flex-start;}
+.rr-score-val{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;}
+.rr-score-action{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);}
+.rr-response{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);line-height:1.4;max-width:180px;}
+.rr-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);}
+.rr-status{display:inline-block;padding:3px 8px;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;cursor:pointer;transition:opacity .15s;}
+.rr-status:hover{opacity:.75;}
+.rr-status.current{background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+.rr-status.obsolete{background:rgba(107,120,133,.1);color:var(--text-muted);border:1px solid var(--border);}
+.rr-status.residual{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.rr-actions{display:flex;gap:5px;}
+.rr-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px;transition:all .15s;flex-shrink:0;}
+.rr-btn:hover{border-color:var(--accent);color:var(--accent);}
+.rr-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.rr-btn.save{background:var(--accent);border-color:var(--accent);color:#060a0d;font-weight:700;}
+
+/* Inline edit inputs */
+.rr-input{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:100%;min-width:60px;}
+.rr-textarea{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;resize:vertical;width:100%;min-height:48px;}
+.rr-select{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;width:100%;}
+
+/* ════════════════════════════════
+   RAID TABLE (Actions/Issues/Decisions)
+   ════════════════════════════════ */
+.raid-table-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);}
 .raid-table{width:100%;border-collapse:collapse;}
-.raid-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
-.raid-table td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
-.raid-table tr:hover td{background:rgba(255,255,255,0.015);}
-.raid-table tr.closed td{opacity:0.45;}
-
-.title-cell{font-weight:600;font-family:'Syne',sans-serif;font-size:12px;color:var(--text);margin-bottom:3px;}
-.owner-cell{font-size:9px;color:var(--text-muted);margin-top:4px;}
-
-.sev-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:9px;letter-spacing:0.06em;border:1px solid;}
-.sev-critical{background:rgba(224,112,112,0.1);color:var(--danger);border-color:rgba(224,112,112,0.25);}
-.sev-high{background:rgba(224,112,112,0.07);color:#f09090;border-color:rgba(224,112,112,0.15);}
-.sev-medium{background:rgba(232,201,122,0.1);color:var(--warning);border-color:rgba(232,201,122,0.25);}
-.sev-low{background:rgba(99,210,180,0.07);color:var(--success);border-color:rgba(99,210,180,0.2);}
-
-.status-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:9px;letter-spacing:0.06em;border:1px solid;}
-.stat-open{background:rgba(224,112,112,0.08);color:var(--danger);border-color:rgba(224,112,112,0.2);}
-.stat-progress{background:rgba(122,184,232,0.08);color:var(--accent3);border-color:rgba(122,184,232,0.2);}
-.stat-closed{background:rgba(99,210,180,0.06);color:var(--accent);border-color:rgba(99,210,180,0.15);}
-.stat-watch{background:rgba(232,201,122,0.08);color:var(--warning);border-color:rgba(232,201,122,0.2);}
-
-.action-icons{display:flex;gap:6px;align-items:center;}
+.raid-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:left;}
+.raid-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
+.raid-table tr:last-child td{border-bottom:none;}
+.raid-table tr:hover td{background:var(--surface2);}
+.raid-table tr.closed td{opacity:.42;}
+.rd-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.rd-mitigation{font-size:9px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+.rd-owner{font-family:'DM Mono',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);}
+.rd-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.rd-date.late{color:var(--danger);}
+.rd-overdue{font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.14);color:var(--danger);margin-left:5px;}
+.sev-badge,.status-badge{display:inline-block;padding:3px 9px;border-radius:3px;font-size:9px;letter-spacing:.05em;border:1px solid;}
+.sev-critical{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.25);}
+.sev-high{background:rgba(239,68,68,.07);color:#f09090;border-color:rgba(239,68,68,.15);}
+.sev-medium{background:rgba(245,158,11,.1);color:var(--accent2);border-color:rgba(245,158,11,.25);}
+.sev-low{background:rgba(99,210,180,.07);color:var(--success);border-color:rgba(99,210,180,.2);}
+.stat-open{background:rgba(239,68,68,.08);color:var(--danger);border-color:rgba(239,68,68,.2);cursor:pointer;}
+.stat-progress{background:rgba(122,184,232,.08);color:var(--accent3);border-color:rgba(122,184,232,.2);cursor:pointer;}
+.stat-closed{background:rgba(99,210,180,.06);color:var(--accent);border-color:rgba(99,210,180,.15);cursor:pointer;}
+.stat-watch{background:rgba(245,158,11,.08);color:var(--accent2);border-color:rgba(245,158,11,.2);cursor:pointer;}
+.status-badge:hover{opacity:.75;}
 .icon-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:11px;transition:all .15s;}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
 .icon-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.empty-state{text-align:center;padding:50px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);font-size:11px;line-height:1.8;}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(3,6,9,0.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay{position:fixed;inset:0;z-index:400;background:rgba(3,6,9,.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px;}
 .modal-overlay.open{opacity:1;pointer-events:all;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:44px;width:600px;max-width:96vw;position:relative;transform:translateY(20px);transition:transform .3s;max-height:90vh;overflow-y:auto;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:580px;max-width:100%;max-height:90vh;overflow-y:auto;position:relative;transform:translateY(20px);transition:transform .3s;}
 .modal-overlay.open .modal{transform:translateY(0);}
-.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--danger),var(--warning));border-radius:14px 14px 0 0;}
-.modal-close{position:absolute;top:16px;right:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:13px;transition:all .15s;}
+.modal-strip{height:3px;background:linear-gradient(90deg,var(--danger),var(--accent2));border-radius:14px 14px 0 0;}
+.modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;}
+.modal-close{width:30px;height:30px;border-radius:5px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
 .modal-close:hover{border-color:var(--danger);color:var(--danger);}
-.modal-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--danger);text-transform:uppercase;margin-bottom:8px;}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;margin-bottom:26px;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.modal-body{padding:20px 28px 28px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group.full{grid-column:1/-1;}
-.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
-.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;transition:border-color .2s;outline:none;width:100%;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;transition:border-color .2s;outline:none;width:100%;}
 .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);}
-.form-select{cursor:pointer;}
-.form-textarea{resize:vertical;min-height:75px;}
-.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
-.btn-primary{display:flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:11px 22px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
-.btn-primary:hover{background:#7fe0c8;}
-.btn-secondary{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text);padding:11px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
-.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.form-textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-primary{background:var(--accent);color:#060a0d;padding:10px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;}
+.btn-primary:hover{opacity:.88;}
+.btn-secondary{background:transparent;color:var(--text-muted);padding:10px 16px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text);}
 
-.empty-state{text-align:center;padding:60px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);}
-.empty-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface2);border:1px solid rgba(99,210,180,.3);border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
 
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
-.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 24px rgba(99,210,180,.3);transition:transform .2s;}
 .ai-float-btn:hover{transform:scale(1.08);}
-@media print{nav,.project-selector,.tabs,.toolbar,.ai-float-btn,.modal-overlay{display:none!important;}
-.layout{display:block!important;padding-top:0!important;}
-.main{padding:0!important;}body{background:#fff;color:#111;}}
+
+html[data-theme="light"] .rr-table tr:hover td,.raid-table tr:hover td{background:var(--surface2);}
+@media print{nav,.raid-bar,.raid-kpis,.tabs-row,.toolbar,.ai-float-btn,.modal-overlay{display:none!important;}.main-col{height:auto;overflow:visible;}.raid-scroll{overflow:visible;}}
 </style>
 </head>
 <body>
-<a href="pm-hub-ai.html?from=RAID" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA" onclick="this.href='pm-hub-ai.html?from=RAID&project='+currentProject">🤖</a>
 
 <nav>
-  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <a href="pm-hub.html" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;">← Retour</a>
   <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
   <div class="nav-context" id="nav-context"></div>
-  <div class="nav-links">
-    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
-    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  <div class="nav-links" style="display:flex;gap:8px;">
+    <a href="pm-hub-settings.html" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;border-radius:5px;" title="Paramètres">⚙</a>
   </div>
 </nav>
 
+<a href="pm-hub-ai.html?from=RAID" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+
 <div class="layout">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
 
-  <main class="main">
-    <div class="page-tag">Gestion des risques & actions</div>
-    <h1 class="page-h1">RAID <em>Log</em></h1>
-    <p class="page-sub">Risques · Actions · Issues · Décisions — Suivi centralisé et proactif.</p>
-
-    <!-- PROJECT SELECTOR -->
-    <div class="project-selector">
-      <span class="proj-sel-label">Projet :</span>
-      <div id="projChips"></div>
+    <!-- TOP BAR -->
+    <div class="raid-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0;">Projet :</span>
+      <select id="projectSelect" onchange="switchProject(parseInt(this.value))"></select>
+      <span class="rb-badge" id="projectBadge"></span>
+      <a href="pm-hub-gantt.html" id="linkGantt" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);text-decoration:none;margin-left:auto;padding:5px 11px;border:1px solid rgba(99,210,180,.2);border-radius:5px;">📅 Gantt →</a>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-strip">
-      <div class="kpi red"><div class="kpi-label">Risques ouverts</div><div class="kpi-val" id="kRisks">0</div></div>
-      <div class="kpi blue"><div class="kpi-label">Actions en cours</div><div class="kpi-val" id="kActions">0</div></div>
-      <div class="kpi yellow"><div class="kpi-label">Issues actives</div><div class="kpi-val" id="kIssues">0</div></div>
-      <div class="kpi green"><div class="kpi-label">Décisions prises</div><div class="kpi-val" id="kDecisions">0</div></div>
+    <!-- KPI STRIP -->
+    <div class="raid-kpis">
+      <div class="rkpi"><span class="rkpi-val" id="kRisks" style="color:var(--danger)">—</span><span class="rkpi-lbl">Risques ouverts</span></div>
+      <div class="rkpi"><span class="rkpi-val" id="kActions" style="color:#7C3AED">—</span><span class="rkpi-lbl">Actions en cours</span></div>
+      <div class="rkpi"><span class="rkpi-val" id="kIssues" style="color:var(--accent2)">—</span><span class="rkpi-lbl">Issues actives</span></div>
+      <div class="rkpi"><span class="rkpi-val" id="kDecisions" style="color:var(--success)">—</span><span class="rkpi-lbl">Décisions prises</span></div>
+      <div class="rkpi"><span class="rkpi-val" id="kOverdue" style="color:var(--danger)">—</span><span class="rkpi-lbl">En retard</span></div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <div class="tab active" id="tab-risks" onclick="setTab('risks')">Risques<span class="tab-count" id="tc-risks">0</span></div>
-      <div class="tab" id="tab-actions" onclick="setTab('actions')">Actions<span class="tab-count b" id="tc-actions">0</span></div>
-      <div class="tab" id="tab-issues" onclick="setTab('issues')">Issues<span class="tab-count y" id="tc-issues">0</span></div>
-      <div class="tab" id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="tab-count g" id="tc-decisions">0</span></div>
-    </div>
+    <!-- MAIN SCROLL -->
+    <div class="raid-scroll" id="raidScroll">
 
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <div id="tabInfo" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);"></div>
-      <button type="button" style="background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:9px 18px;border-radius:5px;font-size:11px;cursor:pointer;" onclick="window.print()">🖨 Imprimer</button>
-      <button class="add-btn" onclick="openAddModal()">＋ Ajouter</button>
-    </div>
+      <!-- RISK MATRIX (register tab only) -->
+      <div id="riskMatrixWrap" class="risk-matrix-wrap" style="display:none;">
+        <div class="risk-matrix-title">
+          <span>Matrice des risques — Probabilité × Impact</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">Cliquer sur un risque pour l'éditer</span>
+        </div>
+        <div class="risk-matrix-inner">
+          <div class="matrix-y-label">Probabilité</div>
+          <div class="matrix-grid-wrap">
+            <div class="matrix-grid" id="riskMatrix"></div>
+            <div class="matrix-x-label">Impact</div>
+          </div>
+        </div>
+      </div>
 
-    <!-- TABLE -->
-    <div id="raidTableContainer"></div>
+      <!-- LEGEND -->
+      <div class="legend-wrap" id="legendWrap" style="display:none;">
+        <div class="legend-header" id="legendHeader" onclick="toggleLegend()">
+          <span class="legend-title">📖 Légende du registre des risques</span>
+          <span class="legend-toggle" id="legendToggle">▸ Afficher</span>
+        </div>
+        <div class="legend-body" id="legendBody">
+          <div class="legend-block">
+            <div class="legend-block-title">Type (M/O)</div>
+            <div class="legend-row"><span class="lb-badge lb-threat">▲ MENACE</span>Événement négatif pour le projet</div>
+            <div class="legend-row"><span class="lb-badge lb-opp">▼ OPPORT.</span>Événement positif à exploiter</div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-block-title">Probabilité & Impact</div>
+            <div class="legend-row"><span class="lb-badge lb-low">Faible</span>1–33 %</div>
+            <div class="legend-row"><span class="lb-badge lb-med">Moyen</span>34–66 %</div>
+            <div class="legend-row"><span class="lb-badge lb-high">Élevé</span>67–99 %</div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-block-title">Score de risque</div>
+            <div class="legend-formula"><strong>Score = Prob% × Impact%</strong><br>Seuil : 0,30<br>≥ 0,30 → plan d'action requis<br>&lt; 0,30 → surveillance seulement</div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-block-title">Statut</div>
+            <div class="legend-row"><span class="lb-badge lb-current">Actuel</span>Risque actif, suivi en cours</div>
+            <div class="legend-row"><span class="lb-badge lb-residual">Résiduel</span>Atténué mais non éliminé</div>
+            <div class="legend-row"><span class="lb-badge lb-obsolete">Obsolète</span>Plus pertinent / clos</div>
+          </div>
+          <div class="legend-block">
+            <div class="legend-block-title">Matrice des couleurs</div>
+            <div class="legend-row"><span class="lb-badge lb-low">Vert</span>Score faible — surveiller</div>
+            <div class="legend-row"><span class="lb-badge lb-med">Ambre</span>Score moyen — surveiller</div>
+            <div class="legend-row"><span class="lb-badge lb-high">Rouge</span>Score élevé ≥ 0,30 — agir</div>
+          </div>
+        </div>
+      </div>
 
-  </main>
-</div>
+      <!-- TABS -->
+      <div class="tabs-row">
+        <div class="rtab active" id="tab-register" onclick="setTab('register')">Registre des risques<span class="rtab-count" id="tc-register" style="background:rgba(239,68,68,.15);color:var(--danger);">0</span></div>
+        <div class="rtab" id="tab-actions"  onclick="setTab('actions')">Actions<span class="rtab-count" id="tc-actions" style="background:rgba(122,184,232,.12);color:var(--accent3);">0</span></div>
+        <div class="rtab" id="tab-issues"   onclick="setTab('issues')">Issues<span class="rtab-count" id="tc-issues" style="background:rgba(245,158,11,.12);color:var(--accent2);">0</span></div>
+        <div class="rtab" id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="rtab-count" id="tc-decisions" style="background:rgba(99,210,180,.1);color:var(--accent);">0</span></div>
+      </div>
 
-<!-- MODAL AJOUT -->
-<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-tag" id="modalTypeTag">Risque</div>
-    <h2 class="modal-title" id="modalTitle">Nouveau Risque</h2>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label class="form-label">Description *</label>
-        <input class="form-input" id="f_desc" placeholder="Décrivez le risque / l'action / l'issue..."/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Probabilité</label>
-        <select class="form-select" id="f_proba">
-          <option>Faible</option><option selected>Moyen</option><option>Élevé</option><option>Certain</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Impact / Sévérité</label>
-        <select class="form-select" id="f_impact">
-          <option>Faible</option><option>Moyen</option><option selected>Élevé</option><option>Critique</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Owner / Responsable</label>
-        <select class="form-select" id="f_owner">
-          <option value="AN">AN — Abdelhakim Nechniche</option>
-          <option value="ML">ML — Marc Leblanc</option>
-          <option value="KB">KB — Karim Benali</option>
-          <option value="SC">SC — Sophie Carré</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Statut</label>
-        <select class="form-select" id="f_status">
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <input class="tb-search" id="tbSearch" type="text" placeholder="🔍 Rechercher…" oninput="renderCurrent()">
+        <select class="tb-sel" id="tbStatus" onchange="renderCurrent()">
+          <option value="">Tous les statuts</option>
           <option value="open">Ouvert</option>
           <option value="progress">En cours</option>
           <option value="watch">Surveillance</option>
           <option value="closed">Clôturé</option>
+          <option value="current">Actuel</option>
+          <option value="residual">Résiduel</option>
+          <option value="obsolete">Obsolète</option>
         </select>
+        <button class="tb-toggle" id="tbOverdue" onclick="toggleOD()">⚠ En retard</button>
+        <button class="tb-add" onclick="handleAdd()">＋ Ajouter</button>
       </div>
-      <div class="form-group">
-        <label class="form-label">Échéance</label>
-        <input class="form-input" type="date" id="f_due"/>
-      </div>
-      <div class="form-group full">
-        <label class="form-label">Plan de mitigation / Action</label>
-        <textarea class="form-textarea" id="f_mitigation" placeholder="Comment gérer ce risque ? Quelle action corrective ?"></textarea>
-      </div>
+
+      <!-- TABLE CONTAINER -->
+      <div id="tableContainer"></div>
+
+    </div><!-- /raid-scroll -->
+  </div>
+</div>
+
+<!-- MODAL (Actions / Issues / Decisions) -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-strip"></div>
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Nouvelle entrée</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="form-actions">
-      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
-      <button class="btn-primary" onclick="saveItem()">Enregistrer →</button>
+    <div class="modal-body">
+      <input type="hidden" id="editingId">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Description *</label>
+          <input class="form-input" id="f_desc" placeholder="Décrivez l'action / l'issue / la décision…">
+        </div>
+        <div class="form-group" id="grp_proba">
+          <label class="form-label">Probabilité</label>
+          <select class="form-select" id="f_proba">
+            <option>Faible</option><option selected>Moyen</option><option>Élevé</option><option>Certain</option>
+          </select>
+        </div>
+        <div class="form-group" id="grp_impact">
+          <label class="form-label">Impact / Sévérité</label>
+          <select class="form-select" id="f_impact">
+            <option>Faible</option><option>Moyen</option><option selected>Élevé</option><option>Critique</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable</label>
+          <select class="form-select" id="f_owner"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-select" id="f_status">
+            <option value="open">Ouvert</option>
+            <option value="progress">En cours</option>
+            <option value="watch">Surveillance</option>
+            <option value="closed">Clôturé</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Échéance</label>
+          <input class="form-input" type="date" id="f_due">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Plan de mitigation / Détail</label>
+          <textarea class="form-textarea" id="f_mitigation" placeholder="Plan d'action, contexte, résolution…"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="btnDelete" style="display:none;color:var(--danger);border-color:rgba(239,68,68,.3);" onclick="deleteCurrentItem()">🗑 Supprimer</button>
+        <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+        <button class="btn-primary" onclick="saveItem()">Enregistrer →</button>
+      </div>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-let currentProject = 1; // AI Data Center par défaut
-let currentTab = 'risks';
+// ══════════════════════════════════════════════════════
+// CONFIG & STATE
+// ══════════════════════════════════════════════════════
+let currentProject = null;
+let currentTab = 'register';
 let editingId = null;
+let showOD = false;
 
-// ── SEED DATA (injecté une seule fois dans localStorage si vide) ──
-const SEED = {
-  risks: [
-    { id:1001, desc:'Retard fournisseur infrastructure serveurs', proba:'Élevé', impact:'Élevé', severity:'high', owner:'AN', status:'open', due:'2026-03-15', mitigation:'Identifier 2 fournisseurs alternatifs, clause contractuelle pénalités', createdAt:'2025-11-15' },
-    { id:1002, desc:'Dérive du périmètre (scope creep) en phase déploiement', proba:'Moyen', impact:'Critique', severity:'critical', owner:'AN', status:'watch', due:'2026-04-01', mitigation:'Comité de changement formel, gel de périmètre après phase 2', createdAt:'2025-11-20' },
-    { id:1003, desc:'Compétences IA/ML insuffisantes en interne', proba:'Faible', impact:'Élevé', severity:'medium', owner:'SC', status:'progress', due:'2026-02-01', mitigation:'Formation équipe + recrutement contractor si nécessaire', createdAt:'2025-12-01' },
-  ],
-  actions: [
-    { id:1004, desc:'Valider architecture avec direction technique', proba:'—', impact:'—', severity:'medium', owner:'AN', status:'progress', due:'2026-01-20', mitigation:'Présentation planifiée semaine 3 Jan 2026', createdAt:'2025-11-10' },
-    { id:1005, desc:'Obtenir devis fournisseurs hardware (3 min.)', proba:'—', impact:'—', severity:'low', owner:'KB', status:'open', due:'2026-01-31', mitigation:'', createdAt:'2025-12-10' },
-    { id:1006, desc:'Rédiger plan de formation équipe', proba:'—', impact:'—', severity:'medium', owner:'SC', status:'open', due:'2026-02-15', mitigation:'', createdAt:'2026-01-05' },
-    { id:1007, desc:'Organiser kick-off avec parties prenantes', proba:'—', impact:'—', severity:'high', owner:'AN', status:'closed', due:'2025-12-01', mitigation:'Réalisé le 05/12/2025', createdAt:'2025-11-01' },
-  ],
-  issues: [
-    { id:1008, desc:'Accès VPN bloqué pour équipe distante', proba:'—', impact:'Élevé', severity:'high', owner:'KB', status:'progress', due:'2026-01-15', mitigation:'IT en cours de résolution — contournement VPN backup', createdAt:'2026-01-08' },
-  ],
-  decisions: [
-    { id:1009, desc:'Architecture hybride cloud / on-premise retenue', proba:'—', impact:'—', severity:'low', owner:'AN', status:'closed', due:'2025-12-15', mitigation:'Décidé en COPIL du 10/12/2025. Azure + datacenter Nantes.', createdAt:'2025-12-10' },
-    { id:1010, desc:'Méthodologie Hybride (Prédictif + Agile) validée', proba:'—', impact:'—', severity:'low', owner:'AN', status:'closed', due:'2025-11-30', mitigation:'Validé par sponsor le 28/11/2025', createdAt:'2025-11-28' },
-  ],
+const PROB_VAL  = { low: 0.17, medium: 0.50, high: 0.83 };
+const PROB_LABELS = { low: 'Faible', medium: 'Moyen', high: 'Élevé' };
+const STATUS_CYCLE_RAID = { open:'progress', progress:'watch', watch:'closed', closed:'open' };
+const STATUS_CYCLE_RR   = { current:'residual', residual:'obsolete', obsolete:'current' };
+const RR_CATS = ['Stratégique','Financier','Opérationnel','Technique','Externe','Juridique','RH'];
+
+const SEED_RR = [
+  { id:'RR-001', category:'Externe', description:'La production pourrait s\'arrêter suite à la faillite du fournisseur ABC', trigger:'Indicateurs financiers dégradés chez le fournisseur', to:'threat', probability:'high', impact:'high', responsePlan:'Mitiger : contrat avec un nouveau fournisseur sous 30 jours', riskOwner:'Chef de projet', status:'current', createdAt:'2026-01-01' },
+  { id:'RR-002', category:'Technique', description:'Dérive de périmètre en phase déploiement', trigger:'Demandes de modifications fréquentes hors scope', to:'threat', probability:'medium', impact:'high', responsePlan:'Comité de changement formel, gel de périmètre après phase 2', riskOwner:'CdP', status:'current', createdAt:'2026-01-05' },
+  { id:'RR-003', category:'Stratégique', description:'Opportunité de partenariat avec intégrateur technologique', trigger:'Discussions préliminaires favorables', to:'opportunity', probability:'medium', impact:'medium', responsePlan:'Exploiter : négocier accord-cadre avant Q2', riskOwner:'Directeur', status:'current', createdAt:'2026-01-10' },
+];
+const SEED_RAIDS = {
+  risks:[], actions:[
+    {id:2001,desc:'Valider architecture avec direction technique',proba:'—',impact:'—',severity:'medium',owner:'CdP',status:'progress',due:'2026-04-01',mitigation:'Présentation planifiée',createdAt:'2026-01-10'},
+  ], issues:[
+    {id:2002,desc:'Accès VPN bloqué pour équipe distante',proba:'—',impact:'Élevé',severity:'high',owner:'DSI',status:'progress',due:'2026-03-25',mitigation:'IT en cours de résolution',createdAt:'2026-03-10'},
+  ], decisions:[
+    {id:2003,desc:'Architecture hybride cloud / on-premise retenue',proba:'—',impact:'—',severity:'low',owner:'CdP',status:'closed',due:'2026-02-15',mitigation:'Décidé en COPIL du 10/02/2026',createdAt:'2026-02-10'},
+  ]
 };
 
-function initSeed() {
-  const existing = PMHUB.getRaids(1);
-  if(Object.values(existing).every(arr => arr.length === 0)) {
-    PMHUB.saveRaids(1, JSON.parse(JSON.stringify(SEED)));
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+function getRR()   { return JSON.parse(localStorage.getItem('pmhub_rr_' + currentProject) || 'null') || JSON.parse(JSON.stringify(SEED_RR)); }
+function saveRR(d) { localStorage.setItem('pmhub_rr_' + currentProject, JSON.stringify(d)); }
+function getRaid() {
+  const d = typeof PMHUB !== 'undefined' ? PMHUB.getRaids(currentProject) : null;
+  if (!d || Object.values(d).every(a=>!a.length)) {
+    const seed = JSON.parse(JSON.stringify(SEED_RAIDS));
+    if (typeof PMHUB !== 'undefined') PMHUB.saveRaids(currentProject, seed);
+    return seed;
   }
+  return d;
 }
+function saveRaid(d) { if (typeof PMHUB !== 'undefined') PMHUB.saveRaids(currentProject, d); }
 
-const TAB_META = {
-  risks:     { label:'Risques',   icon:'🔴', addLabel:'Nouveau Risque' },
-  actions:   { label:'Actions',   icon:'🔵', addLabel:'Nouvelle Action' },
-  issues:    { label:'Issues',    icon:'🟡', addLabel:'Nouvelle Issue' },
-  decisions: { label:'Décisions', icon:'🟢', addLabel:'Nouvelle Décision' },
-};
-
-function getRaidData() {
-  return PMHUB.getRaids(currentProject);
-}
-
-function persistRaidData(data) {
-  PMHUB.saveRaids(currentProject, data);
-}
-
-function updateKPIs() {
-  const data = getRaidData();
-  const openRisks = data.risks.filter(r=>r.status!=='closed').length;
-  const openActions = data.actions.filter(r=>r.status!=='closed').length;
-  const openIssues = data.issues.filter(r=>r.status!=='closed').length;
-  const closedDec = data.decisions.filter(r=>r.status==='closed').length;
-  document.getElementById('kRisks').textContent = openRisks;
-  document.getElementById('kActions').textContent = openActions;
-  document.getElementById('kIssues').textContent = openIssues;
-  document.getElementById('kDecisions').textContent = closedDec;
-  document.getElementById('tc-risks').textContent = data.risks.length;
-  document.getElementById('tc-actions').textContent = data.actions.length;
-  document.getElementById('tc-issues').textContent = data.issues.length;
-  document.getElementById('tc-decisions').textContent = data.decisions.length;
-}
-
-function setTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('tabInfo').textContent = TAB_META[tab].icon + ' ' + TAB_META[tab].label;
-  renderTable();
-}
-
-function severityClass(impact) {
-  const m = { 'Critique':'critical','Élevé':'high','Moyen':'medium','Faible':'low' };
-  return m[impact] || 'low';
-}
-function statusClass(s) {
-  const m = { open:'stat-open', progress:'stat-progress', watch:'stat-watch', closed:'stat-closed' };
-  return m[s] || 'stat-open';
-}
-function statusLabel(s) {
-  const m = { open:'Ouvert', progress:'En cours', watch:'Surveillance', closed:'Clôturé' };
-  return m[s] || s;
-}
-function formatDate(d) {
-  if(!d || d==='—') return '—';
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function calcScore(prob, impact) { return (PROB_VAL[prob]||0) * (PROB_VAL[impact]||0); }
+function scoreLevel(s) { return s >= 0.30 ? 'high' : s >= 0.10 ? 'medium' : 'low'; }
+function scoreLbl(s) { return s >= 0.30 ? 'Élevé' : s >= 0.10 ? 'Moyen' : 'Faible'; }
+function fmtDate(d) {
+  if (!d || d==='—') return '—';
   const [y,m,day] = d.split('-');
-  const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-  return `${parseInt(day)} ${M[parseInt(m)-1]} ${y}`;
+  const ms=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return parseInt(day)+' '+ms[parseInt(m)-1]+' '+y;
+}
+function isOverdue(item) {
+  if (!item.due || item.due==='—') return false;
+  return new Date(item.due) < new Date() && item.status !== 'closed' && item.status !== 'obsolete';
+}
+function daysLate(item) { return Math.round((new Date()-new Date(item.due))/86400000); }
+function sevClass(impact) { const m={'Critique':'critical','Élevé':'high','Moyen':'medium','Faible':'low'}; return m[impact]||'low'; }
+function statusLabel(s) { const m={open:'Ouvert',progress:'En cours',watch:'Surveillance',closed:'Clôturé'}; return m[s]||s; }
+function statusClass(s) { const m={open:'stat-open',progress:'stat-progress',watch:'stat-watch',closed:'stat-closed'}; return m[s]||'stat-open'; }
+function rrStatusLabel(s) { const m={current:'Actuel',residual:'Résiduel',obsolete:'Obsolète'}; return m[s]||s; }
+function nextRRId(rr) {
+  const nums = rr.map(r => parseInt((r.id||'RR-000').replace('RR-',''))||0);
+  return 'RR-' + String((Math.max(0,...nums)+1)).padStart(3,'0');
 }
 
-function renderTable() {
-  const data = getRaidData();
-  const items = data[currentTab] || [];
-  const container = document.getElementById('raidTableContainer');
+// ══════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════
+function updateKPIs() {
+  const rr   = getRR();
+  const raid = getRaid();
+  const today = new Date();
+  const openRisks = rr.filter(r=>r.status!=='obsolete').length;
+  const openActions = (raid.actions||[]).filter(r=>r.status!=='closed').length;
+  const openIssues  = (raid.issues||[]).filter(r=>r.status!=='closed').length;
+  const closedDec   = (raid.decisions||[]).filter(r=>r.status==='closed').length;
+  const allItems    = [...(raid.actions||[]),...(raid.issues||[]),...(raid.decisions||[])];
+  const overdue     = allItems.filter(r=>isOverdue(r)).length;
+  document.getElementById('kRisks').textContent     = openRisks;
+  document.getElementById('kActions').textContent   = openActions;
+  document.getElementById('kIssues').textContent    = openIssues;
+  document.getElementById('kDecisions').textContent = closedDec;
+  document.getElementById('kOverdue').textContent   = overdue;
+  const rr2 = getRR();
+  document.getElementById('tc-register').textContent = rr2.length;
+  document.getElementById('tc-actions').textContent  = (raid.actions||[]).length;
+  document.getElementById('tc-issues').textContent   = (raid.issues||[]).length;
+  document.getElementById('tc-decisions').textContent= (raid.decisions||[]).length;
+}
 
-  if(items.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div>Aucun élément pour ce projet.</div><div style="margin-top:8px;font-size:10px;">Cliquez sur "Ajouter" pour créer le premier.</div></div>`;
+// ══════════════════════════════════════════════════════
+// RISK MATRIX
+// ══════════════════════════════════════════════════════
+function renderMatrix() {
+  const grid = document.getElementById('riskMatrix');
+  if (!grid) return;
+  const rr = getRR();
+  // Colors for each cell [row=prob (high/med/low), col=impact (low/med/high)]
+  const COLORS = [
+    ['amber','red','red'],
+    ['low','amber','red'],
+    ['low','low','amber'],
+  ];
+  const PROB_ROWS = ['high','medium','low'];
+  const IMP_COLS  = ['low','medium','high'];
+  const PROB_LBL  = ['Élevé','Moyen','Faible'];
+  const IMP_LBL   = ['Faible','Moyen','Élevé'];
+  grid.innerHTML = '';
+  // Header: empty + col labels
+  const empty = document.createElement('div');
+  grid.appendChild(empty);
+  IMP_LBL.forEach(lbl => {
+    const el = document.createElement('div');
+    el.className = 'matrix-col-lbl';
+    el.textContent = lbl;
+    grid.appendChild(el);
+  });
+  // Rows
+  PROB_ROWS.forEach((prob, ri) => {
+    const rowLbl = document.createElement('div');
+    rowLbl.className = 'matrix-row-lbl';
+    rowLbl.textContent = PROB_LBL[ri];
+    grid.appendChild(rowLbl);
+    IMP_COLS.forEach((imp, ci) => {
+      const cell = document.createElement('div');
+      cell.className = 'matrix-cell ' + COLORS[ri][ci];
+      // Find risks in this cell
+      rr.filter(r => r.probability === prob && r.impact === imp && r.status !== 'obsolete').forEach(r => {
+        const dot = document.createElement('div');
+        dot.className = 'matrix-dot ' + r.to;
+        dot.textContent = r.id;
+        dot.title = r.description;
+        dot.onclick = () => editRRRow(r.id);
+        cell.appendChild(dot);
+      });
+      grid.appendChild(cell);
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// RISK REGISTER RENDER
+// ══════════════════════════════════════════════════════
+function filterRR(rr) {
+  const q      = (document.getElementById('tbSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('tbStatus')?.value || '';
+  return rr.filter(r => {
+    if (q && !(r.description||'').toLowerCase().includes(q) && !(r.category||'').toLowerCase().includes(q)) return false;
+    if (status && r.status !== status) return false;
+    return true;
+  });
+}
+
+function renderRegister() {
+  document.getElementById('riskMatrixWrap').style.display = '';
+  document.getElementById('legendWrap').style.display = '';
+  renderMatrix();
+  const rr = filterRR(getRR());
+  const container = document.getElementById('tableContainer');
+  if (!rr.length) {
+    container.innerHTML = '<div class="empty-state">📋<br>Aucun risque enregistré.<br>Cliquez sur "＋ Ajouter" pour créer le premier risque.</div>';
     return;
   }
-
-  const showProba = currentTab === 'risks';
-  const rows = items.map(item => `
-    <tr class="${item.status==='closed'?'closed':''}">
-      <td>
-        <div class="title-cell">${item.desc}</div>
-        ${item.mitigation ? `<div class="owner-cell">→ ${item.mitigation.slice(0,80)}${item.mitigation.length>80?'…':''}</div>` : ''}
-      </td>
-      ${showProba ? `<td style="font-family:'DM Mono',monospace;color:var(--text-soft);">${item.proba}</td>` : ''}
-      <td>${item.impact && item.impact!=='—' ? `<span class="sev-badge sev-${item.severity||severityClass(item.impact)}">${item.impact}</span>` : '—'}</td>
-      <td><span style="font-family:'DM Mono',monospace;font-size:10px;background:rgba(99,210,180,0.08);color:var(--accent);padding:3px 9px;border-radius:3px;">${item.owner}</span></td>
-      <td><span class="status-badge ${statusClass(item.status)}">${statusLabel(item.status)}</span></td>
-      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:10px;">${formatDate(item.due)}</td>
-      <td>
-        <div class="action-icons">
-          <button class="icon-btn" onclick="editItem(${item.id})" title="Éditer">✏️</button>
-          <button class="icon-btn del" onclick="deleteItem(${item.id})" title="Supprimer">🗑️</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-
-  container.innerHTML = `
-    <table class="raid-table">
-      <thead><tr>
-        <th>Description</th>
-        ${showProba ? '<th>Probabilité</th>' : ''}
-        <th>Impact</th><th>Owner</th><th>Statut</th><th>Échéance</th><th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
+  const tbody = rr.map(r => buildRRViewRow(r)).join('');
+  container.innerHTML =
+    '<div class="rr-table-wrap"><table class="rr-table"><thead><tr>' +
+    '<th style="width:70px">ID</th><th style="width:110px">Catégorie</th>' +
+    '<th style="min-width:200px">Description & Déclencheur</th>' +
+    '<th style="width:95px">M / O</th>' +
+    '<th style="width:90px">Probabilité</th><th style="width:90px">Impact</th>' +
+    '<th style="width:100px">Score</th>' +
+    '<th style="min-width:180px">Plan de réponse</th>' +
+    '<th style="width:110px">Responsable</th>' +
+    '<th style="width:95px">Statut</th>' +
+    '<th style="width:70px"></th>' +
+    '</tr></thead><tbody id="rrTbody">' + tbody + '</tbody></table></div>';
 }
 
-function openAddModal() {
+function buildRRViewRow(r) {
+  const score  = calcScore(r.probability, r.impact);
+  const slevel = scoreLevel(score);
+  const slbl   = scoreLbl(score);
+  const action = score >= 0.30 ? '⚠ Plan requis' : '● Surveiller';
+  return `<tr data-rrid="${r.id}" class="${r.status==='obsolete'?'obsolete':''}">
+    <td><span class="rr-id">${r.id}</span></td>
+    <td><span class="rr-cat">${r.category||'—'}</span></td>
+    <td><div class="rr-desc">${(r.description||'').replace(/</g,'&lt;')}</div>${r.trigger?`<div class="rr-trigger">⚡ ${r.trigger.replace(/</g,'&lt;')}</div>`:''}</td>
+    <td><span class="rr-to ${r.to}">${r.to==='threat'?'▲ Menace':'▼ Opport.'}</span></td>
+    <td><span class="rr-level ${r.probability}">${PROB_LABELS[r.probability]||r.probability}</span></td>
+    <td><span class="rr-level ${r.impact}">${PROB_LABELS[r.impact]||r.impact}</span></td>
+    <td><div class="rr-score-wrap"><span class="rr-level ${slevel}">${slbl} (${score.toFixed(2)})</span><span class="rr-score-action">${action}</span></div></td>
+    <td><div class="rr-response">${(r.responsePlan||'—').replace(/</g,'&lt;')}</div></td>
+    <td><span class="rr-owner">${r.riskOwner||'—'}</span></td>
+    <td><span class="rr-status ${r.status}" onclick="cycleRRStatus('${r.id}')" title="Clic pour changer">${rrStatusLabel(r.status)}</span></td>
+    <td><div class="rr-actions">
+      <button class="rr-btn" onclick="editRRRow('${r.id}')" title="Éditer">✏️</button>
+      <button class="rr-btn del" onclick="deleteRRRow('${r.id}')" title="Supprimer">🗑️</button>
+    </div></td>
+  </tr>`;
+}
+
+function editRRRow(id) {
+  const rr = getRR();
+  const r = rr.find(x => x.id === id);
+  if (!r) return;
+  const row = document.querySelector(`tr[data-rrid="${id}"]`);
+  if (!row) return;
+  row.innerHTML = `
+    <td><span class="rr-id">${r.id}</span></td>
+    <td><select class="rr-select" id="ed_cat">${RR_CATS.map(c=>`<option${r.category===c?' selected':''}>${c}</option>`).join('')}</select></td>
+    <td>
+      <textarea class="rr-textarea" id="ed_desc" rows="2">${r.description||''}</textarea>
+      <input class="rr-input" id="ed_trigger" style="margin-top:4px" placeholder="Déclencheur…" value="${r.trigger||''}">
+    </td>
+    <td><select class="rr-select" id="ed_to">
+      <option value="threat"${r.to==='threat'?' selected':''}>▲ Menace</option>
+      <option value="opportunity"${r.to==='opportunity'?' selected':''}>▼ Opportunité</option>
+    </select></td>
+    <td><select class="rr-select" id="ed_prob">
+      <option value="low"${r.probability==='low'?' selected':''}>Faible</option>
+      <option value="medium"${r.probability==='medium'?' selected':''}>Moyen</option>
+      <option value="high"${r.probability==='high'?' selected':''}>Élevé</option>
+    </select></td>
+    <td><select class="rr-select" id="ed_impact">
+      <option value="low"${r.impact==='low'?' selected':''}>Faible</option>
+      <option value="medium"${r.impact==='medium'?' selected':''}>Moyen</option>
+      <option value="high"${r.impact==='high'?' selected':''}>Élevé</option>
+    </select></td>
+    <td style="color:var(--text-muted);font-size:10px;" id="ed_score_preview">—</td>
+    <td><textarea class="rr-textarea" id="ed_plan" rows="2">${r.responsePlan||''}</textarea></td>
+    <td><input class="rr-input" id="ed_owner" value="${r.riskOwner||''}"></td>
+    <td><select class="rr-select" id="ed_status">
+      <option value="current"${r.status==='current'?' selected':''}>Actuel</option>
+      <option value="residual"${r.status==='residual'?' selected':''}>Résiduel</option>
+      <option value="obsolete"${r.status==='obsolete'?' selected':''}>Obsolète</option>
+    </select></td>
+    <td><div class="rr-actions">
+      <button class="rr-btn save" onclick="saveRRRow('${r.id}')" title="Sauvegarder">💾</button>
+      <button class="rr-btn" onclick="renderRegister()" title="Annuler">✕</button>
+    </div></td>`;
+  // Live score preview
+  const updatePreview = () => {
+    const p = document.getElementById('ed_prob')?.value;
+    const i = document.getElementById('ed_impact')?.value;
+    if (!p||!i) return;
+    const s = calcScore(p,i);
+    const sl = scoreLevel(s);
+    const colors = {low:'var(--success)',medium:'var(--accent2)',high:'var(--danger)'};
+    const preview = document.getElementById('ed_score_preview');
+    if (preview) preview.innerHTML = `<span style="color:${colors[sl]};font-weight:700">${scoreLbl(s)}<br>(${s.toFixed(2)})</span>`;
+  };
+  ['ed_prob','ed_impact'].forEach(id => document.getElementById(id)?.addEventListener('change', updatePreview));
+  updatePreview();
+}
+
+function saveRRRow(id) {
+  const rr = getRR();
+  const idx = rr.findIndex(x=>x.id===id);
+  if (idx===-1) return;
+  const desc = document.getElementById('ed_desc')?.value.trim();
+  if (!desc) return;
+  rr[idx] = {
+    ...rr[idx],
+    category:     document.getElementById('ed_cat')?.value,
+    description:  desc,
+    trigger:      document.getElementById('ed_trigger')?.value.trim(),
+    to:           document.getElementById('ed_to')?.value,
+    probability:  document.getElementById('ed_prob')?.value,
+    impact:       document.getElementById('ed_impact')?.value,
+    responsePlan: document.getElementById('ed_plan')?.value.trim(),
+    riskOwner:    document.getElementById('ed_owner')?.value.trim(),
+    status:       document.getElementById('ed_status')?.value,
+  };
+  saveRR(rr);
+  updateKPIs();
+  renderRegister();
+  showToast('✓ Risque mis à jour');
+}
+
+function addRRRow() {
+  const rr = getRR();
+  const newR = {
+    id: nextRRId(rr), category:'Opérationnel', description:'', trigger:'',
+    to:'threat', probability:'medium', impact:'medium',
+    responsePlan:'', riskOwner:'', status:'current', createdAt: new Date().toISOString().split('T')[0]
+  };
+  rr.unshift(newR);
+  saveRR(rr);
+  renderRegister();
+  editRRRow(newR.id);
+}
+
+function deleteRRRow(id) {
+  if (!confirm('Supprimer ce risque définitivement ?')) return;
+  const rr = getRR().filter(r=>r.id!==id);
+  saveRR(rr);
+  updateKPIs();
+  renderRegister();
+  showToast('🗑 Risque supprimé');
+}
+
+function cycleRRStatus(id) {
+  const rr = getRR();
+  const r  = rr.find(x=>x.id===id);
+  if (!r) return;
+  r.status = STATUS_CYCLE_RR[r.status]||'current';
+  saveRR(rr);
+  updateKPIs();
+  renderRegister();
+}
+
+// ══════════════════════════════════════════════════════
+// RAID TABLE (Actions / Issues / Decisions)
+// ══════════════════════════════════════════════════════
+function filterRaid(items) {
+  const q      = (document.getElementById('tbSearch')?.value||'').toLowerCase();
+  const status = document.getElementById('tbStatus')?.value||'';
+  const od     = showOD;
+  const today  = new Date();
+  return items.filter(item => {
+    if (q && !(item.desc||'').toLowerCase().includes(q) && !(item.owner||'').toLowerCase().includes(q)) return false;
+    if (status && item.status !== status) return false;
+    if (od && !isOverdue(item)) return false;
+    return true;
+  });
+}
+
+function renderRaidTab(tab) {
+  document.getElementById('riskMatrixWrap').style.display = 'none';
+  document.getElementById('legendWrap').style.display = 'none';
+  const raid   = getRaid();
+  const items  = filterRaid(raid[tab]||[]);
+  const showProba = false;
+  const container = document.getElementById('tableContainer');
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state">📋<br>Aucun élément.<br>Cliquez "＋ Ajouter".</div>';
+    return;
+  }
+  const rows = items.map(item => {
+    const od = isOverdue(item);
+    return `<tr class="${item.status==='closed'?'closed':''}">
+      <td>
+        <div class="rd-title">${(item.desc||'').replace(/</g,'&lt;')}</div>
+        ${item.mitigation?`<div class="rd-mitigation">→ ${item.mitigation.replace(/</g,'&lt;').slice(0,100)}${item.mitigation.length>100?'…':''}</div>`:''}
+      </td>
+      ${tab==='risks'?`<td style="font-size:10px;color:var(--text-soft)">${item.proba||'—'}</td>`:''}
+      ${tab!=='actions'&&tab!=='decisions'?`<td>${item.impact&&item.impact!=='—'?`<span class="sev-badge sev-${item.severity||sevClass(item.impact)}">${item.impact}</span>`:'—'}</td>`:''}
+      <td><span class="rd-owner">${item.owner||'—'}</span></td>
+      <td><span class="status-badge ${statusClass(item.status)}" onclick="cycleRaidStatus(${item.id},'${tab}')" title="Clic pour changer">${statusLabel(item.status)}</span></td>
+      <td>
+        <span class="rd-date${od?' late':''}">${od?'⚠ ':''}${fmtDate(item.due)}</span>
+        ${od?`<span class="rd-overdue">${daysLate(item)}j</span>`:''}
+      </td>
+      <td><div style="display:flex;gap:5px;">
+        <button class="icon-btn" onclick="openEditItem(${item.id},'${tab}')" title="Éditer">✏️</button>
+        <button class="icon-btn del" onclick="deleteItem(${item.id},'${tab}')" title="Supprimer">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  const cols = tab === 'risks'
+    ? '<th>Description</th><th>Proba</th><th>Impact</th><th>Owner</th><th>Statut</th><th>Échéance</th><th></th>'
+    : tab === 'actions' || tab === 'decisions'
+    ? '<th>Description</th><th>Owner</th><th>Statut</th><th>Échéance</th><th></th>'
+    : '<th>Description</th><th>Impact</th><th>Owner</th><th>Statut</th><th>Échéance</th><th></th>';
+  container.innerHTML = `<div class="raid-table-wrap"><table class="raid-table"><thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function cycleRaidStatus(id, tab) {
+  const raid = getRaid();
+  const item = (raid[tab]||[]).find(i=>i.id===id);
+  if (!item) return;
+  item.status = STATUS_CYCLE_RAID[item.status]||'open';
+  saveRaid(raid);
+  updateKPIs();
+  renderRaidTab(tab);
+}
+
+function deleteItem(id, tab) {
+  if (!confirm('Supprimer cet élément ?')) return;
+  const raid = getRaid();
+  raid[tab] = (raid[tab]||[]).filter(i=>i.id!==id);
+  saveRaid(raid);
+  updateKPIs();
+  renderRaidTab(tab);
+  showToast('🗑 Supprimé');
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL (Actions / Issues / Decisions)
+// ══════════════════════════════════════════════════════
+function populateOwners() {
+  const sel = document.getElementById('f_owner');
+  if (!sel) return;
+  const resources = (typeof PMHUB !== 'undefined' && PMHUB.getResources) ? PMHUB.getResources() : [];
+  sel.innerHTML = resources.length
+    ? resources.map(r => `<option value="${r.name||r.id}">${r.name||r.id}</option>`).join('')
+    : '<option>Chef de projet</option><option>CdP</option><option>DSI</option><option>MOA</option>';
+}
+
+function openAddItem() {
   editingId = null;
-  const meta = TAB_META[currentTab];
-  document.getElementById('modalTypeTag').textContent = meta.label;
-  document.getElementById('modalTitle').textContent = meta.addLabel;
+  const TAB_LBL = {actions:'Action',issues:'Issue',decisions:'Décision'};
+  document.getElementById('modalTitle').textContent = 'Nouveau · ' + (TAB_LBL[currentTab]||currentTab);
   document.getElementById('f_desc').value = '';
   document.getElementById('f_mitigation').value = '';
   document.getElementById('f_due').value = '';
   document.getElementById('f_status').value = 'open';
+  document.getElementById('editingId').value = '';
+  document.getElementById('btnDelete').style.display = 'none';
+  const showProbImpact = currentTab === 'risks';
+  document.getElementById('grp_proba').style.display = showProbImpact ? '' : 'none';
+  document.getElementById('grp_impact').style.display = showProbImpact ? '' : 'none';
+  populateOwners();
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-function editItem(id) {
-  const data = getRaidData();
-  const all = [...data.risks,...data.actions,...data.issues,...data.decisions];
-  const item = all.find(i => i.id === id);
-  if(!item) return;
+function openEditItem(id, tab) {
+  const raid = getRaid();
+  const item = (raid[tab]||[]).find(i=>i.id===id);
+  if (!item) return;
   editingId = id;
-  document.getElementById('modalTypeTag').textContent = TAB_META[currentTab].label;
   document.getElementById('modalTitle').textContent = 'Modifier';
-  document.getElementById('f_desc').value = item.desc;
-  document.getElementById('f_proba').value = item.proba !== '—' ? item.proba : 'Moyen';
-  document.getElementById('f_impact').value = item.impact !== '—' ? item.impact : 'Élevé';
-  document.getElementById('f_owner').value = item.owner;
-  document.getElementById('f_status').value = item.status;
-  document.getElementById('f_due').value = item.due || '';
-  document.getElementById('f_mitigation').value = item.mitigation || '';
+  document.getElementById('f_desc').value = item.desc||'';
+  document.getElementById('f_proba').value = item.proba!=='—' ? item.proba : 'Moyen';
+  document.getElementById('f_impact').value = item.impact!=='—' ? item.impact : 'Élevé';
+  document.getElementById('f_status').value = item.status||'open';
+  document.getElementById('f_due').value = item.due||'';
+  document.getElementById('f_mitigation').value = item.mitigation||'';
+  document.getElementById('editingId').value = id;
+  document.getElementById('btnDelete').style.display = '';
+  const showPI = currentTab === 'risks';
+  document.getElementById('grp_proba').style.display = showPI ? '' : 'none';
+  document.getElementById('grp_impact').style.display = showPI ? '' : 'none';
+  populateOwners();
+  setTimeout(() => { const sel = document.getElementById('f_owner'); if(sel && item.owner) sel.value = item.owner; }, 10);
   document.getElementById('modalOverlay').classList.add('open');
 }
 
 function saveItem() {
   const desc = document.getElementById('f_desc').value.trim();
-  if(!desc) { document.getElementById('f_desc').style.borderColor='var(--danger)'; return; }
-  const impact = document.getElementById('f_impact').value;
-  const item = {
+  if (!desc) { document.getElementById('f_desc').style.borderColor='var(--danger)'; return; }
+  const impact  = document.getElementById('f_impact').value;
+  const newItem = {
     desc,
     proba:      currentTab==='risks' ? document.getElementById('f_proba').value : '—',
     impact:     ['actions','decisions'].includes(currentTab) ? '—' : impact,
-    severity:   severityClass(impact),
+    severity:   sevClass(impact),
     owner:      document.getElementById('f_owner').value,
     status:     document.getElementById('f_status').value,
     due:        document.getElementById('f_due').value,
     mitigation: document.getElementById('f_mitigation').value,
   };
-
-  const data = getRaidData();
-  if(editingId) {
-    const idx = data[currentTab].findIndex(i=>i.id===editingId);
-    if(idx!==-1) data[currentTab][idx] = {...data[currentTab][idx],...item};
+  const raid = getRaid();
+  const eid = parseInt(document.getElementById('editingId').value);
+  if (eid) {
+    const idx = (raid[currentTab]||[]).findIndex(i=>i.id===eid);
+    if (idx!==-1) raid[currentTab][idx] = {...raid[currentTab][idx],...newItem};
   } else {
-    item.id = Date.now();
-    item.createdAt = new Date().toISOString().split('T')[0];
-    data[currentTab].push(item);
+    newItem.id = Date.now();
+    newItem.createdAt = new Date().toISOString().split('T')[0];
+    (raid[currentTab] = raid[currentTab]||[]).push(newItem);
   }
-  persistRaidData(data);
+  saveRaid(raid);
   closeModal();
   updateKPIs();
-  renderTable();
-  showToast(editingId ? '✅ Élément mis à jour.' : '✅ Élément ajouté.');
+  renderRaidTab(currentTab);
+  showToast(eid ? '✓ Mis à jour' : '✓ Ajouté');
 }
 
-function deleteItem(id) {
-  if(!confirm('Supprimer cet élément définitivement ?')) return;
-  const data = getRaidData();
-  data[currentTab] = data[currentTab].filter(i=>i.id!==id);
-  persistRaidData(data);
+function deleteCurrentItem() {
+  const eid = parseInt(document.getElementById('editingId').value);
+  if (!eid || !confirm('Supprimer ?')) return;
+  const raid = getRaid();
+  raid[currentTab] = (raid[currentTab]||[]).filter(i=>i.id!==eid);
+  saveRaid(raid);
+  closeModal();
   updateKPIs();
-  renderTable();
-  showToast('🗑️ Élément supprimé.');
+  renderRaidTab(currentTab);
+  showToast('🗑 Supprimé');
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
 
-function renderProjChips() {
-  const projects = PMHUB.getProjects().filter(p=>p.status==='active'||p.status==='risk');
-  const container = document.getElementById('projChips');
-  container.innerHTML = '';
-  projects.forEach(p => {
-    const chip = document.createElement('button');
-    chip.className = 'proj-chip' + (currentProject===p.id?' active':'');
-    chip.textContent = p.name.length>30 ? p.name.slice(0,29)+'…' : p.name;
-    chip.onclick = () => { currentProject=p.id; renderProjChips(); updateKPIs(); renderTable(); };
-    container.appendChild(chip);
-  });
-  // Fallback si aucun projet actif trouvé
-  if(projects.length === 0) {
-    container.innerHTML = '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucun projet actif</span>';
+// ══════════════════════════════════════════════════════
+// TAB / FILTER / RENDER DISPATCH
+// ══════════════════════════════════════════════════════
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  // Show/hide status options relevant to each tab
+  const tbStatus = document.getElementById('tbStatus');
+  if (tbStatus) {
+    const rrOpts = ['current','residual','obsolete'];
+    const raidOpts = ['open','progress','watch','closed'];
+    [...tbStatus.options].forEach(o => {
+      if (!o.value) return;
+      if (tab === 'register') o.style.display = rrOpts.includes(o.value) ? '' : 'none';
+      else o.style.display = raidOpts.includes(o.value) ? '' : 'none';
+    });
+    if (tab !== 'register' && rrOpts.includes(tbStatus.value)) tbStatus.value = '';
+    if (tab === 'register' && raidOpts.includes(tbStatus.value)) tbStatus.value = '';
   }
+  renderCurrent();
+}
+
+function renderCurrent() {
+  if (currentTab === 'register') renderRegister();
+  else renderRaidTab(currentTab);
+}
+
+function handleAdd() {
+  if (currentTab === 'register') addRRRow();
+  else openAddItem();
+}
+
+function toggleOD() {
+  showOD = !showOD;
+  const btn = document.getElementById('tbOverdue');
+  if (btn) btn.classList.toggle('active', showOD);
+  renderCurrent();
+}
+
+function toggleLegend() {
+  const body   = document.getElementById('legendBody');
+  const toggle = document.getElementById('legendToggle');
+  const header = document.getElementById('legendHeader');
+  const open   = body.classList.toggle('open');
+  header.classList.toggle('open', open);
+  toggle.textContent = open ? '▾ Masquer' : '▸ Afficher';
+}
+
+// ══════════════════════════════════════════════════════
+// PROJECT SELECTOR
+// ══════════════════════════════════════════════════════
+function loadProjects() {
+  const projects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
+  const sel = document.getElementById('projectSelect');
+  sel.innerHTML = '';
+  if (!projects.length) {
+    sel.innerHTML = '<option>Aucun projet</option>';
+    return;
+  }
+  const paramId = typeof PMHUB !== 'undefined' ? PMHUB.getParam('project') : null;
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
+    if (String(p.id) === String(paramId)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  switchProject(parseInt(sel.value));
+}
+
+function switchProject(id) {
+  currentProject = id;
+  const p = typeof PMHUB !== 'undefined' ? PMHUB.getProjectById(id) : null;
+  const badge = document.getElementById('projectBadge');
+  if (p && badge) {
+    const labels={active:'En cours',risk:'À risque',hold:'En attente',closed:'Clôturé'};
+    const bg={active:'rgba(99,210,180,.1)',risk:'rgba(239,68,68,.12)',hold:'rgba(245,158,11,.1)',closed:'rgba(107,120,133,.1)'};
+    const clr={active:'var(--accent)',risk:'var(--danger)',hold:'var(--accent2)',closed:'var(--text-muted)'};
+    badge.textContent = labels[p.status]||p.status;
+    badge.style.cssText='background:'+(bg[p.status]||'transparent')+';color:'+(clr[p.status]||'var(--text-muted)')+';border:1px solid '+(clr[p.status]||'var(--border)')+'44;font-family:\'DM Mono\',monospace;font-size:9px;padding:3px 9px;border-radius:20px;';
+  }
+  const lg = document.getElementById('linkGantt');
+  if (lg) lg.href = 'pm-hub-gantt.html?project='+id;
+  const ab = document.getElementById('aiFloatBtn');
+  if (ab) ab.href = 'pm-hub-ai.html?from=RAID&project='+id;
+  updateKPIs();
+  renderCurrent();
 }
 
 function showToast(msg) {
-  let t = document.getElementById('pmhub-toast');
-  if(!t) {
-    t = document.createElement('div');
-    t.id = 'pmhub-toast';
-    t.style.cssText = `position:fixed;bottom:32px;right:32px;z-index:999;
-      background:#0c1118;border:1px solid rgba(99,210,180,0.35);border-radius:10px;
-      padding:14px 20px;font-family:'DM Mono',monospace;font-size:12px;color:#dde5ed;
-      display:flex;align-items:center;gap:10px;
-      transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;`;
-    document.body.appendChild(t);
-  }
+  const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.transform = 'translateY(0)'; t.style.opacity = '1';
-  setTimeout(()=>{ t.style.transform='translateY(80px)'; t.style.opacity='0'; }, 3000);
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// INIT
-initSeed();
-renderProjChips();
-updateKPIs();
-setTab('risks');
+function sevClass(impact) {
+  const m={'Critique':'critical','Élevé':'high','Moyen':'medium','Faible':'low'};
+  return m[impact]||'low';
+}
+
+// ── BOOT ──
+if (typeof PMHUB !== 'undefined') {
+  loadProjects();
+} else {
+  document.getElementById('projectSelect').innerHTML = '<option>Chargez le hub</option>';
+}
 </script>
-<div id="ai-suggestions-bar"></div>
-<script src="pmhub-ai-suggestions.js"></script>
 </body>
 </html>
