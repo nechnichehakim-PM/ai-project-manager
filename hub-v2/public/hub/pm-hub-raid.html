@@ -19,8 +19,8 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
 
 /* LAYOUT */
-.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;}
-.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;}
+.layout{display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;}
+.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;min-height:0;}
 
 /* TOP BAR */
 .raid-bar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
@@ -37,7 +37,7 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .rkpi-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-top:2px;}
 
 /* SCROLL CONTAINER */
-.raid-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;min-height:0;}
+.raid-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;padding-bottom:90px;min-height:0;}
 .raid-scroll::-webkit-scrollbar{width:5px;}
 .raid-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
 
@@ -83,6 +83,18 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .lb-residual{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
 .legend-formula{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);background:var(--surface2);padding:8px 12px;border-radius:6px;border-left:2px solid var(--accent);}
 .legend-formula strong{color:var(--text);}
+/* Legend matrix table */
+.legend-matrix{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:9px;margin-top:6px;}
+.legend-matrix th,.legend-matrix td{border:1px solid var(--border);padding:4px 6px;text-align:center;}
+.legend-matrix th{background:var(--surface2);color:var(--text-muted);letter-spacing:.08em;}
+.legend-matrix td.lm-green{background:rgba(34,197,94,.12);color:var(--success);}
+.legend-matrix td.lm-amber{background:rgba(245,158,11,.12);color:var(--accent2);}
+.legend-matrix td.lm-red{background:rgba(239,68,68,.13);color:var(--danger);}
+/* Source badge */
+.rr-source{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(124,58,237,.1);color:var(--accent3);border:1px solid rgba(124,58,237,.2);margin-top:3px;}
+/* Last update header */
+.rr-last-update{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.rr-last-update span{color:var(--text-soft);}
 
 /* TABS */
 .tabs-row{display:flex;gap:3px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
@@ -278,31 +290,40 @@ html[data-theme="light"] .rr-table tr:hover td,.raid-table tr:hover td{backgroun
           </div>
           <div class="legend-block">
             <div class="legend-block-title">Probabilité & Impact</div>
-            <div class="legend-row"><span class="lb-badge lb-low">Faible</span>1–33 %</div>
+            <div class="legend-row"><span class="lb-badge lb-low">Faible</span>1–33 % (jamais 0 %)</div>
             <div class="legend-row"><span class="lb-badge lb-med">Moyen</span>34–66 %</div>
-            <div class="legend-row"><span class="lb-badge lb-high">Élevé</span>67–99 %</div>
+            <div class="legend-row"><span class="lb-badge lb-high">Élevé</span>67–99 % (jamais 100 %)</div>
+            <div class="legend-row" style="font-size:9px;color:var(--text-muted);margin-top:2px;">⚡ Sources : Expert, Historique, Calcul, Observation, IA</div>
           </div>
           <div class="legend-block">
             <div class="legend-block-title">Score de risque</div>
             <div class="legend-formula">
-              <strong>Score = Prob% × Impact%</strong><br>
-              Seuil : 0,30<br><br>
-              <span style="color:var(--danger)">▲ Menace :</span> score ≥ 0,30 → plan d'action requis<br>
+              <strong>Score = %Prob × %Impact</strong><br>
+              Seuil : <strong>0,30</strong><br>
+              Score 0,01–0,29 → surveiller seulement<br>
+              Score ≥ 0,30 → plan d'action + analyse quantitative<br><br>
+              <span style="color:var(--danger)">▲ Menace :</span> score ≥ 0,30 → plan requis<br>
               <span style="color:var(--success)">▼ Opportunité :</span> score ≥ 0,30 → exploiter activement<br>
-              Pour les opportunités, <em>Probabilité</em> = chance d'occurrence, <em>Impact</em> = bénéfice potentiel
+              <em>Probabilité</em> = occurrence · <em>Impact</em> = bénéfice
             </div>
+          </div>
+          <div class="legend-block" style="grid-column:1/-1;">
+            <div class="legend-block-title">Matrice Probabilité × Impact</div>
+            <table class="legend-matrix">
+              <thead><tr><th>Prob \ Impact</th><th>Faible (≈0,17)</th><th>Moyen (≈0,50)</th><th>Élevé (≈0,83)</th></tr></thead>
+              <tbody>
+                <tr><td style="font-family:'DM Mono',monospace;font-size:9px;background:var(--surface2);color:var(--text-muted);">Élevé (≈0,83)</td><td class="lm-amber">0,14</td><td class="lm-red">0,42 ⚠</td><td class="lm-red">0,69 ⚠</td></tr>
+                <tr><td style="font-family:'DM Mono',monospace;font-size:9px;background:var(--surface2);color:var(--text-muted);">Moyen (≈0,50)</td><td class="lm-green">0,09</td><td class="lm-amber">0,25</td><td class="lm-red">0,42 ⚠</td></tr>
+                <tr><td style="font-family:'DM Mono',monospace;font-size:9px;background:var(--surface2);color:var(--text-muted);">Faible (≈0,17)</td><td class="lm-green">0,03</td><td class="lm-green">0,09</td><td class="lm-amber">0,14</td></tr>
+              </tbody>
+            </table>
+            <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:6px;">⚠ = Plan d'action requis (score ≥ 0,30)</div>
           </div>
           <div class="legend-block">
             <div class="legend-block-title">Statut</div>
             <div class="legend-row"><span class="lb-badge lb-current">Actuel</span>Risque actif, suivi en cours</div>
             <div class="legend-row"><span class="lb-badge lb-residual">Résiduel</span>Atténué mais non éliminé</div>
             <div class="legend-row"><span class="lb-badge lb-obsolete">Obsolète</span>Plus pertinent / clos</div>
-          </div>
-          <div class="legend-block">
-            <div class="legend-block-title">Matrice des couleurs</div>
-            <div class="legend-row"><span class="lb-badge lb-low">Vert</span>Score faible — surveiller</div>
-            <div class="legend-row"><span class="lb-badge lb-med">Ambre</span>Score moyen — surveiller</div>
-            <div class="legend-row"><span class="lb-badge lb-high">Rouge</span>Score élevé ≥ 0,30 — agir</div>
           </div>
         </div>
       </div>
@@ -412,12 +433,13 @@ const PROB_VAL  = { low: 0.17, medium: 0.50, high: 0.83 };
 const PROB_LABELS = { low: 'Faible', medium: 'Moyen', high: 'Élevé' };
 const STATUS_CYCLE_RAID = { open:'progress', progress:'watch', watch:'closed', closed:'open' };
 const STATUS_CYCLE_RR   = { current:'residual', residual:'obsolete', obsolete:'current' };
-const RR_CATS = ['Stratégique','Financier','Opérationnel','Technique','Externe','Juridique','RH'];
+const RR_CATS    = ['Stratégique','Financier','Opérationnel','Technique','Externe','Juridique','RH'];
+const RR_SOURCES = ['Expert','Historique','Calcul','Observation','IA'];
 
 const SEED_RR = [
-  { id:'RR-001', category:'Externe', description:'La production pourrait s\'arrêter suite à la faillite du fournisseur ABC', trigger:'Indicateurs financiers dégradés chez le fournisseur', to:'threat', probability:'high', impact:'high', responsePlan:'Mitiger : contrat avec un nouveau fournisseur sous 30 jours', riskOwner:'Chef de projet', status:'current', createdAt:'2026-01-01' },
-  { id:'RR-002', category:'Technique', description:'Dérive de périmètre en phase déploiement', trigger:'Demandes de modifications fréquentes hors scope', to:'threat', probability:'medium', impact:'high', responsePlan:'Comité de changement formel, gel de périmètre après phase 2', riskOwner:'CdP', status:'current', createdAt:'2026-01-05' },
-  { id:'RR-003', category:'Stratégique', description:'Opportunité de partenariat avec intégrateur technologique', trigger:'Discussions préliminaires favorables', to:'opportunity', probability:'medium', impact:'medium', responsePlan:'Exploiter : négocier accord-cadre avant Q2', riskOwner:'Directeur', status:'current', createdAt:'2026-01-10' },
+  { id:'RR-001', category:'Externe', description:'La production pourrait s\'arrêter suite à la faillite du fournisseur ABC', trigger:'Indicateurs financiers dégradés chez le fournisseur', to:'threat', probability:'high', impact:'high', source:'Expert', responsePlan:'Mitiger : contrat avec un nouveau fournisseur sous 30 jours', riskOwner:'Chef de projet', status:'current', createdAt:'2026-01-01' },
+  { id:'RR-002', category:'Technique', description:'Dérive de périmètre en phase déploiement', trigger:'Demandes de modifications fréquentes hors scope', to:'threat', probability:'medium', impact:'high', source:'Observation', responsePlan:'Comité de changement formel, gel de périmètre après phase 2', riskOwner:'CdP', status:'current', createdAt:'2026-01-05' },
+  { id:'RR-003', category:'Stratégique', description:'Opportunité de partenariat avec intégrateur technologique', trigger:'Discussions préliminaires favorables', to:'opportunity', probability:'medium', impact:'medium', source:'Expert', responsePlan:'Exploiter : négocier accord-cadre avant Q2', riskOwner:'Directeur', status:'current', createdAt:'2026-01-10' },
 ];
 const SEED_RAIDS = {
   risks:[], actions:[
@@ -569,15 +591,18 @@ function renderRegister() {
     container.innerHTML = '<div class="empty-state">📋<br>Aucun risque enregistré.<br>Cliquez sur "＋ Ajouter" pour créer le premier risque.</div>';
     return;
   }
+  const lastUpdate = rr.reduce((latest, r) => r.updatedAt > latest ? r.updatedAt : latest, rr[0]?.createdAt || '');
   const tbody = rr.map(r => buildRRViewRow(r)).join('');
   container.innerHTML =
+    '<div class="rr-last-update">📋 Registre des risques &nbsp;·&nbsp; <span>Dernière mise à jour : ' + (lastUpdate ? fmtDate(lastUpdate) : '—') + '</span></div>' +
     '<div class="rr-table-wrap"><table class="rr-table"><thead><tr>' +
     '<th style="width:70px">ID</th><th style="width:110px">Catégorie</th>' +
     '<th style="min-width:200px">Description & Déclencheur</th>' +
     '<th style="width:95px">M / O</th>' +
     '<th style="width:90px">Probabilité</th><th style="width:90px">Impact</th>' +
     '<th style="width:100px">Score</th>' +
-    '<th style="min-width:180px">Plan de réponse</th>' +
+    '<th style="min-width:160px">Plan de réponse</th>' +
+    '<th style="width:90px">Source</th>' +
     '<th style="width:110px">Responsable</th>' +
     '<th style="width:95px">Statut</th>' +
     '<th style="width:70px"></th>' +
@@ -621,6 +646,7 @@ function buildRRViewRow(r) {
     <td>
       <div class="rr-response">${(r.responsePlan||'—').replace(/</g,'&lt;')}</div>
     </td>
+    <td>${r.source?`<span class="rr-source">${r.source}</span>`:'<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
     <td><span class="rr-owner">${r.riskOwner||'—'}</span></td>
     <td><span class="rr-status ${r.status}" onclick="cycleRRStatus('${r.id}')" title="Clic pour changer">${rrStatusLabel(r.status)}</span></td>
     <td><div class="rr-actions">
@@ -659,6 +685,7 @@ function editRRRow(id) {
     </select></td>
     <td style="color:var(--text-muted);font-size:10px;" id="ed_score_preview">—</td>
     <td><textarea class="rr-textarea" id="ed_plan" rows="2">${r.responsePlan||''}</textarea></td>
+    <td><select class="rr-select" id="ed_source"><option value="">—</option>${RR_SOURCES.map(s=>`<option${r.source===s?' selected':''}>${s}</option>`).join('')}</select></td>
     <td><input class="rr-input" id="ed_owner" value="${r.riskOwner||''}"></td>
     <td><select class="rr-select" id="ed_status">
       <option value="current"${r.status==='current'?' selected':''}>Actuel</option>
@@ -699,8 +726,10 @@ function saveRRRow(id) {
     probability:  document.getElementById('ed_prob')?.value,
     impact:       document.getElementById('ed_impact')?.value,
     responsePlan: document.getElementById('ed_plan')?.value.trim(),
+    source:       document.getElementById('ed_source')?.value || '',
     riskOwner:    document.getElementById('ed_owner')?.value.trim(),
     status:       document.getElementById('ed_status')?.value,
+    updatedAt:    new Date().toISOString().split('T')[0],
   };
   saveRR(rr);
   updateKPIs();
@@ -712,8 +741,8 @@ function addRRRow() {
   const rr = getRR();
   const newR = {
     id: nextRRId(rr), category:'Opérationnel', description:'', trigger:'',
-    to:'threat', probability:'medium', impact:'medium',
-    responsePlan:'', riskOwner:'', status:'current', createdAt: new Date().toISOString().split('T')[0]
+    to:'threat', probability:'medium', impact:'medium', source:'Expert',
+    responsePlan:'', riskOwner:'', status:'current', createdAt: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString().split('T')[0]
   };
   rr.unshift(newR);
   saveRR(rr);
