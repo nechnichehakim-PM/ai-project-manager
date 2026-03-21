@@ -173,7 +173,10 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
         <div class="gtab active" id="tab-comites"   onclick="setTab('comites')">Comités<span class="gtab-count" id="tc-comites" style="background:rgba(124,58,237,.12);color:#a78bfa;"></span></div>
         <div class="gtab"        id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="gtab-count" id="tc-decisions" style="background:rgba(99,210,180,.1);color:var(--accent);"></span></div>
         <div class="gtab"        id="tab-actions"   onclick="setTab('actions')">Actions<span class="gtab-count" id="tc-actions" style="background:rgba(245,158,11,.1);color:var(--accent2);"></span></div>
-        <div class="gtab"        id="tab-raci"      onclick="setTab('raci')">RACI</div>
+        <div class="gtab"        id="tab-raci"        onclick="setTab('raci')">RACI</div>
+        <div class="gtab"        id="tab-changements" onclick="setTab('changements')">Changements<span class="gtab-count" id="tc-changements" style="background:rgba(239,68,68,.1);color:var(--danger);"></span></div>
+        <div class="gtab"        id="tab-hypotheses"  onclick="setTab('hypotheses')">Hypothèses<span class="gtab-count" id="tc-hypotheses" style="background:rgba(245,158,11,.08);color:var(--accent2);"></span></div>
+        <div class="gtab"        id="tab-lessons"     onclick="setTab('lessons')">Leçons apprises</div>
       </div>
 
       <!-- TAB CONTENT -->
@@ -202,6 +205,31 @@ var SEED_COMMITTEES = [
   { id:3, type:'COPROJ',          date:'2026-03-18', participants:'CdP, Équipe technique', agenda:'Revue technique phase 2 — architecture, déploiement',     cr:'',                                                           status:'planifie' },
   { id:4, type:'COPIL',           date:'2026-04-15', participants:'Direction, CdP, MOA',   agenda:'Bilan Q1 — arbitrages budget et périmètre',               cr:'',                                                           status:'planifie' },
 ];
+var CR_TYPES   = ['Périmètre','Délai','Budget','Qualité','Risque','Ressources','Autre'];
+var CR_DEC     = { pending:'En attente', approved:'Approuvé', rejected:'Refusé', deferred:'Différé' };
+var CR_DEC_CYC = { pending:'approved', approved:'rejected', rejected:'deferred', deferred:'pending' };
+var CR_ST      = { draft:'Brouillon', submitted:'Soumis', in_review:'En revue', implemented:'Implémenté', cancelled:'Annulé' };
+var CR_ST_CYC  = { draft:'submitted', submitted:'in_review', in_review:'implemented', implemented:'cancelled', cancelled:'draft' };
+var HYP_CATS   = ['Technique','Budget','Planning','Équipe','Externe','Qualité','Autre'];
+var HYP_ST     = { valid:'Valide', invalid:'Invalidée', unknown:'À vérifier' };
+var HYP_ST_CYC = { valid:'invalid', invalid:'unknown', unknown:'valid' };
+var LL_CATS    = ['Risque','Planning','Équipe','Technique','Budget','Communication','Gouvernance','Autre'];
+
+var SEED_CHANGES = [
+  { id:'CR-001', title:'Extension périmètre — module reporting', type:'Périmètre', desc:'Le client demande l\'ajout d\'un module de reporting avancé non prévu initialement dans la charte projet.', requestor:'MOA', date:'2026-02-15', impact:'+15 j, +8 000 €', priority:'high', decision:'approved', status:'implemented' },
+  { id:'CR-002', title:'Report jalon V2 de 2 semaines', type:'Délai', desc:'Retard fournisseur sur les licences logicielles. Report du jalon V2 rendu nécessaire.', requestor:'CdP', date:'2026-03-10', impact:'+14 j calendaires, pas d\'impact budget', priority:'medium', decision:'approved', status:'implemented' },
+  { id:'CR-003', title:'Réduction budget infra de 10%', type:'Budget', desc:'Direction demande une optimisation budgétaire suite à la révision annuelle des dépenses IT.', requestor:'Direction', date:'2026-03-20', impact:'Scope infra à réviser, risque qualité élevé', priority:'high', decision:'pending', status:'submitted' },
+];
+var SEED_ASSUMPTIONS = [
+  { id:'H-001', desc:'Les ressources clés seront disponibles à 80% pendant toute la durée du projet', owner:'CdP', category:'Équipe', status:'valid', impact:'Retard planning +20-30% si invalidée', verifiedDate:'2026-01-05' },
+  { id:'H-002', desc:'Le budget alloué couvre l\'intégralité du périmètre défini dans la charte', owner:'MOA', category:'Budget', status:'valid', impact:'Demande de changement CR nécessaire si invalidée', verifiedDate:'2026-01-05' },
+  { id:'H-003', desc:'L\'environnement de production sera disponible 4 semaines avant la mise en service', owner:'DSI', category:'Technique', status:'unknown', impact:'Décalage des tests d\'acceptance et de la date de mise en production', verifiedDate:'' },
+];
+var SEED_LESSONS = [
+  { id:'LL-001', category:'Planning', phase:'Initialisation', desc:'Le découpage en lots ≤10 jours a facilité le suivi et réduit l\'incertitude', impact:'Vélocité +15% vs projets similaires', recommendation:'Appliquer systématiquement la décomposition WBS en lots courts', owner:'CdP', date:'2026-02-20' },
+  { id:'LL-002', category:'Risque', phase:'Exécution', desc:'Absence de clause contractuelle sur les délais fournisseur — retard non anticipé', impact:'Retard de 2 semaines sur jalon V2', recommendation:'Inclure systématiquement des SLA fournisseurs dans les contrats', owner:'CdP', date:'2026-03-10' },
+];
+
 var SEED_RACI_ROWS = [
   { id:1, label:'Initialisation & Cadrage'    },
   { id:2, label:'Planification détaillée'     },
@@ -230,6 +258,19 @@ function getRaidData() {
   return (typeof PMHUB !== 'undefined') ? PMHUB.getRaids(currentProject) : { actions:[], decisions:[] };
 }
 function saveRaidData(d) { if (typeof PMHUB !== 'undefined') PMHUB.saveRaids(currentProject, d); }
+
+function getChanges() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_changes_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_CHANGES)); } catch(e) { return JSON.parse(JSON.stringify(SEED_CHANGES)); }
+}
+function saveChanges(d) { localStorage.setItem('pmhub_changes_'+currentProject, JSON.stringify(d)); }
+function getAssumptions() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_assumptions_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_ASSUMPTIONS)); } catch(e) { return JSON.parse(JSON.stringify(SEED_ASSUMPTIONS)); }
+}
+function saveAssumptions(d) { localStorage.setItem('pmhub_assumptions_'+currentProject, JSON.stringify(d)); }
+function getLessons() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_lessons_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_LESSONS)); } catch(e) { return JSON.parse(JSON.stringify(SEED_LESSONS)); }
+}
+function saveLessons(d) { localStorage.setItem('pmhub_lessons_'+currentProject, JSON.stringify(d)); }
 
 function getResources() {
   return (typeof PMHUB !== 'undefined' && PMHUB.getResources) ? PMHUB.getResources() : [];
@@ -284,6 +325,10 @@ function updateKPIs() {
   document.getElementById('tc-comites').textContent   = coms.length;
   document.getElementById('tc-decisions').textContent = decs.length;
   document.getElementById('tc-actions').textContent   = openA;
+  var crPending = getChanges().filter(function(c){return c.decision==='pending';}).length;
+  var hypUnk    = getAssumptions().filter(function(h){return h.status==='unknown'||h.status==='invalid';}).length;
+  var tcCR  = document.getElementById('tc-changements'); if(tcCR)  tcCR.textContent  = crPending  || '';
+  var tcHyp = document.getElementById('tc-hypotheses');  if(tcHyp) tcHyp.textContent = hypUnk     || '';
 }
 
 // ══════════════════════════════════════════════════════
@@ -656,16 +701,297 @@ function resetRaci() {
 }
 
 // ══════════════════════════════════════════════════════
+// TAB 5 — CHANGEMENTS (Change Request Register)
+// ══════════════════════════════════════════════════════
+function crDecClass(d) { return {pending:'st-watch',approved:'st-tenu',rejected:'st-annule',deferred:'st-progress'}[d]||'st-watch'; }
+function crStClass(s)  { return {draft:'st-progress',submitted:'st-planifie',in_review:'st-watch',implemented:'st-tenu',cancelled:'st-annule'}[s]||'st-planifie'; }
+function crPrioColor(p){ return {critical:'var(--danger)',high:'#f09090',medium:'var(--accent2)',low:'var(--success)'}[p]||'var(--accent2)'; }
+
+function renderChangements() {
+  var crs  = getChanges();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des demandes de changement</span><button class="sec-btn" onclick="addCR()">＋ Ajouter CR</button></div>';
+  if (!crs.length) return html + '<div class="empty-state">🔄<br>Aucune demande de changement.<br>Cliquez sur "＋ Ajouter CR" pour créer la première demande.</div>';
+  var rows = crs.map(function(cr) {
+    return '<tr data-crid="' + cr.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent3);white-space:nowrap;font-weight:700;">' + cr.id + '</td>' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (cr.title||'').replace(/</g,'&lt;') + '</div>' +
+        (cr.desc ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">' + cr.desc.replace(/</g,'&lt;').slice(0,100) + (cr.desc.length>100?'…':'') + '</div>' : '') +
+      '</td>' +
+      '<td><span class="com-type com-revue" style="font-size:8px;">' + (cr.type||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + crPrioColor(cr.priority) + ';">' + (cr.priority||'medium').charAt(0).toUpperCase() + (cr.priority||'medium').slice(1) + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (cr.requestor||'—') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + fmtDate(cr.date) + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-soft);">' + (cr.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td><span class="st-badge ' + crDecClass(cr.decision) + '" onclick="cycleCRDec(\'' + cr.id + '\')" title="Clic pour changer">' + (CR_DEC[cr.decision]||cr.decision) + '</span></td>' +
+      '<td><span class="st-badge ' + crStClass(cr.status) + '" onclick="cycleCRSt(\'' + cr.id + '\')" title="Clic pour changer">' + (CR_ST[cr.status]||cr.status) + '</span></td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editCR(\'' + cr.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteCR(\'' + cr.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:70px">Réf.</th><th style="min-width:180px">Titre / Description</th><th style="width:90px">Type</th><th style="width:80px">Priorité</th><th style="width:100px">Demandeur</th><th style="width:90px">Date</th><th style="min-width:130px">Impact</th><th style="width:100px">Décision CCB</th><th style="width:100px">Statut</th><th style="width:70px"></th></tr></thead><tbody id="crTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addCR() {
+  var crs   = getChanges();
+  var maxN  = crs.reduce(function(m,c){ var n=parseInt((c.id||'').replace('CR-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'CR-' + String(maxN+1).padStart(3,'0');
+  crs.push({ id:newId, title:'Nouvelle demande', type:'Périmètre', desc:'', requestor:'', date:new Date().toISOString().split('T')[0], impact:'', priority:'medium', decision:'pending', status:'draft' });
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+  editCR(newId);
+}
+
+function editCR(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  var row = document.querySelector('tr[data-crid="' + id + '"]');
+  if (!row) return;
+  var typeOpts  = CR_TYPES.map(function(t){ return '<option'+(cr.type===t?' selected':'')+'>'+t+'</option>'; }).join('');
+  var prioOpts  = ['low','medium','high','critical'].map(function(p){ return '<option value="'+p+'"'+(cr.priority===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>'; }).join('');
+  var decOpts   = Object.keys(CR_DEC).map(function(k){ return '<option value="'+k+'"'+(cr.decision===k?' selected':'')+'>'+CR_DEC[k]+'</option>'; }).join('');
+  var stOpts    = Object.keys(CR_ST).map(function(k){ return '<option value="'+k+'"'+(cr.status===k?' selected':'')+'>'+CR_ST[k]+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent3);">' + cr.id + '</td>' +
+    '<td><input class="g-input" id="ecr_title" value="' + (cr.title||'').replace(/"/g,'&quot;') + '" placeholder="Titre…" style="margin-bottom:4px;"><textarea class="g-textarea" id="ecr_desc" rows="2">' + (cr.desc||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="ecr_type">' + typeOpts + '</select></td>' +
+    '<td><select class="g-select" id="ecr_prio">' + prioOpts + '</select></td>' +
+    '<td><input class="g-input" id="ecr_req" value="' + (cr.requestor||'').replace(/"/g,'&quot;') + '" placeholder="Demandeur…"></td>' +
+    '<td><input class="g-input" id="ecr_date" type="date" value="' + (cr.date||'') + '"></td>' +
+    '<td><input class="g-input" id="ecr_impact" value="' + (cr.impact||'').replace(/"/g,'&quot;') + '" placeholder="Impact coût/délai…"></td>' +
+    '<td><select class="g-select" id="ecr_dec">' + decOpts + '</select></td>' +
+    '<td><select class="g-select" id="ecr_st">' + stOpts + '</select></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveCR(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveCR(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.title     = document.getElementById('ecr_title')?.value.trim()  || '';
+  cr.desc      = document.getElementById('ecr_desc')?.value.trim()   || '';
+  cr.type      = document.getElementById('ecr_type')?.value          || 'Autre';
+  cr.priority  = document.getElementById('ecr_prio')?.value          || 'medium';
+  cr.requestor = document.getElementById('ecr_req')?.value.trim()    || '';
+  cr.date      = document.getElementById('ecr_date')?.value          || '';
+  cr.impact    = document.getElementById('ecr_impact')?.value.trim() || '';
+  cr.decision  = document.getElementById('ecr_dec')?.value           || 'pending';
+  cr.status    = document.getElementById('ecr_st')?.value            || 'draft';
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Changement enregistré');
+}
+
+function deleteCR(id) {
+  if (!confirm('Supprimer cette demande de changement ?')) return;
+  saveChanges(getChanges().filter(function(x){ return x.id!==id; }));
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 CR supprimé');
+}
+
+function cycleCRDec(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.decision = CR_DEC_CYC[cr.decision] || 'pending';
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+}
+
+function cycleCRSt(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.status = CR_ST_CYC[cr.status] || 'draft';
+  saveChanges(crs);
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 6 — HYPOTHÈSES (Assumptions Log)
+// ══════════════════════════════════════════════════════
+function hypStClass(s){ return {valid:'st-tenu',invalid:'st-annule',unknown:'st-watch'}[s]||'st-watch'; }
+
+function renderHypotheses() {
+  var hyps = getAssumptions();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des hypothèses</span><button class="sec-btn" onclick="addHyp()">＋ Ajouter</button></div>';
+  if (!hyps.length) return html + '<div class="empty-state">🔎<br>Aucune hypothèse enregistrée.<br>Cliquez sur "＋ Ajouter" pour documenter les hypothèses du projet.</div>';
+  var rows = hyps.map(function(h) {
+    return '<tr data-hypid="' + h.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent2);white-space:nowrap;font-weight:700;">' + h.id + '</td>' +
+      '<td><div style="font-size:12px;font-weight:600;">' + (h.desc||'').replace(/</g,'&lt;') + '</div></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:9px;"><span style="background:var(--surface2);padding:2px 7px;border-radius:3px;border:1px solid var(--border);">' + (h.category||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (h.owner||'—') + '</td>' +
+      '<td><span class="st-badge ' + hypStClass(h.status) + '" onclick="cycleHyp(\'' + h.id + '\')" title="Clic pour changer">' + (HYP_ST[h.status]||h.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (h.status==='invalid'?'var(--danger)':'var(--text-muted)') + ';">' + (h.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (h.verifiedDate ? fmtDate(h.verifiedDate) : '<span style="color:var(--surface3)">Non vérifié</span>') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editHyp(\'' + h.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteHyp(\'' + h.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:65px">Réf.</th><th style="min-width:200px">Description</th><th style="width:100px">Catégorie</th><th style="width:110px">Propriétaire</th><th style="width:95px">Statut</th><th style="min-width:150px">Impact si invalidée</th><th style="width:100px">Vérifiée le</th><th style="width:70px"></th></tr></thead><tbody id="hypTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addHyp() {
+  var hyps  = getAssumptions();
+  var maxN  = hyps.reduce(function(m,h){ var n=parseInt((h.id||'').replace('H-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'H-' + String(maxN+1).padStart(3,'0');
+  hyps.push({ id:newId, desc:'Nouvelle hypothèse', owner:'', category:'Technique', status:'unknown', impact:'', verifiedDate:'' });
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+  editHyp(newId);
+}
+
+function editHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  var row  = document.querySelector('tr[data-hypid="' + id + '"]');
+  if (!row) return;
+  var catOpts = HYP_CATS.map(function(c){ return '<option'+(h.category===c?' selected':'')+'>'+c+'</option>'; }).join('');
+  var stOpts  = Object.keys(HYP_ST).map(function(k){ return '<option value="'+k+'"'+(h.status===k?' selected':'')+'>'+HYP_ST[k]+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent2);">' + h.id + '</td>' +
+    '<td><textarea class="g-textarea" id="eh_desc" rows="2">' + (h.desc||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="eh_cat">' + catOpts + '</select></td>' +
+    '<td><input class="g-input" id="eh_owner" value="' + (h.owner||'').replace(/"/g,'&quot;') + '" placeholder="Propriétaire…"></td>' +
+    '<td><select class="g-select" id="eh_st">' + stOpts + '</select></td>' +
+    '<td><input class="g-input" id="eh_impact" value="' + (h.impact||'').replace(/"/g,'&quot;') + '" placeholder="Impact si invalidée…"></td>' +
+    '<td><input class="g-input" id="eh_date" type="date" value="' + (h.verifiedDate||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveHyp(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  h.desc         = document.getElementById('eh_desc')?.value.trim()   || '';
+  h.category     = document.getElementById('eh_cat')?.value           || 'Autre';
+  h.owner        = document.getElementById('eh_owner')?.value.trim()  || '';
+  h.status       = document.getElementById('eh_st')?.value            || 'unknown';
+  h.impact       = document.getElementById('eh_impact')?.value.trim() || '';
+  h.verifiedDate = document.getElementById('eh_date')?.value          || '';
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Hypothèse mise à jour');
+}
+
+function deleteHyp(id) {
+  if (!confirm('Supprimer cette hypothèse ?')) return;
+  saveAssumptions(getAssumptions().filter(function(x){ return x.id!==id; }));
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Hypothèse supprimée');
+}
+
+function cycleHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  h.status = HYP_ST_CYC[h.status] || 'unknown';
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 7 — LEÇONS APPRISES (Lessons Learned Register)
+// ══════════════════════════════════════════════════════
+function renderLessons() {
+  var lls  = getLessons();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des leçons apprises</span><button class="sec-btn" onclick="addLL()">＋ Ajouter</button></div>';
+  if (!lls.length) return html + '<div class="empty-state">💡<br>Aucune leçon apprise enregistrée.<br>Cliquez sur "＋ Ajouter" pour capturer les enseignements du projet.</div>';
+  var catColors = { Risque:'var(--danger)', Planning:'var(--accent3)', Équipe:'#a78bfa', Technique:'var(--accent2)', Budget:'var(--accent)', Communication:'#f09090', Gouvernance:'var(--success)', Autre:'var(--text-muted)' };
+  var rows = lls.map(function(ll) {
+    var catColor = catColors[ll.category] || 'var(--text-muted)';
+    return '<tr data-llid="' + ll.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--success);white-space:nowrap;font-weight:700;">' + ll.id + '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:8px;padding:2px 8px;border-radius:3px;background:' + catColor + '22;color:' + catColor + ';border:1px solid ' + catColor + '44;">' + (ll.category||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.phase||'—') + '</td>' +
+      '<td><div style="font-size:11px;font-weight:600;">' + (ll.desc||'').replace(/</g,'&lt;') + '</div></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-soft);">' + (ll.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-size:11px;color:var(--accent3);">' + (ll.recommendation||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.owner||'—') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.date ? fmtDate(ll.date) : '—') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editLL(\'' + ll.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteLL(\'' + ll.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:65px">Réf.</th><th style="width:105px">Catégorie</th><th style="width:100px">Phase</th><th style="min-width:160px">Description</th><th style="min-width:130px">Impact observé</th><th style="min-width:160px">Recommandation</th><th style="width:100px">Contributeur</th><th style="width:90px">Date</th><th style="width:70px"></th></tr></thead><tbody id="llTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addLL() {
+  var lls   = getLessons();
+  var maxN  = lls.reduce(function(m,l){ var n=parseInt((l.id||'').replace('LL-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'LL-' + String(maxN+1).padStart(3,'0');
+  lls.push({ id:newId, category:'Autre', phase:'', desc:'Nouvelle leçon', impact:'', recommendation:'', owner:'', date:new Date().toISOString().split('T')[0] });
+  saveLessons(lls);
+  renderCurrent();
+  editLL(newId);
+}
+
+function editLL(id) {
+  var lls = getLessons();
+  var ll  = lls.find(function(x){ return x.id===id; });
+  if (!ll) return;
+  var row = document.querySelector('tr[data-llid="' + id + '"]');
+  if (!row) return;
+  var catOpts = LL_CATS.map(function(c){ return '<option'+(ll.category===c?' selected':'')+'>'+c+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--success);">' + ll.id + '</td>' +
+    '<td><select class="g-select" id="ell_cat">' + catOpts + '</select></td>' +
+    '<td><input class="g-input" id="ell_phase" value="' + (ll.phase||'').replace(/"/g,'&quot;') + '" placeholder="Phase…"></td>' +
+    '<td><textarea class="g-textarea" id="ell_desc" rows="2">' + (ll.desc||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ell_impact" rows="2">' + (ll.impact||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ell_reco" rows="2">' + (ll.recommendation||'') + '</textarea></td>' +
+    '<td><input class="g-input" id="ell_owner" value="' + (ll.owner||'').replace(/"/g,'&quot;') + '" placeholder="Contributeur…"></td>' +
+    '<td><input class="g-input" id="ell_date" type="date" value="' + (ll.date||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveLL(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveLL(id) {
+  var lls = getLessons();
+  var ll  = lls.find(function(x){ return x.id===id; });
+  if (!ll) return;
+  ll.category       = document.getElementById('ell_cat')?.value            || 'Autre';
+  ll.phase          = document.getElementById('ell_phase')?.value.trim()   || '';
+  ll.desc           = document.getElementById('ell_desc')?.value.trim()    || '';
+  ll.impact         = document.getElementById('ell_impact')?.value.trim()  || '';
+  ll.recommendation = document.getElementById('ell_reco')?.value.trim()    || '';
+  ll.owner          = document.getElementById('ell_owner')?.value.trim()   || '';
+  ll.date           = document.getElementById('ell_date')?.value           || '';
+  saveLessons(lls);
+  renderCurrent();
+  showToast('✓ Leçon apprise enregistrée');
+}
+
+function deleteLL(id) {
+  if (!confirm('Supprimer cette leçon apprise ?')) return;
+  saveLessons(getLessons().filter(function(x){ return x.id!==id; }));
+  renderCurrent();
+  showToast('🗑 Leçon supprimée');
+}
+
+// ══════════════════════════════════════════════════════
 // RENDER DISPATCH
 // ══════════════════════════════════════════════════════
 function renderCurrent() {
   updateKPIs();
   var tc = document.getElementById('tabContent');
   if (!tc) return;
-  if      (currentTab === 'comites')   tc.innerHTML = renderComites();
-  else if (currentTab === 'decisions') tc.innerHTML = renderDecisions();
-  else if (currentTab === 'actions')   tc.innerHTML = renderActions();
-  else if (currentTab === 'raci')      tc.innerHTML = renderRaci();
+  if      (currentTab === 'comites')      tc.innerHTML = renderComites();
+  else if (currentTab === 'decisions')   tc.innerHTML = renderDecisions();
+  else if (currentTab === 'actions')     tc.innerHTML = renderActions();
+  else if (currentTab === 'raci')        tc.innerHTML = renderRaci();
+  else if (currentTab === 'changements') tc.innerHTML = renderChangements();
+  else if (currentTab === 'hypotheses')  tc.innerHTML = renderHypotheses();
+  else if (currentTab === 'lessons')     tc.innerHTML = renderLessons();
 }
 
 function setTab(tab) {
