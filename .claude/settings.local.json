@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E '\\\\.\\(html|js\\)$')",
+      "Bash(grep -E \"\\\\.html$\")",
+      "Bash(grep -v \"backup\\\\|//\")",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "Bash(npm run:*)",
+      "Bash(grep \".html$\")",
+      "Bash(node \"C:\\\\Users\\\\hakim\\\\Downloads\\\\PM Project\\\\hub-v2\\\\scripts\\\\build-hub.js\")",
+      "Bash(node check-syntax.js)",
+      "Bash(node check-syntax2.js)",
+      "Bash(node --check _wizard_script.js)",
+      "Bash(wc -l C:UsershakimDownloadsPM Projecthub-v2publichub/*.js C:UsershakimDownloadsPM Projecthub-v2publichub/*.html C:UsershakimDownloadsPM Projecthub-v2publichub/*.css)",
+      "Bash(grep:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
