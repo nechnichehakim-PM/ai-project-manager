@@ -100,13 +100,20 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .gantt-chart::-webkit-scrollbar-thumb:hover{background:var(--text-muted);}
 .gantt-chart::-webkit-scrollbar-corner{background:var(--bg);}
 .gantt-inner{position:relative;}
-.gantt-header{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);display:flex;height:52px;}
-.gantt-header-months{display:flex;height:26px;border-bottom:1px solid var(--border);background:var(--surface2);}
-.gantt-month{display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);border-right:1px solid var(--border);flex-shrink:0;}
-.gantt-header-days{display:flex;height:26px;}
-.gantt-day{display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);border-right:1px solid var(--border);flex-shrink:0;opacity:.7;}
+.gantt-header{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--border);display:flex;flex-direction:column;height:62px;}
+.gantt-header-months{display:flex;height:30px;border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;}
+.gantt-month{display:flex;align-items:center;padding:0 10px;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);border-right:1px solid var(--border);flex-shrink:0;white-space:nowrap;overflow:hidden;}
+.gantt-month.even{background:var(--surface2);}
+.gantt-month.odd{background:var(--surface3);}
+.gantt-header-days{display:flex;height:32px;flex-shrink:0;overflow:hidden;}
+.gantt-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:'DM Mono',monospace;color:var(--text-muted);border-right:1px solid var(--border);flex-shrink:0;}
 .gantt-day.weekend{background:var(--surface2);}
-.gantt-day.today{background:rgba(99,102,241,.12);color:var(--accent);font-weight:700;opacity:1;}
+.gantt-day.today{background:rgba(99,102,241,.15);}
+.ghd-dow{font-size:7px;opacity:.55;line-height:1;letter-spacing:.05em;text-transform:uppercase;}
+.ghd-num{font-size:11px;font-weight:600;line-height:1;color:var(--text-soft);}
+.gantt-day.today .ghd-num{color:var(--accent);font-weight:700;}
+.gantt-day.today .ghd-dow{opacity:.85;color:var(--accent);}
+.gantt-day.weekend .ghd-num{opacity:.45;}
 .gantt-rows{position:relative;}
 .gantt-row{height:40px;border-bottom:1px solid var(--border);position:relative;display:flex;align-items:center;transition:background .15s;}
 .gantt-row:hover{background:var(--surface2);}
@@ -130,8 +137,8 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .today-marker::before{content:'TODAY';position:absolute;top:0;font-family:'DM Mono',monospace;font-size:8px;color:var(--accent);letter-spacing:.1em;transform:translateX(-50%);white-space:nowrap;background:var(--surface);border:1px solid var(--border);padding:2px 5px;border-radius:3px;opacity:1;}
 
 /* GANTT SEEKBAR */
-.gantt-seekbar{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);display:flex;flex-direction:column;height:46px;position:relative;overflow:hidden;user-select:none;}
-.seekbar-months{height:15px;position:relative;padding:0 10px;flex-shrink:0;}
+.gantt-seekbar{flex-shrink:0;background:var(--surface);border-top:2px solid var(--border);display:flex;flex-direction:column;height:52px;position:relative;overflow:hidden;user-select:none;}
+.seekbar-months{height:16px;position:relative;padding:0 12px;flex-shrink:0;display:flex;align-items:center;}
 .seekbar-month-lbl{position:absolute;font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;top:2px;}
 .seekbar-track{flex:1;position:relative;margin:0 10px 5px;background:var(--surface3);border-radius:4px;overflow:hidden;cursor:pointer;min-height:16px;}
 .seekbar-task-bar{position:absolute;top:4px;height:4px;border-radius:2px;opacity:.65;}
@@ -387,6 +394,7 @@ let viewMode    = 'days';   // 'days' | 'weeks' | 'months'
 let activeFilter = 'all';   // 'all' | 'inprogress' | 'overdue' | 'milestones'
 let dragState   = null;
 let editingTaskId = null;
+let seekbarInitialized = false;
 
 function getDayW() {
   if (viewMode === 'weeks')  return 10;
@@ -589,7 +597,7 @@ function renderAll() {
   renderKPIs();
   renderTaskPanel(visible);
   renderGantt(visible);
-  renderSeekbar();
+  requestAnimationFrame(renderSeekbar);
   const real = tasks.filter(t => t.type !== 'group');
   document.getElementById('taskCount').textContent = real.length + ' tâches · ' + tasks.filter(t=>t.type==='group').length + ' phases';
 }
@@ -806,36 +814,85 @@ function renderGanttHeader(minDate, totalDays, dayW, totalW) {
   const header = document.getElementById('ganttHeader');
   header.innerHTML = '';
   header.style.width = totalW + 'px';
-  const mRow = document.createElement('div'); mRow.className = 'gantt-header-months';
-  const dRow = document.createElement('div'); dRow.className = 'gantt-header-days';
-  const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const MFULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MS    = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const DOW   = ['D','L','M','M','J','V','S'];
   const today = new Date(); today.setHours(0,0,0,0);
-  let curM = -1, mDays = 0;
+
+  // ── Row 1 : Months (alternating even/odd background) ──
+  const mRow = document.createElement('div');
+  mRow.className = 'gantt-header-months';
+  mRow.style.width = totalW + 'px';
+  let mGroups = [];
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(minDate); d.setDate(d.getDate() + i);
-    if (d.getMonth() !== curM) {
-      if (curM !== -1) {
-        const el = document.createElement('div'); el.className = 'gantt-month';
-        el.style.width = (mDays * dayW) + 'px';
-        el.textContent = months[curM] + ' ' + new Date(minDate.getFullYear(), curM, 1).getFullYear();
-        mRow.appendChild(el);
-      }
-      curM = d.getMonth(); mDays = 0;
-    }
-    mDays++;
-    const dEl = document.createElement('div');
-    dEl.className = 'gantt-day' + ([0,6].includes(d.getDay()) ? ' weekend' : '') + (d.getTime()===today.getTime() ? ' today' : '');
-    dEl.style.width = Math.ceil(dayW) + 'px';
-    if (viewMode === 'days' && dayW >= 18)         dEl.textContent = d.getDate();
-    else if (viewMode === 'weeks' && d.getDay()===1) dEl.textContent = 'S' + getWeekNum(d);
-    else if (viewMode === 'months' && d.getDate()===1) dEl.textContent = months[d.getMonth()][0];
-    dRow.appendChild(dEl);
+    const key = d.getFullYear() * 100 + d.getMonth();
+    const last = mGroups[mGroups.length - 1];
+    if (last && last.key === key) { last.days++; }
+    else { mGroups.push({ key, month: d.getMonth(), year: d.getFullYear(), days: 1 }); }
   }
-  const lastM = document.createElement('div'); lastM.className = 'gantt-month';
-  lastM.style.width = (mDays * dayW) + 'px';
-  lastM.textContent = months[curM] + ' ' + new Date(minDate.getFullYear(), curM, 1).getFullYear();
-  mRow.appendChild(lastM);
+  mGroups.forEach((g, i) => {
+    const el = document.createElement('div');
+    el.className = 'gantt-month ' + (i % 2 === 0 ? 'even' : 'odd');
+    el.style.width = (g.days * dayW) + 'px';
+    const w = g.days * dayW;
+    el.textContent = w > 130 ? MFULL[g.month] + ' ' + g.year : (w > 60 ? MS[g.month] + ' ' + g.year : (w > 26 ? MS[g.month] : ''));
+    mRow.appendChild(el);
+  });
   header.appendChild(mRow);
+
+  // ── Row 2 : Days / Weeks ──
+  const dRow = document.createElement('div');
+  dRow.className = 'gantt-header-days';
+  dRow.style.width = totalW + 'px';
+
+  if (viewMode === 'days') {
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(minDate); d.setDate(d.getDate() + i);
+      const isWE = [0,6].includes(d.getDay());
+      const isTd = d.getTime() === today.getTime();
+      const el = document.createElement('div');
+      el.className = 'gantt-day' + (isWE ? ' weekend' : '') + (isTd ? ' today' : '');
+      el.style.width = dayW + 'px';
+      if (dayW >= 20) {
+        el.innerHTML = '<span class="ghd-dow">' + DOW[d.getDay()] + '</span><span class="ghd-num">' + d.getDate() + '</span>';
+      } else if (dayW >= 11) {
+        el.innerHTML = '<span class="ghd-num" style="font-size:8px">' + d.getDate() + '</span>';
+      }
+      dRow.appendChild(el);
+    }
+  } else if (viewMode === 'weeks') {
+    let i = 0;
+    while (i < totalDays) {
+      const d = new Date(minDate); d.setDate(d.getDate() + i);
+      let span = 1;
+      while (i + span < totalDays) {
+        const nx = new Date(minDate); nx.setDate(nx.getDate() + i + span);
+        if (nx.getDay() === 1) break;
+        span++;
+      }
+      span = Math.min(span, totalDays - i);
+      const we = new Date(d); we.setDate(we.getDate() + span - 1);
+      const isTw = d <= today && today <= we;
+      const el = document.createElement('div');
+      el.className = 'gantt-day' + (isTw ? ' today' : '');
+      el.style.width = (span * dayW) + 'px';
+      el.innerHTML = '<span class="ghd-dow">Sem</span><span class="ghd-num">' + getWeekNum(d) + '</span>';
+      dRow.appendChild(el);
+      i += span;
+    }
+  } else { // months view — thin per-day cells, label on 1st
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(minDate); d.setDate(d.getDate() + i);
+      const isWE = [0,6].includes(d.getDay());
+      const isTd = d.getTime() === today.getTime();
+      const el = document.createElement('div');
+      el.className = 'gantt-day' + (isWE ? ' weekend' : '') + (isTd ? ' today' : '');
+      el.style.width = dayW + 'px';
+      if (d.getDate() === 1) el.innerHTML = '<span class="ghd-num" style="font-size:8px">' + MS[d.getMonth()][0] + '</span>';
+      dRow.appendChild(el);
+    }
+  }
   header.appendChild(dRow);
 }
 
@@ -1050,7 +1107,8 @@ function renderSeekbar() {
   if (!track || !monthsEl || !tasksEl) return;
 
   const {minDate, totalDays} = getDateRange();
-  const trackW = track.clientWidth || 600;
+  const trackW = track.clientWidth;
+  if (!trackW) { requestAnimationFrame(renderSeekbar); return; }
   const scale = trackW / totalDays; // px per day on seekbar
 
   // Month labels
@@ -1113,6 +1171,8 @@ function updateSeekbarThumb() {
 }
 
 function initSeekbar() {
+  if (seekbarInitialized) return;
+  seekbarInitialized = true;
   const track   = document.getElementById('seekbarTrack');
   const thumb   = document.getElementById('seekbarThumb');
   const chartEl = document.getElementById('ganttChart');
@@ -1150,7 +1210,5 @@ function initSeekbar() {
 // ══════════════════════════════════════════════════════
 init();
 </script>
-<div id="ai-suggestions-bar"></div>
-<script src="pmhub-ai-suggestions.js"></script>
 </body>
 </html>
