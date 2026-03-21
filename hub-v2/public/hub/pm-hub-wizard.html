@@ -285,6 +285,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 }
 .ai-float-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(99,210,180,0.45);}
 .ai-float-btn.hidden{display:none;}
+
+/* ── DRAFT MODAL ── */
+.draft-overlay{position:fixed;inset:0;background:rgba(11,15,25,.85);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.draft-modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:440px;width:90%;box-shadow:0 32px 64px rgba(0,0,0,.5);}
+.draft-modal-icon{font-size:32px;margin-bottom:12px;}
+.draft-modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.draft-modal-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:4px;}
+.draft-modal-info{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap;}
+.draft-chip{background:var(--glass);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.draft-chip strong{color:var(--text);}
+.draft-modal-actions{display:flex;gap:10px;margin-top:20px;}
+.draft-modal-actions .btn-resume{flex:1;background:var(--accent);color:#0B0F19;border:none;padding:10px 16px;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .2s;}
+.draft-modal-actions .btn-resume:hover{opacity:.85;}
+.draft-modal-actions .btn-new{flex:1;background:transparent;color:var(--text-muted);border:1px solid var(--border);padding:10px 16px;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.draft-modal-actions .btn-new:hover{border-color:var(--danger);color:var(--danger);}
+/* ── NAV STATUS ── */
+.nav-status{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);padding:4px 10px;border-radius:20px;border:1px solid var(--border);}
+.nav-status .ns-dot{width:6px;height:6px;border-radius:50%;background:var(--warning);}
+.nav-status.saved .ns-dot{background:var(--success);}
+.nav-status.saved{color:var(--success);border-color:rgba(99,210,180,.3);}
 </style>
 </head>
 <body>
@@ -293,6 +313,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
   <div class="nav-logo">🧭 PM Wizard</div>
   <div style="display:flex;align-items:center;gap:20px;">
     <div class="nav-project-name" id="navProjectName">—</div>
+    <div class="nav-status" id="navStatus" style="display:none;"><div class="ns-dot"></div><span id="navStatusTxt">Non enregistré</span></div>
     <a class="nav-back" href="pm-hub.html">← Dashboard</a>
     <a href="pm-hub-ai.html" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;">🤖 IA</a>
     <a href="pm-hub-settings.html" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;">⚙</a>
@@ -303,6 +324,20 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;
 <button class="ai-float-btn hidden" id="aiFloatBtn" onclick="showStep(0)" title="Utiliser l'IA pour pré-remplir le wizard">
   ✨ Générer avec l'IA
 </button>
+
+<!-- DRAFT RESUME MODAL -->
+<div class="draft-overlay" id="draftOverlay" style="display:none;">
+  <div class="draft-modal">
+    <div class="draft-modal-icon">📝</div>
+    <div class="draft-modal-title">Brouillon non enregistré</div>
+    <div class="draft-modal-sub">Vous avez un projet en cours de création, non encore enregistré.</div>
+    <div class="draft-modal-info" id="draftInfo"></div>
+    <div class="draft-modal-actions">
+      <button class="btn-resume" onclick="resumeDraft()">↩ Reprendre le brouillon</button>
+      <button class="btn-new" onclick="startFresh()">+ Nouveau projet</button>
+    </div>
+  </div>
+</div>
 
 <div class="page">
 
@@ -589,6 +624,38 @@ const stepRenderers = {
   backlog_hybrid: renderBacklogHybrid,
 };
 
+function setNavStatus(saved) {
+  const el = document.getElementById('navStatus');
+  const txt = document.getElementById('navStatusTxt');
+  if (!el) return;
+  el.style.display = 'flex';
+  if (saved) {
+    el.classList.add('saved');
+    if (txt) txt.textContent = 'Enregistré ✓';
+  } else {
+    el.classList.remove('saved');
+    if (txt) txt.textContent = 'Non enregistré';
+  }
+}
+
+function resumeDraft() {
+  document.getElementById('draftOverlay').style.display = 'none';
+  renderStepper();
+  showStep(currentStep);
+  setNavStatus(false);
+}
+
+function startFresh() {
+  PMHUB.saveWizardState(null, { currentStep: 0, data: {}, completed: false });
+  wizardData = {};
+  currentStep = 0;
+  document.getElementById('draftOverlay').style.display = 'none';
+  document.getElementById('navProjectName').textContent = '—';
+  renderStepper();
+  showStep(0);
+  setNavStatus(false);
+}
+
 function init() {
   projectId = PMHUB.getParam('project');
   if(projectId) {
@@ -600,8 +667,28 @@ function init() {
   currentStep = state.currentStep || 0;
   wizardData  = { ...(state.data || {}), methodology: state.data?.methodology || wizardData.methodology || '' };
 
+  // Si pas de ?project= et qu'il y a un brouillon non complété avec des données
+  if (!projectId && !state.completed && state.currentStep > 0) {
+    const draftName = wizardData.charte?.name || wizardData.cadrage?.name || wizardData.vision?.vision || 'Projet sans nom';
+    const steps = getSteps();
+    const info = document.getElementById('draftInfo');
+    if (info) {
+      info.innerHTML = [
+        `<div class="draft-chip"><strong>${draftName}</strong></div>`,
+        `<div class="draft-chip">Étape <strong>${state.currentStep + 1}/${steps.length}</strong></div>`,
+        wizardData.methodology ? `<div class="draft-chip">Méthodo : <strong>${wizardData.methodology}</strong></div>` : ''
+      ].join('');
+    }
+    document.getElementById('draftOverlay').style.display = 'flex';
+    // Pre-render but don't show yet — resumeDraft() will call showStep
+    renderStepper();
+    setNavStatus(false);
+    return;
+  }
+
   renderStepper();
   showStep(currentStep);
+  if (!projectId) setNavStatus(false);
 }
 
 function renderStepper() {
@@ -808,6 +895,9 @@ function finishWizard() {
     PMHUB.saveTemplate(pid, 'product_vision', wizardData.vision);
   }
 
+  // Nettoyer le brouillon et marquer comme enregistré
+  PMHUB.saveWizardState(null, { currentStep: 0, data: {}, completed: true });
+  setNavStatus(true);
   showToast('🎉 Projet créé et initialisé ! Toutes les données sont synchronisées.');
   setTimeout(() => PMHUB.goTo('pm-hub.html'), 2000);
 }
