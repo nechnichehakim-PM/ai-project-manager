@@ -12,99 +12,228 @@
 <script src="pmhub-mini-chat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
-nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
-.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;opacity:.35;}
+
+/* NAV */
+nav{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);backdrop-filter:blur(20px);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
 .nav-links{display:flex;gap:8px;align-items:center;}
-.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
-.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
-.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.nav-links a{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:6px 12px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:var(--surface2);}
 
-.kanban-bar{display:flex;align-items:center;gap:16px;padding:12px 48px;border-bottom:1px solid var(--border);background:rgba(13,17,23,0.95);position:sticky;top:65px;z-index:90;flex-wrap:wrap;}
-.kanban-bar .proj-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);}
-.kanban-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:260px;outline:none;cursor:pointer;}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0;position:relative;z-index:1;}
+.inner-col{display:flex;flex-direction:column;height:calc(100vh - 65px);overflow:hidden;}
+
+/* KANBAN BAR */
+.kanban-bar{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
+.kanban-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:240px;outline:none;cursor:pointer;transition:border-color .2s;}
 .kanban-bar select:focus{border-color:var(--accent);}
-.kanban-bar .badge{font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border-radius:20px;letter-spacing:.08em;}
-.kanban-bar .link-gantt{font-size:11px;color:var(--accent);text-decoration:none;margin-left:auto;}
-.kanban-bar .link-gantt:hover{text-decoration:underline;}
+.kb-badge{font-family:'DM Mono',monospace;font-size:9px;padding:3px 9px;border-radius:20px;letter-spacing:.08em;flex-shrink:0;}
+.kb-sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+.kb-search{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:140px;transition:border-color .2s;}
+.kb-search:focus{border-color:var(--accent);}
+.kb-filter-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;transition:border-color .2s;}
+.kb-filter-sel:focus{border-color:var(--accent);}
+.kb-toggle{font-family:'DM Mono',monospace;font-size:10px;padding:5px 11px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.kb-toggle:hover{color:var(--text);border-color:var(--border-active);}
+.kb-toggle.active{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.4);}
+.kb-reset{font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.kb-reset:hover{color:var(--text);border-color:var(--accent);}
+.kb-link{font-size:10px;font-family:'DM Mono',monospace;color:var(--accent);text-decoration:none;letter-spacing:.06em;margin-left:auto;padding:5px 11px;border:1px solid rgba(99,210,180,.2);border-radius:5px;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.kb-link:hover{background:rgba(99,210,180,.07);}
 
-.main-kanban{padding:28px 48px;position:relative;z-index:1;}
-.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-height:calc(100vh - 220px);}
-.kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;min-width:0;}
-.kanban-col-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.kanban-col-title{font-size:13px;font-weight:700;}
-.kanban-col-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);background:var(--surface2);padding:2px 8px;border-radius:10px;}
-.kanban-col-cards{padding:12px;flex:1;overflow-y:auto;min-height:120px;}
-.kanban-col-cards.droppable{drop-target:true;}
-.kanban-col-cards.drag-over{background:rgba(99,210,180,0.06);border:1px dashed rgba(99,210,180,0.3);border-radius:8px;}
-.kanban-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;cursor:grab;transition:all .18s;}
-.kanban-card:hover{border-color:rgba(99,210,180,0.3);}
+/* KPI STRIP */
+.kanban-kpis{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
+.kkpi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;border-right:1px solid var(--border);transition:background .15s;cursor:default;}
+.kkpi:last-child{border-right:none;}
+.kkpi:hover{background:var(--surface2);}
+.kkpi-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1;}
+.kkpi-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-top:2px;}
+
+/* BOARD */
+.kanban-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:18px 20px 32px;}
+.kanban-scroll::-webkit-scrollbar{width:5px;}
+.kanban-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start;}
+
+/* COLUMN */
+.kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;}
+.kanban-col-accent{height:3px;width:100%;flex-shrink:0;}
+.kanban-col-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;}
+.kanban-col-title{font-size:12px;font-weight:700;letter-spacing:.03em;display:flex;align-items:center;gap:7px;}
+.kanban-col-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.kanban-col-right{display:flex;align-items:center;gap:6px;}
+.kanban-col-avg{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.kanban-col-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);background:var(--surface2);padding:2px 8px;border-radius:10px;min-width:22px;text-align:center;}
+.kanban-col-cards{padding:10px;flex:1;overflow-y:auto;min-height:60px;}
+.kanban-col-cards::-webkit-scrollbar{width:3px;}
+.kanban-col-cards::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+.kanban-col-cards.drag-over{background:rgba(99,210,180,.05);outline:1.5px dashed rgba(99,210,180,.4);outline-offset:-5px;border-radius:8px;}
+.kanban-col-footer{padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0;}
+.kanban-add-btn{width:100%;padding:7px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:.04em;}
+.kanban-add-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,.05);}
+.kanban-add-inline{display:flex;gap:5px;align-items:center;}
+.kanban-add-input{flex:1;background:var(--surface2);border:1px solid var(--accent);border-radius:5px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;}
+.kanban-add-ok{padding:5px 9px;border-radius:5px;background:var(--accent);color:#060a0d;border:none;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;font-weight:700;}
+.kanban-add-cancel{padding:5px;border-radius:5px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;font-size:14px;}
+
+/* CARD */
+.kanban-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 12px 10px;margin-bottom:8px;cursor:grab;transition:transform .15s, box-shadow .15s, border-color .15s;position:relative;overflow:hidden;}
 .kanban-card:last-child{margin-bottom:0;}
-.kanban-card.dragging{opacity:0.5;cursor:grabbing;}
-.kanban-card-title{font-size:12px;font-weight:600;margin-bottom:6px;line-height:1.3;}
-.kanban-card-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;}
-.kanban-card-owner{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
-.kanban-card-progress{font-family:'DM Mono',monospace;font-size:9px;color:var(--accent);}
-.kanban-card-type{margin-left:auto;font-size:10px;}
-.toast-k{position:fixed;bottom:28px;right:28px;z-index:400;background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:12px 18px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.kanban-card:hover{border-color:rgba(99,210,180,.25);transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,0,0,.2);}
+.kanban-card:active{cursor:grabbing;}
+.kanban-card.dragging{opacity:.35;transform:scale(.96);}
+.kanban-card.overdue{border-color:rgba(239,68,68,.3);}
+.kanban-card.overdue:hover{border-color:rgba(239,68,68,.55);}
+.kc-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;}
+
+/* Card top row */
+.kc-top{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap;}
+.kc-priority{font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:10px;letter-spacing:.06em;cursor:pointer;transition:opacity .15s;user-select:none;flex-shrink:0;}
+.kc-priority:hover{opacity:.75;}
+.kc-priority.high{background:rgba(239,68,68,.15);color:var(--danger);}
+.kc-priority.medium{background:rgba(245,158,11,.12);color:var(--accent2);}
+.kc-priority.low{background:rgba(99,210,180,.1);color:var(--accent);}
+.kc-type{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-left:auto;}
+.kc-overdue-badge{font-family:'DM Mono',monospace;font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,.14);color:var(--danger);flex-shrink:0;}
+
+/* Card title */
+.kc-title{font-size:12px;font-weight:600;line-height:1.35;margin-bottom:9px;color:var(--text);}
+
+/* Progress bar */
+.kc-prog-wrap{margin-bottom:9px;}
+.kc-prog-track{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;}
+.kc-prog-fill{height:100%;border-radius:2px;}
+.kc-prog-footer{display:flex;justify-content:flex-end;margin-top:3px;}
+.kc-prog-pct{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);}
+
+/* Card footer */
+.kc-footer{display:flex;align-items:center;gap:6px;}
+.kc-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;}
+.kc-owner-name{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.kc-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.kc-date.late{color:var(--danger);}
+
+/* Empty state */
+.kanban-empty{padding:24px 12px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;opacity:.6;}
+
+/* Toast */
+.toast-k{position:fixed;bottom:24px;right:24px;z-index:400;background:var(--surface2);border:1px solid rgba(99,210,180,.35);border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
 .toast-k.show{transform:translateY(0);opacity:1;}
-.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+
+/* AI float */
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 24px rgba(99,210,180,.3);border:1px solid rgba(99,210,180,.4);transition:transform .2s;}
 .ai-float-btn:hover{transform:scale(1.08);}
-@media(max-width:1100px){.kanban-board{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:640px){.kanban-board{grid-template-columns:1fr;} nav{padding:14px 20px;} .main-kanban{padding:20px;} .kanban-bar{padding:12px 20px;}}
+
+/* No tasks message */
+.kb-no-tasks{padding:32px 20px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.8;}
+
+/* Light mode */
+html[data-theme="light"] .kanban-card{background:var(--surface);}
+html[data-theme="light"] .kanban-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.08);}
+html[data-theme="light"] .kanban-col{background:var(--surface2);}
+
+@media(max-width:1200px){.kanban-board{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.kanban-board{grid-template-columns:1fr;}.inner-col{height:auto;overflow:auto;}.kanban-scroll{overflow:visible;}}
 </style>
 </head>
 <body>
+
 <nav>
-  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <a href="pm-hub.html" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;">← Retour</a>
   <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
   <div class="nav-context" id="nav-context"></div>
   <div class="nav-links">
-    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
-    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+    <a href="pm-hub-settings.html" title="Paramètres">⚙</a>
   </div>
 </nav>
 
-<div class="layout" style="display:grid;grid-template-columns:260px 1fr;min-height:100vh;padding-top:65px;">
-  <aside class="sidebar" id="pmhub-sidebar"></aside>
-  <div style="display:flex;flex-direction:column;min-height:0;">
-<div class="kanban-bar">
-  <span class="proj-label">Projet :</span>
-  <select id="projectSelect" onchange="switchProject(this.value)"></select>
-  <span class="badge" id="projectBadge" style="background:rgba(99,210,180,.1);color:var(--accent);"></span>
-  <a href="#" id="linkGantt" class="link-gantt">📅 Voir le Gantt →</a>
-</div>
+<a href="pm-hub-ai.html?from=Kanban" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
 
-<main class="main-kanban">
-  <div class="kanban-board" id="kanbanBoard"></div>
-</main>
-</div>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="inner-col">
+
+    <!-- KANBAN BAR -->
+    <div class="kanban-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0;">Projet :</span>
+      <select id="projectSelect" onchange="switchProject(this.value)"></select>
+      <span class="kb-badge" id="projectBadge"></span>
+      <div class="kb-sep"></div>
+      <input class="kb-search" id="searchInput" type="text" placeholder="🔍 Rechercher…" oninput="searchQuery=this.value;render()">
+      <select class="kb-filter-sel" id="filterOwnerSel" onchange="filterOwner=this.value;render()">
+        <option value="">Tous les membres</option>
+      </select>
+      <button class="kb-toggle" id="btnOverdue" onclick="toggleOverdue()">⚠ En retard</button>
+      <button class="kb-reset" onclick="resetFilters()">✕ Réinit.</button>
+      <a href="pm-hub-gantt.html" id="linkGantt" class="kb-link">📅 Gantt →</a>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kanban-kpis">
+      <div class="kkpi" id="kkpiTotal">
+        <span class="kkpi-val">—</span><span class="kkpi-lbl">Tâches</span>
+      </div>
+      <div class="kkpi" id="kkpiDone">
+        <span class="kkpi-val">—</span><span class="kkpi-lbl">Terminées</span>
+      </div>
+      <div class="kkpi" id="kkpiInProg">
+        <span class="kkpi-val">—</span><span class="kkpi-lbl">En cours</span>
+      </div>
+      <div class="kkpi" id="kkpiOverdue">
+        <span class="kkpi-val">—</span><span class="kkpi-lbl">En retard</span>
+      </div>
+      <div class="kkpi" id="kkpiAvg">
+        <span class="kkpi-val">—</span><span class="kkpi-lbl">Avancement</span>
+      </div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="kanban-scroll">
+      <div class="kanban-board" id="kanbanBoard"></div>
+    </div>
+
+  </div>
 </div>
 
 <div class="toast-k" id="toastK"></div>
-<a href="pm-hub-ai.html?from=Kanban" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
 
 <script>
-const KANBAN_COLUMNS = [
-  { id: 'todo',       label: 'À faire',      color: 'var(--text-muted)' },
-  { id: 'in_progress', label: 'En cours',     color: 'var(--accent3)' },
-  { id: 'review',     label: 'En revue',     color: 'var(--accent2)' },
-  { id: 'done',       label: 'Terminé',      color: 'var(--success)' },
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const COLUMNS = [
+  { id: 'todo',        label: 'À faire',   hex: '#94a3b8' },
+  { id: 'in_progress', label: 'En cours',  hex: '#7C3AED' },
+  { id: 'review',      label: 'En revue',  hex: '#F59E0B' },
+  { id: 'done',        label: 'Terminé',   hex: '#22C55E' },
 ];
+const PRIORITY_CYCLE  = { high: 'medium', medium: 'low', low: 'high' };
+const PRIORITY_LABELS = { high: '▲ HAUTE', medium: '● MOY.', low: '▼ BASSE' };
+const AVATAR_COLORS   = ['#7C3AED','#6366F1','#0EA5E9','#10B981','#F59E0B','#EF4444','#EC4899'];
 
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
 let activeProjectId = null;
 let tasks = [];
-let draggedCard = null;
-let dragStatus = null;
+let draggedId = null;
+let dragFromCol = null;
+let filterOwner = '';
+let filterOverdue = false;
+let searchQuery = '';
 
-function getTasksKey(projectId) {
-  return 'pmhub_tasks_' + projectId;
-}
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+function tasksKey(id) { return 'pmhub_tasks_' + id; }
 
 function loadTasks(projectId) {
   try {
-    const raw = localStorage.getItem(getTasksKey(projectId));
+    const raw = localStorage.getItem(tasksKey(projectId));
     tasks = raw ? JSON.parse(raw) : [];
     tasks.forEach(t => {
       if (t.type === 'group') return;
@@ -112,90 +241,299 @@ function loadTasks(projectId) {
         const p = t.progress || 0;
         t.kanbanStatus = p >= 100 ? 'done' : p > 0 ? 'in_progress' : 'todo';
       }
+      if (!t.priority) t.priority = 'medium';
     });
-  } catch (e) { tasks = []; }
+  } catch(e) { tasks = []; }
 }
 
 function saveTasks() {
   if (!activeProjectId) return;
-  localStorage.setItem(getTasksKey(activeProjectId), JSON.stringify(tasks));
+  localStorage.setItem(tasksKey(activeProjectId), JSON.stringify(tasks));
 }
 
-function getTasksByStatus() {
-  const items = tasks.filter(t => t.type !== 'group');
-  return KANBAN_COLUMNS.map(col => ({
-    ...col,
-    tasks: items.filter(t => (t.kanbanStatus || 'todo') === col.id),
-  }));
+// ══════════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════════
+function toggleOverdue() {
+  filterOverdue = !filterOverdue;
+  const btn = document.getElementById('btnOverdue');
+  if (btn) btn.classList.toggle('active', filterOverdue);
+  render();
 }
 
+function resetFilters() {
+  filterOwner = ''; filterOverdue = false; searchQuery = '';
+  const si = document.getElementById('searchInput');
+  const fo = document.getElementById('filterOwnerSel');
+  const bo = document.getElementById('btnOverdue');
+  if (si) si.value = '';
+  if (fo) fo.value = '';
+  if (bo) bo.classList.remove('active');
+  render();
+}
+
+function getVisibleItems() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return tasks.filter(t => {
+    if (t.type === 'group') return false;
+    if (searchQuery && !(t.name||'').toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterOwner && t.owner !== filterOwner) return false;
+    if (filterOverdue) {
+      const isOD = t.end && new Date(t.end) < today && (t.progress||0) < 100;
+      if (!isOD) return false;
+    }
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════
+function renderKPIs() {
+  const all   = tasks.filter(t => t.type !== 'group');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const total   = all.length;
+  const done    = all.filter(t => (t.kanbanStatus||'todo') === 'done').length;
+  const inProg  = all.filter(t => (t.kanbanStatus||'todo') === 'in_progress').length;
+  const overdue = all.filter(t => t.end && new Date(t.end) < today && (t.progress||0) < 100).length;
+  const avg     = total ? Math.round(all.reduce((s,t) => s + (t.progress||0), 0) / total) : 0;
+
+  function set(id, val, color) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<span class="kkpi-val"' + (color ? ' style="color:' + color + '"' : '') + '>' + val + '</span><span class="kkpi-lbl">' + el.querySelector('.kkpi-lbl').textContent + '</span>';
+  }
+  // Rebuild keeping the labels
+  const labels = {kkpiTotal:'Tâches',kkpiDone:'Terminées',kkpiInProg:'En cours',kkpiOverdue:'En retard',kkpiAvg:'Avancement'};
+  Object.entries(labels).forEach(([id, lbl]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<span class="kkpi-val">' + '—' + '</span><span class="kkpi-lbl">' + lbl + '</span>';
+  });
+
+  const tv = document.getElementById('kkpiTotal');     if(tv) tv.innerHTML = '<span class="kkpi-val">' + total + '</span><span class="kkpi-lbl">Tâches</span>';
+  const dv = document.getElementById('kkpiDone');      if(dv) dv.innerHTML = '<span class="kkpi-val" style="color:var(--success)">' + done + '</span><span class="kkpi-lbl">Terminées</span>';
+  const iv = document.getElementById('kkpiInProg');    if(iv) iv.innerHTML = '<span class="kkpi-val" style="color:#7C3AED">' + inProg + '</span><span class="kkpi-lbl">En cours</span>';
+  const ov = document.getElementById('kkpiOverdue');   if(ov) ov.innerHTML = '<span class="kkpi-val" style="color:var(--danger)">' + overdue + '</span><span class="kkpi-lbl">En retard</span>';
+  const av = document.getElementById('kkpiAvg');       if(av) av.innerHTML = '<span class="kkpi-val" style="color:var(--accent)">' + avg + '%</span><span class="kkpi-lbl">Avancement</span>';
+}
+
+// ══════════════════════════════════════════════════════
+// OWNER FILTER POPULATE
+// ══════════════════════════════════════════════════════
+function populateOwnerFilter() {
+  const sel = document.getElementById('filterOwnerSel');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tous les membres</option>';
+  const owners = [...new Set(tasks.filter(t => t.type !== 'group' && t.owner).map(t => t.owner))].sort();
+  owners.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    if (o === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
 function render() {
-  const board = document.getElementById('kanbanBoard');
+  renderKPIs();
+  populateOwnerFilter();
+
+  const visible = getVisibleItems();
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const board   = document.getElementById('kanbanBoard');
   board.innerHTML = '';
-  const cols = getTasksByStatus();
-  cols.forEach(col => {
+
+  const allItems = tasks.filter(t => t.type !== 'group');
+  if (!allItems.length) {
+    board.innerHTML = '<div class="kb-no-tasks">Aucune tâche dans ce projet.<br>Créez des tâches depuis le Gantt ou cliquez "＋ Ajouter".</div>';
+    return;
+  }
+
+  COLUMNS.forEach(col => {
+    const colTasks = visible.filter(t => (t.kanbanStatus || 'todo') === col.id);
+    const avg = colTasks.length ? Math.round(colTasks.reduce((s,t) => s + (t.progress||0), 0) / colTasks.length) : 0;
+
     const colEl = document.createElement('div');
     colEl.className = 'kanban-col';
     colEl.dataset.status = col.id;
-    colEl.innerHTML = `
-      <div class="kanban-col-hdr">
-        <span class="kanban-col-title" style="color:${col.color}">${col.label}</span>
-        <span class="kanban-col-count">${col.tasks.length}</span>
-      </div>
-      <div class="kanban-col-cards" data-status="${col.id}"></div>
-    `;
+
+    // Column header
+    colEl.innerHTML =
+      '<div class="kanban-col-accent" style="background:' + col.hex + '"></div>' +
+      '<div class="kanban-col-hdr">' +
+        '<div class="kanban-col-title">' +
+          '<div class="kanban-col-dot" style="background:' + col.hex + '"></div>' +
+          col.label +
+        '</div>' +
+        '<div class="kanban-col-right">' +
+          (colTasks.length > 0 ? '<span class="kanban-col-avg">' + avg + '% moy.</span>' : '') +
+          '<span class="kanban-col-count">' + colTasks.length + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="kanban-col-cards" data-status="' + col.id + '"></div>' +
+      '<div class="kanban-col-footer">' +
+        '<button class="kanban-add-btn" data-col="' + col.id + '">＋ Ajouter une tâche</button>' +
+      '</div>';
+
     const cardsZone = colEl.querySelector('.kanban-col-cards');
-    col.tasks.forEach(t => {
+
+    // Empty column hint
+    if (colTasks.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'kanban-empty';
+      empty.textContent = 'Déposez une tâche ici';
+      cardsZone.appendChild(empty);
+    }
+
+    // Cards
+    colTasks.forEach(t => {
+      const isOD      = t.end && new Date(t.end) < today && (t.progress||0) < 100;
+      const daysOD    = isOD ? Math.round((today - new Date(t.end)) / 86400000) : 0;
+      const pct       = t.progress || 0;
+      const priority  = t.priority || 'medium';
+      const progColor = pct >= 80 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#94a3b8';
+      const ownerInitials = (t.owner || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0,2);
+      const avatarColor = AVATAR_COLORS[(t.owner||'').length % AVATAR_COLORS.length];
+      const dateStr = t.end ? fmtDate(t.end) : '';
+
       const card = document.createElement('div');
-      card.className = 'kanban-card';
+      card.className = 'kanban-card' + (isOD ? ' overdue' : '');
       card.draggable = true;
       card.dataset.id = t.id;
-      card.dataset.status = col.id;
-      const icon = t.type === 'milestone' ? '💎 ' : '';
-      card.innerHTML = `
-        <div class="kanban-card-title">${icon}${(t.name||'').replace(/</g,'&lt;')}</div>
-        <div class="kanban-card-meta">
-          <span class="kanban-card-owner">${(t.owner||'—')}</span>
-          <span class="kanban-card-progress">${t.progress != null ? t.progress + '%' : '—'}</span>
-          <span class="kanban-card-type">${t.type==='milestone'?'Jalon':''}</span>
-        </div>
-      `;
-      card.style.borderLeftColor = t.color || 'var(--accent)';
-      card.style.borderLeftWidth = '3px';
-      card.style.borderLeftStyle = 'solid';
+
+      card.innerHTML =
+        '<div class="kc-stripe" style="background:' + (t.color || col.hex) + '"></div>' +
+        '<div class="kc-top">' +
+          '<span class="kc-priority ' + priority + '" data-id="' + t.id + '" title="Clic pour changer la priorité">' + PRIORITY_LABELS[priority] + '</span>' +
+          (t.type === 'milestone' ? '<span class="kc-type">◆ Jalon</span>' : '') +
+          (isOD ? '<span class="kc-overdue-badge">⚠ ' + daysOD + 'j</span>' : '') +
+        '</div>' +
+        '<div class="kc-title">' + (t.name||'').replace(/</g,'&lt;') + '</div>' +
+        (t.type !== 'milestone' ?
+          '<div class="kc-prog-wrap">' +
+            '<div class="kc-prog-track"><div class="kc-prog-fill" style="width:' + pct + '%;background:' + progColor + '"></div></div>' +
+            '<div class="kc-prog-footer"><span class="kc-prog-pct">' + pct + '%</span></div>' +
+          '</div>' : '') +
+        '<div class="kc-footer">' +
+          '<div class="kc-avatar" style="background:' + avatarColor + '" title="' + (t.owner||'Non assigné') + '">' + ownerInitials + '</div>' +
+          '<span class="kc-owner-name">' + (t.owner || '—') + '</span>' +
+          (dateStr ? '<span class="kc-date' + (isOD ? ' late' : '') + '">' + (isOD ? '⚠ ' : '📅 ') + dateStr + '</span>' : '') +
+        '</div>';
+
+      // Priority click → cycle
+      const priBadge = card.querySelector('.kc-priority');
+      if (priBadge) {
+        priBadge.addEventListener('click', e => {
+          e.stopPropagation();
+          t.priority = PRIORITY_CYCLE[t.priority || 'medium'];
+          saveTasks();
+          render();
+        });
+      }
+
+      // Drag
       card.addEventListener('dragstart', e => {
-        draggedCard = t.id;
-        dragStatus = col.id;
+        draggedId = t.id;
+        dragFromCol = col.id;
         card.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', t.id);
+        e.dataTransfer.setData('text/plain', String(t.id));
         e.dataTransfer.effectAllowed = 'move';
       });
       card.addEventListener('dragend', () => card.classList.remove('dragging'));
-      card.addEventListener('click', () => { window.location.href = 'pm-hub-gantt.html?project=' + activeProjectId; });
+
       cardsZone.appendChild(card);
     });
+
+    // Drop handlers
     cardsZone.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       cardsZone.classList.add('drag-over');
     });
-    cardsZone.addEventListener('dragleave', () => cardsZone.classList.remove('drag-over'));
+    cardsZone.addEventListener('dragleave', e => {
+      if (!cardsZone.contains(e.relatedTarget)) cardsZone.classList.remove('drag-over');
+    });
     cardsZone.addEventListener('drop', e => {
       e.preventDefault();
       cardsZone.classList.remove('drag-over');
-      const taskId = e.dataTransfer.getData('text/plain');
-      if (!taskId || dragStatus === col.id) return;
-      const task = tasks.find(x => String(x.id) === String(taskId));
+      const tid = e.dataTransfer.getData('text/plain');
+      if (!tid || dragFromCol === col.id) return;
+      const task = tasks.find(x => String(x.id) === String(tid));
       if (!task) return;
       task.kanbanStatus = col.id;
-      if (col.id === 'done') task.progress = 100;
-      else if (col.id === 'todo') task.progress = 0;
+      if      (col.id === 'done')        { task.progress = 100; }
+      else if (col.id === 'in_progress') { if ((task.progress||0) === 0) task.progress = 10; }
+      else if (col.id === 'todo')        { if ((task.progress||0) >= 100) task.progress = 0; }
       saveTasks();
       render();
-      showToast('Tâche déplacée → ' + col.label);
+      showToast('✓ ' + (task.name||'Tâche') + ' → ' + col.label);
     });
+
+    // Quick add button
+    const addBtn = colEl.querySelector('.kanban-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => openQuickAdd(colEl, col.id, addBtn));
+    }
+
     board.appendChild(colEl);
   });
+}
+
+// ══════════════════════════════════════════════════════
+// QUICK ADD
+// ══════════════════════════════════════════════════════
+function openQuickAdd(colEl, status, btn) {
+  const footer = colEl.querySelector('.kanban-col-footer');
+  if (!footer) return;
+  footer.innerHTML =
+    '<div class="kanban-add-inline">' +
+      '<input class="kanban-add-input" id="quickAddInput_' + status + '" type="text" placeholder="Nom de la tâche…" maxlength="80">' +
+      '<button class="kanban-add-ok" onclick="confirmQuickAdd(\'' + status + '\')">✓</button>' +
+      '<button class="kanban-add-cancel" onclick="render()">✕</button>' +
+    '</div>';
+  const inp = footer.querySelector('input');
+  if (inp) {
+    inp.focus();
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmQuickAdd(status);
+      if (e.key === 'Escape') render();
+    });
+  }
+}
+
+function confirmQuickAdd(status) {
+  const inp = document.getElementById('quickAddInput_' + status);
+  const name = inp ? inp.value.trim() : '';
+  if (!name) { render(); return; }
+  const today = new Date();
+  const end   = new Date(); end.setDate(end.getDate() + 7);
+  tasks.push({
+    id: Date.now(),
+    name,
+    type: 'task',
+    start: today.toISOString().split('T')[0],
+    end:   end.toISOString().split('T')[0],
+    progress: status === 'done' ? 100 : 0,
+    kanbanStatus: status,
+    priority: 'medium',
+    color: '#63d2b4',
+  });
+  saveTasks();
+  render();
+  showToast('✓ Tâche ajoutée dans "' + COLUMNS.find(c => c.id === status).label + '"');
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const ms = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  return day + ' ' + ms[parseInt(m)-1];
 }
 
 function showToast(msg) {
@@ -206,52 +544,60 @@ function showToast(msg) {
   t._to = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-async function loadProjects() {
+// ══════════════════════════════════════════════════════
+// PROJECT LOAD
+// ══════════════════════════════════════════════════════
+function loadProjects() {
   const projects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
   const sel = document.getElementById('projectSelect');
   sel.innerHTML = '';
   if (!projects.length) {
-    sel.innerHTML = '<option>Aucun projet</option>';
+    sel.innerHTML = '<option>Aucun projet — créez-en un sur l\'accueil</option>';
     return;
   }
   const paramId = PMHUB.getParam('project');
   projects.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = p.ref + ' — ' + p.name;
+    opt.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
     if (String(p.id) === String(paramId)) opt.selected = true;
     sel.appendChild(opt);
   });
   activeProjectId = parseInt(sel.value);
-  await switchProject(activeProjectId);
+  switchProject(activeProjectId);
 }
 
-async function switchProject(id) {
+function switchProject(id) {
   activeProjectId = parseInt(id);
   const p = typeof PMHUB !== 'undefined' ? PMHUB.getProjectById(id) : null;
   const badge = document.getElementById('projectBadge');
-  const linkGantt = document.getElementById('linkGantt');
-  if (p) {
-    const labels = { active: 'En cours', risk: 'À risque', hold: 'En attente', closed: 'Clôturé' };
+  if (p && badge) {
+    const labels = { active:'En cours', risk:'À risque', hold:'En attente', closed:'Clôturé' };
+    const bg  = { active:'rgba(99,210,180,.1)', risk:'rgba(239,68,68,.12)', hold:'rgba(245,158,11,.1)', closed:'rgba(107,120,133,.1)' };
+    const clr = { active:'var(--accent)', risk:'var(--danger)', hold:'var(--accent2)', closed:'var(--text-muted)' };
     badge.textContent = labels[p.status] || p.status;
-    badge.style.background = p.status === 'active' ? 'rgba(99,210,180,.1)' : p.status === 'risk' ? 'rgba(224,112,112,.15)' : 'rgba(107,120,133,.15)';
-    badge.style.color = p.status === 'active' ? 'var(--accent)' : p.status === 'risk' ? 'var(--danger)' : 'var(--text-muted)';
+    badge.style.cssText = 'background:' + (bg[p.status]||'transparent') + ';color:' + (clr[p.status]||'var(--text-muted)') + ';border:1px solid ' + (clr[p.status]||'var(--border)') + '44;font-family:\'DM Mono\',monospace;font-size:9px;padding:3px 9px;border-radius:20px;';
   }
-  linkGantt.href = 'pm-hub-gantt.html?project=' + activeProjectId;
+  const lg = document.getElementById('linkGantt');
+  if (lg) lg.href = 'pm-hub-gantt.html?project=' + id;
   const ab = document.getElementById('aiFloatBtn');
-  if (ab) ab.href = 'pm-hub-ai.html?from=Kanban' + (activeProjectId ? '&project=' + activeProjectId : '');
-  loadTasks(activeProjectId);
+  if (ab) ab.href = 'pm-hub-ai.html?from=Kanban&project=' + id;
+
+  filterOwner = ''; filterOverdue = false; searchQuery = '';
+  const si = document.getElementById('searchInput'); if(si) si.value = '';
+  const fo = document.getElementById('filterOwnerSel'); if(fo) fo.value = '';
+  const bo = document.getElementById('btnOverdue'); if(bo) bo.classList.remove('active');
+
+  loadTasks(id);
   render();
 }
 
+// ── BOOT ──
 if (typeof PMHUB !== 'undefined') {
   loadProjects();
 } else {
   document.getElementById('projectSelect').innerHTML = '<option>Chargez le hub</option>';
-  document.getElementById('kanbanBoard').innerHTML = '<p style="padding:40px;color:var(--text-muted);">Aucune donnée. Ouvrez depuis le Dashboard.</p>';
 }
 </script>
-<div id="ai-suggestions-bar"></div>
-<script src="pmhub-ai-suggestions.js"></script>
 </body>
 </html>
