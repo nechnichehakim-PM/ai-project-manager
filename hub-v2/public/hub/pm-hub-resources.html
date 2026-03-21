@@ -183,6 +183,32 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 24px rgba(99,210,180,.3);transition:transform .2s;}
 .ai-float-btn:hover{transform:scale(1.08);}
 .empty-state{text-align:center;padding:50px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);font-size:11px;line-height:1.8;}
+/* ── MES TÂCHES ──────────────────────────────────────── */
+.tasks-section{margin-bottom:24px;}
+.tasks-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:none;}
+.tasks-section-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0;}
+.tasks-section-name{font-size:12px;font-weight:700;}
+.tasks-section-role{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.tasks-count{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);margin-left:auto;}
+.tasks-table-wrap{border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden;background:var(--surface);}
+.tasks-table{width:100%;border-collapse:collapse;}
+.tasks-table th{font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:left;white-space:nowrap;}
+.tasks-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;vertical-align:middle;}
+.tasks-table tr:last-child td{border-bottom:none;}
+.tasks-table tr:hover td{background:var(--surface2);}
+.task-name{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:var(--text);}
+.task-proj{font-family:'DM Mono',monospace;font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(99,210,180,.06);border:1px solid rgba(99,210,180,.15);color:var(--accent);white-space:nowrap;}
+.ks-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.ks-todo{background:rgba(107,120,133,.1);color:var(--text-muted);border:1px solid var(--border);}
+.ks-progress{background:rgba(122,184,232,.1);color:var(--accent3);border:1px solid rgba(122,184,232,.2);}
+.ks-review{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.ks-done{background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.2);}
+.ks-overdue{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.pri-high{color:var(--danger);}
+.pri-medium{color:var(--accent2);}
+.pri-low{color:var(--success);}
+.task-progress{height:4px;background:var(--surface2);border-radius:2px;width:60px;display:inline-block;overflow:hidden;vertical-align:middle;}
+.task-progress-fill{height:100%;border-radius:2px;}
 </style>
 </head>
 <body>
@@ -245,6 +271,7 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
         <div class="rtab active" id="tab-team"     onclick="setTab('team')">Équipe</div>
         <div class="rtab"        id="tab-workload" onclick="setTab('workload')">Charge de travail</div>
         <div class="rtab"        id="tab-skills"   onclick="setTab('skills')">Matrice compétences</div>
+      <div class="rtab"        id="tab-tasks"    onclick="setTab('tasks')">Mes tâches</div>
       </div>
 
       <!-- TAB CONTENT -->
@@ -646,6 +673,109 @@ function renderSkillsMatrix() {
 }
 
 // ══════════════════════════════════════════════════════
+// TAB — MES TÂCHES
+// ══════════════════════════════════════════════════════
+function getAllTasks() {
+  var projs = getProjects();
+  var result = [];
+  projs.forEach(function(p) {
+    try {
+      var raw = localStorage.getItem('pmhub_tasks_' + p.id);
+      if (!raw) return;
+      var tasks = JSON.parse(raw);
+      tasks.forEach(function(t) {
+        if (t.type === 'group') return;
+        result.push({ task: t, project: p });
+      });
+    } catch(e) {}
+  });
+  return result;
+}
+
+function taskStatusBadge(t) {
+  var today = new Date();
+  var isOD  = t.end && new Date(t.end) < today && (t.progress||0) < 100;
+  if (isOD) return '<span class="ks-badge ks-overdue">⚠ En retard</span>';
+  var ks = t.kanbanStatus || (t.progress >= 100 ? 'done' : t.progress > 0 ? 'in_progress' : 'todo');
+  var map = { todo:'<span class="ks-badge ks-todo">À faire</span>', in_progress:'<span class="ks-badge ks-progress">En cours</span>', review:'<span class="ks-badge ks-review">En revue</span>', done:'<span class="ks-badge ks-done">Terminé</span>' };
+  return map[ks] || '<span class="ks-badge ks-todo">' + ks + '</span>';
+}
+
+function fmtDateShort(d) {
+  if (!d) return '—';
+  var ms = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  var parts = d.split('-');
+  return parseInt(parts[2]) + ' ' + ms[parseInt(parts[1])-1] + ' ' + parts[0].slice(2);
+}
+
+function renderTasks() {
+  var res     = getResources();
+  var allTasks = getAllTasks();
+  if (!res.length) return '<div class="empty-state">Aucun membre. Ajoutez des membres pour voir leurs tâches.</div>';
+
+  var totalAssigned = 0;
+  var html = '';
+  res.forEach(function(r) {
+    var mine = allTasks.filter(function(x) {
+      return (x.task.owner||'').toLowerCase() === (r.name||r.id).toLowerCase() ||
+             (x.task.assignee||'').toLowerCase() === (r.name||r.id).toLowerCase() ||
+             (x.task.assignee||'').toLowerCase() === (r.id||'').toLowerCase();
+    });
+    totalAssigned += mine.length;
+
+    // Sort: overdue first, then in_progress, then todo, then done
+    mine.sort(function(a, b) {
+      var today = new Date();
+      var aOD = a.task.end && new Date(a.task.end) < today && (a.task.progress||0) < 100;
+      var bOD = b.task.end && new Date(b.task.end) < today && (b.task.progress||0) < 100;
+      if (aOD && !bOD) return -1;
+      if (!aOD && bOD) return 1;
+      var order = { in_progress:0, review:1, todo:2, done:3 };
+      var as = a.task.kanbanStatus || 'todo';
+      var bs = b.task.kanbanStatus || 'todo';
+      return (order[as]||2) - (order[bs]||2);
+    });
+
+    var rows = mine.length
+      ? mine.map(function(x) {
+          var t   = x.task;
+          var p   = x.project;
+          var pct = t.progress || 0;
+          var pc  = pct >= 80 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#94a3b8';
+          var pri = t.priority || 'medium';
+          var priMap = { high:'● Haute', medium:'● Moy.', low:'● Faible' };
+          var priCls = { high:'pri-high', medium:'pri-medium', low:'pri-low' };
+          return '<tr>' +
+            '<td><div class="task-name">' + (t.name||'').replace(/</g,'&lt;') + '</div></td>' +
+            '<td><span class="task-proj">' + (p.icon||'📁') + ' ' + (p.name||'').slice(0,20) + '</span></td>' +
+            '<td>' + taskStatusBadge(t) + '</td>' +
+            '<td><span class="' + (priCls[pri]||'pri-medium') + '" style="font-family:\'DM Mono\',monospace;font-size:9px;">' + (priMap[pri]||pri) + '</span></td>' +
+            '<td><div class="task-progress"><div class="task-progress-fill" style="width:' + pct + '%;background:' + pc + ';"></div></div> <span style="font-size:9px;color:var(--text-muted);">' + pct + '%</span></td>' +
+            '<td style="color:var(--text-muted);font-size:9px;">' + fmtDateShort(t.end) + '</td>' +
+          '</tr>';
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);font-family:\'DM Mono\',monospace;font-size:10px;padding:16px;">Aucune tâche assignée</td></tr>';
+
+    html += '<div class="tasks-section">' +
+      '<div class="tasks-section-hdr">' +
+        '<div class="tasks-section-avatar" style="background:' + (r.color||'#63d2b4') + '22;color:' + (r.color||'#63d2b4') + ';border:2px solid ' + (r.color||'#63d2b4') + '33;">' + (r.id||'?') + '</div>' +
+        '<div><div class="tasks-section-name">' + (r.name||'').replace(/</g,'&lt;') + '</div><div class="tasks-section-role">' + (r.role||'') + '</div></div>' +
+        '<span class="tasks-count">' + mine.length + ' tâche' + (mine.length !== 1 ? 's' : '') + '</span>' +
+      '</div>' +
+      '<div class="tasks-table-wrap"><table class="tasks-table">' +
+        '<thead><tr><th>Tâche</th><th>Projet</th><th>Statut</th><th>Priorité</th><th>Progression</th><th>Échéance</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+  });
+
+  if (totalAssigned === 0) {
+    return '<div class="empty-state">📋<br>Aucune tâche assignée à un membre.<br>Ouvrez une carte Kanban et assignez un responsable depuis la liste des ressources.</div>';
+  }
+  return html;
+}
+
+// ══════════════════════════════════════════════════════
 // RENDER DISPATCH
 // ══════════════════════════════════════════════════════
 function renderCurrent() {
@@ -659,6 +789,8 @@ function renderCurrent() {
     tc.innerHTML = renderWorkload();
   } else if (_currentTab === 'skills') {
     tc.innerHTML = renderSkillsMatrix();
+  } else if (_currentTab === 'tasks') {
+    tc.innerHTML = renderTasks();
   }
 }
 
@@ -670,6 +802,9 @@ function setTab(tab) {
   // Filter bar only relevant on team tab
   var fb = document.querySelector('.filter-bar');
   if (fb) fb.style.display = (tab === 'team') ? '' : 'none';
+  // View toggle only on team tab
+  var vt = document.getElementById('viewToggle');
+  if (vt) vt.style.display = (tab === 'team') ? '' : 'none';
   renderCurrent();
 }
 

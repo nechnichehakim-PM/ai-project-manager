@@ -148,6 +148,39 @@ html[data-theme="light"] .kanban-card{background:var(--surface);}
 html[data-theme="light"] .kanban-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.08);}
 html[data-theme="light"] .kanban-col{background:var(--surface2);}
 
+/* ── CARD DETAIL MODAL ───────────────────────────────── */
+.cm-overlay{position:fixed;inset:0;z-index:400;background:rgba(3,6,9,.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px;}
+.cm-overlay.open{opacity:1;pointer-events:all;}
+.cm-modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto;position:relative;transform:translateY(20px);transition:transform .3s;}
+.cm-overlay.open .cm-modal{transform:translateY(0);}
+.cm-strip{height:3px;border-radius:14px 14px 0 0;}
+.cm-head{padding:22px 26px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.cm-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;line-height:1.2;flex:1;}
+.cm-close{width:28px;height:28px;border-radius:5px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.cm-close:hover{border-color:var(--danger);color:var(--danger);}
+.cm-body{padding:18px 26px 26px;}
+.cm-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cm-group{display:flex;flex-direction:column;gap:5px;}
+.cm-group.full{grid-column:1/-1;}
+.cm-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.cm-input,.cm-select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 11px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;transition:border-color .2s;}
+.cm-input:focus,.cm-select:focus{border-color:var(--accent);}
+.cm-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 11px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;resize:vertical;min-height:60px;transition:border-color .2s;}
+.cm-textarea:focus{border-color:var(--accent);}
+.cm-progress-wrap{display:flex;align-items:center;gap:10px;}
+.cm-prog-slider{flex:1;accent-color:var(--accent);cursor:pointer;}
+.cm-prog-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);width:36px;text-align:right;flex-shrink:0;}
+.cm-actions{display:flex;gap:10px;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+.cm-btn-save{background:var(--accent);color:#060a0d;padding:9px 18px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;}
+.cm-btn-save:hover{opacity:.88;}
+.cm-btn-cancel{background:transparent;color:var(--text-muted);padding:9px 14px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.cm-btn-cancel:hover{border-color:var(--accent);color:var(--text);}
+.cm-btn-del{background:transparent;color:var(--danger);padding:9px 14px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;border:1px solid rgba(239,68,68,.3);cursor:pointer;transition:all .2s;}
+.cm-btn-del:hover{background:rgba(239,68,68,.08);}
+/* Quick-add owner */
+.kanban-add-owner{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;margin-top:4px;width:100%;}
+.kanban-add-owner:focus{border-color:var(--accent);}
+
 @media(max-width:1200px){.kanban-board{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:640px){.kanban-board{grid-template-columns:1fr;}.inner-col{height:auto;overflow:auto;}.kanban-scroll{overflow:visible;}}
 </style>
@@ -459,6 +492,9 @@ function render() {
         });
       }
 
+      // Click → open edit modal
+      card.addEventListener('click', () => openCardModal(t.id));
+
       // Drag
       card.addEventListener('dragstart', e => {
         draggedId = t.id;
@@ -510,12 +546,20 @@ function render() {
 // ══════════════════════════════════════════════════════
 // QUICK ADD
 // ══════════════════════════════════════════════════════
+function buildOwnerOptions(selected) {
+  const res = (typeof PMHUB !== 'undefined' && PMHUB.getResources) ? PMHUB.getResources() : [];
+  let opts = '<option value="">— Non assigné</option>';
+  res.forEach(r => { opts += '<option value="' + (r.name||r.id).replace(/"/g,'&quot;') + '"' + ((r.name||r.id) === selected ? ' selected' : '') + '>' + (r.name||r.id) + '</option>'; });
+  return opts;
+}
+
 function openQuickAdd(colEl, status, btn) {
   const footer = colEl.querySelector('.kanban-col-footer');
   if (!footer) return;
   footer.innerHTML =
     '<div class="kanban-add-inline">' +
       '<input class="kanban-add-input" id="quickAddInput_' + status + '" type="text" placeholder="Nom de la tâche…" maxlength="80">' +
+      '<select class="kanban-add-owner" id="quickAddOwner_' + status + '">' + buildOwnerOptions('') + '</select>' +
       '<button class="kanban-add-ok" onclick="confirmQuickAdd(\'' + status + '\')">✓</button>' +
       '<button class="kanban-add-cancel" onclick="render()">✕</button>' +
     '</div>';
@@ -530,8 +574,9 @@ function openQuickAdd(colEl, status, btn) {
 }
 
 function confirmQuickAdd(status) {
-  const inp = document.getElementById('quickAddInput_' + status);
-  const name = inp ? inp.value.trim() : '';
+  const inp   = document.getElementById('quickAddInput_' + status);
+  const owner = document.getElementById('quickAddOwner_' + status);
+  const name  = inp ? inp.value.trim() : '';
   if (!name) { render(); return; }
   const today = new Date();
   const end   = new Date(); end.setDate(end.getDate() + 7);
@@ -545,6 +590,7 @@ function confirmQuickAdd(status) {
     kanbanStatus: status,
     priority: 'medium',
     color: '#63d2b4',
+    owner: owner ? owner.value : '',
   });
   saveTasks();
   render();
@@ -640,6 +686,68 @@ function switchProject(id) {
   render();
 }
 
+// ══════════════════════════════════════════════════════
+// CARD DETAIL MODAL
+// ══════════════════════════════════════════════════════
+function openCardModal(id) {
+  const t = tasks.find(x => x.id == id);
+  if (!t) return;
+  const col = COLUMNS.find(c => c.id === (t.kanbanStatus || 'todo')) || COLUMNS[0];
+  document.getElementById('cm_id').value        = t.id;
+  document.getElementById('cm_name').value      = t.name || '';
+  document.getElementById('cm_type').value      = t.type || 'task';
+  document.getElementById('cm_priority').value  = t.priority || 'medium';
+  document.getElementById('cm_status').value    = t.kanbanStatus || 'todo';
+  document.getElementById('cm_start').value     = t.start || '';
+  document.getElementById('cm_end').value       = t.end   || '';
+  document.getElementById('cm_notes').value     = t.notes || '';
+  // Progress slider
+  const slider = document.getElementById('cm_progress');
+  const progVal = document.getElementById('cm_prog_val');
+  slider.value = t.progress || 0;
+  progVal.textContent = (t.progress || 0) + '%';
+  slider.oninput = () => { progVal.textContent = slider.value + '%'; };
+  // Owner dropdown
+  document.getElementById('cm_owner').innerHTML = buildOwnerOptions(t.owner || '');
+  // Strip color
+  document.getElementById('cm_strip').style.background = col.hex;
+  document.getElementById('cmOverlay').classList.add('open');
+}
+
+function saveCardModal() {
+  const id  = parseInt(document.getElementById('cm_id').value);
+  const t   = tasks.find(x => x.id == id);
+  if (!t) return;
+  t.name         = document.getElementById('cm_name').value.trim() || t.name;
+  t.type         = document.getElementById('cm_type').value;
+  t.priority     = document.getElementById('cm_priority').value;
+  t.kanbanStatus = document.getElementById('cm_status').value;
+  t.start        = document.getElementById('cm_start').value;
+  t.end          = document.getElementById('cm_end').value;
+  t.progress     = parseInt(document.getElementById('cm_progress').value) || 0;
+  t.owner        = document.getElementById('cm_owner').value;
+  t.notes        = document.getElementById('cm_notes').value.trim();
+  if (t.kanbanStatus === 'done') t.progress = 100;
+  saveTasks();
+  closeCardModal();
+  render();
+  showToast('✓ Tâche mise à jour');
+}
+
+function deleteCardModal() {
+  const id = parseInt(document.getElementById('cm_id').value);
+  if (!confirm('Supprimer cette tâche ?')) return;
+  tasks = tasks.filter(x => x.id != id);
+  saveTasks();
+  closeCardModal();
+  render();
+  showToast('🗑 Tâche supprimée');
+}
+
+function closeCardModal() {
+  document.getElementById('cmOverlay').classList.remove('open');
+}
+
 // ── BOOT ──
 if (typeof PMHUB !== 'undefined') {
   loadProjects();
@@ -647,5 +755,76 @@ if (typeof PMHUB !== 'undefined') {
   document.getElementById('projectSelect').innerHTML = '<option>Chargez le hub</option>';
 }
 </script>
+
+<!-- CARD DETAIL MODAL -->
+<div class="cm-overlay" id="cmOverlay" onclick="if(event.target===this)closeCardModal()">
+  <div class="cm-modal">
+    <div class="cm-strip" id="cm_strip"></div>
+    <div class="cm-head">
+      <div class="cm-title">Détail de la tâche</div>
+      <button class="cm-close" onclick="closeCardModal()">✕</button>
+    </div>
+    <div class="cm-body">
+      <input type="hidden" id="cm_id">
+      <div class="cm-form">
+        <div class="cm-group full">
+          <label class="cm-label">Nom de la tâche *</label>
+          <input class="cm-input" id="cm_name" placeholder="Nom de la tâche…">
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Type</label>
+          <select class="cm-select" id="cm_type">
+            <option value="task">Tâche</option>
+            <option value="milestone">Jalon</option>
+          </select>
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Priorité</label>
+          <select class="cm-select" id="cm_priority">
+            <option value="high">🔴 Haute</option>
+            <option value="medium">🟡 Moyenne</option>
+            <option value="low">🟢 Faible</option>
+          </select>
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Statut Kanban</label>
+          <select class="cm-select" id="cm_status">
+            <option value="todo">À faire</option>
+            <option value="in_progress">En cours</option>
+            <option value="review">En revue</option>
+            <option value="done">Terminé</option>
+          </select>
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Assigné à</label>
+          <select class="cm-select" id="cm_owner"></select>
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Date de début</label>
+          <input class="cm-input" id="cm_start" type="date">
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Date de fin / Échéance</label>
+          <input class="cm-input" id="cm_end" type="date">
+        </div>
+        <div class="cm-group full">
+          <label class="cm-label">Progression — <span id="cm_prog_val">0%</span></label>
+          <input class="cm-prog-slider" id="cm_progress" type="range" min="0" max="100" step="5">
+        </div>
+        <div class="cm-group full">
+          <label class="cm-label">Notes</label>
+          <textarea class="cm-textarea" id="cm_notes" placeholder="Contexte, détails, liens…"></textarea>
+        </div>
+      </div>
+      <div class="cm-actions">
+        <button class="cm-btn-del" onclick="deleteCardModal()">🗑 Supprimer</button>
+        <div style="display:flex;gap:8px;">
+          <button class="cm-btn-cancel" onclick="closeCardModal()">Annuler</button>
+          <button class="cm-btn-save" onclick="saveCardModal()">Enregistrer →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
