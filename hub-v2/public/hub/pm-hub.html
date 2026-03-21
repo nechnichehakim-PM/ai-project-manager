@@ -362,43 +362,58 @@ function renderProjects(list) {
   grid.innerHTML = '';
   list.forEach(p => {
     const tplCount = PMHUB.countSavedTemplates(p.id);
-    const projectDashboardUrl = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+    const url = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+    const meth = p.methodology ? (PMHUB.getMethodology(p.methodology).shortLabel || p.methodology) : '';
+    const pctColor = p.status==='risk' ? 'var(--danger)' : p.status==='closed' ? 'var(--text-muted)' : p.status==='hold' ? 'var(--warning)' : 'var(--accent)';
+    const h = PMHUB.getProjectHealth(p.id);
+    const ragColors = { green:'var(--success)', amber:'var(--warning)', red:'var(--danger)' };
+
+    const chips = [
+      p.budget  ? `<div class="card-chip">💰 ${p.budget}</div>` : '',
+      p.end     ? `<div class="card-chip">📅 ${formatDate(p.end)}</div>` : '',
+      (p.team||[]).length ? `<div class="card-chip">👥 ${p.team.length} membre${p.team.length>1?'s':''}</div>` : '',
+      h.openRisks ? `<div class="card-chip chip-risk">⚠ ${h.openRisks} risque${h.openRisks>1?'s':''}</div>` : '',
+    ].filter(Boolean).join('');
+
     const card = document.createElement('div');
     card.className = `project-card status-${p.status}`;
-    card.style.cursor = 'pointer';
-    card.onclick = function(ev) {
-      if (!ev.target.closest('.card-actions')) window.location.href = projectDashboardUrl;
-    };
+    card.onclick = ev => { if (!ev.target.closest('.card-sec-actions')) window.location.href = url; };
     card.innerHTML = `
-        <div class="card-top">
-          <div class="card-icon">${p.icon||'📁'}</div>
+      <div class="card-header">
+        <div class="card-icon" style="background:${p.color||'var(--accent)'}18;border-color:${p.color||'var(--accent)'}33;">${p.icon||'📁'}</div>
+        <div class="card-header-right">
           <div class="card-status status-${p.status}">${statusLabel(p.status)}</div>
+          ${p.priority==='Critique'||p.priority==='Haute' ? `<div class="card-priority-badge">⚡ ${p.priority}</div>` : ''}
         </div>
-        <div class="card-ref">${p.ref} · ${p.type} ${p.methodology ? ' · ' + (PMHUB.getMethodology(p.methodology).shortLabel || p.methodology) : ''}</div>
-        <div class="card-title">${p.name} <span style="font-size:11px;font-weight:400;color:var(--text-muted);opacity:0.7;">→</span></div>
-        <div class="card-desc">${p.desc}</div>
-        <div class="card-progress">
-          <div class="progress-header">
-            <span>Avancement</span>
-            <span style="color:${p.status==='risk'?'var(--danger)':p.status==='closed'?'var(--text-muted)':'var(--accent)'}">${p.progress||0}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill ${progressClass(p.progress,p.status)}" style="width:${p.progress||0}%"></div>
-          </div>
+      </div>
+      <div class="card-ref">${p.ref}${p.type?' · '+p.type:''}${meth?' · '+meth:''}</div>
+      <div class="card-title">${p.name}</div>
+      <div class="card-desc">${p.desc||'Aucune description.'}</div>
+      ${chips ? `<div class="card-chips">${chips}</div>` : ''}
+      <div class="card-progress">
+        <div class="progress-header">
+          <span>Avancement</span>
+          <span style="color:${pctColor};font-weight:700;">${p.progress||0}%</span>
         </div>
-        <div class="card-footer">
-          <div class="card-meta">
-            ${p.client ? `Client : <span>${p.client}</span><br>` : ''}
-            Fin : <span>${formatDate(p.end)}</span>
-            ${tplCount ? ` · <span style="color:var(--accent)">${tplCount} tpl</span>` : ''}
-          </div>
-          <div class="card-actions" onclick="event.stopPropagation();">
-            ${p.status==='archived' ? `<button type="button" class="card-btn primary" onclick="restoreProject(${p.id},event)">Restaurer</button>` : `<a href="${projectDashboardUrl}" class="card-btn-primary">Voir le dashboard</a>`}
-            ${p.status==='active' ? `<button type="button" class="card-btn orange" onclick="goWizard(${p.id},event)">Wizard</button>` : ''}
-            ${p.status!=='archived' ? `<button type="button" class="card-btn" onclick="goTemplates(${p.id},event)">Templates</button>` : ''}
-            <button type="button" class="card-btn red" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
-          </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${progressClass(p.progress,p.status)}" style="width:${p.progress||0}%"></div>
         </div>
+        <div class="card-rag-line">
+          <span class="card-rag-dot" style="background:${ragColors[h.rag]||'var(--text-muted)'}"></span>
+          <span class="card-rag-label" style="color:${ragColors[h.rag]||'var(--text-muted)'}">Santé ${h.rag==='green'?'Bonne':h.rag==='amber'?'Moyenne':'Critique'} · Score ${h.score}/100</span>
+        </div>
+      </div>
+      <div class="card-cta-wrap" onclick="event.stopPropagation();">
+        ${p.status==='archived'
+          ? `<button class="card-cta-primary" onclick="restoreProject(${p.id},event)">↩ Restaurer le projet</button>`
+          : `<a href="${url}" class="card-cta-primary">Ouvrir le projet →</a>`}
+      </div>
+      <div class="card-sec-actions" onclick="event.stopPropagation();">
+        ${p.status==='active' ? `<button class="card-sec-btn" onclick="goWizard(${p.id},event)">🧭 Wizard</button>` : ''}
+        ${p.status!=='archived' ? `<button class="card-sec-btn" onclick="goTemplates(${p.id},event)">📋 Templates</button>` : ''}
+        ${tplCount ? `<span class="card-sec-tpl">${tplCount} tpl</span>` : ''}
+        <button class="card-sec-btn card-sec-del" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
+      </div>
     `;
     grid.appendChild(card);
   });
