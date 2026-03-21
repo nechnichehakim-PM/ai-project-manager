@@ -384,26 +384,78 @@ function cycleCom(id) {
 function renderDecisions() {
   var raid = getRaidData();
   var decs = raid.decisions || [];
-  var html = '<div class="sec-hdr"><span class="sec-title">Registre des décisions</span></div>';
-  if (!decs.length) return html + '<div class="empty-state">📋<br>Aucune décision enregistrée.<br>Ajoutez des décisions depuis l\'onglet RAID du projet.</div>';
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des décisions</span><button class="sec-btn" onclick="addDec()">＋ Ajouter</button></div>';
+  if (!decs.length) return html + '<div class="empty-state">📋<br>Aucune décision enregistrée.<br>Cliquez sur "＋ Ajouter" pour saisir une décision.</div>';
   var rows = decs.map(function(d) {
     var od = isOverdue(d);
-    return '<tr>' +
+    return '<tr data-decid="' + d.id + '">' +
       '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (d.desc||'').replace(/</g,'&lt;') + '</div>' +
         (d.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + d.mitigation.replace(/</g,'&lt;').slice(0,100) + '</div>' : '') +
       '</td>' +
       '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (d.owner||'—') + '</span></td>' +
-      '<td><span class="st-badge ' + statusClass(d.status) + '" onclick="cycleDec(' + d.id + ')" title="Clic pour changer">' + statusLabel(d.status) + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(d.status) + '" onclick="cycleDec(\'' + d.id + '\')" title="Clic pour changer">' + statusLabel(d.status) + '</span></td>' +
       '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od ? '⚠ ' : '') + fmtDate(d.due) + (od ? '<span class="g-overdue">+'+daysLate(d)+'j</span>' : '') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editDec(\'' + d.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteDec(\'' + d.id + '\')" title="Supprimer">🗑️</button></div></td>' +
     '</tr>';
   }).join('');
-  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Contexte</th><th style="width:120px">Décideur</th><th style="width:110px">Statut</th><th style="width:110px">Date</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Contexte</th><th style="width:130px">Décideur</th><th style="width:110px">Statut</th><th style="width:110px">Échéance</th><th style="width:70px"></th></tr></thead><tbody id="decTbody">' + rows + '</tbody></table></div>';
   return html;
+}
+
+function addDec() {
+  var raid = getRaidData();
+  if (!raid.decisions) raid.decisions = [];
+  var today = new Date().toISOString().split('T')[0];
+  var newId = 'D' + Date.now();
+  raid.decisions.push({ id: newId, desc:'Nouvelle décision', owner:'', status:'open', due: today, mitigation:'' });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  editDec(newId);
+}
+
+function editDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!d) return;
+  var row  = document.querySelector('tr[data-decid="' + id + '"]');
+  if (!row) return;
+  row.innerHTML =
+    '<td><input class="g-input" id="ed_desc" value="' + (d.desc||'').replace(/"/g,'&quot;') + '" placeholder="Description…" style="margin-bottom:4px;"><input class="g-input" id="ed_mit" value="' + (d.mitigation||'').replace(/"/g,'&quot;') + '" placeholder="Contexte / justification…"></td>' +
+    '<td><input class="g-input" id="ed_owner" value="' + (d.owner||'').replace(/"/g,'&quot;') + '" placeholder="Décideur…"></td>' +
+    '<td><select class="g-select" id="ed_status"><option value="open"' + (d.status==='open'?' selected':'') + '>Ouvert</option><option value="progress"' + (d.status==='progress'?' selected':'') + '>En cours</option><option value="closed"' + (d.status==='closed'?' selected':'') + '>Clôturé</option></select></td>' +
+    '<td><input class="g-input" id="ed_due" type="date" value="' + (d.due||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveDec(\'' + id + '\')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!d) return;
+  d.desc       = document.getElementById('ed_desc')?.value.trim()  || '';
+  d.mitigation = document.getElementById('ed_mit')?.value.trim()   || '';
+  d.owner      = document.getElementById('ed_owner')?.value.trim() || '';
+  d.status     = document.getElementById('ed_status')?.value || 'open';
+  d.due        = document.getElementById('ed_due')?.value    || '';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Décision mise à jour');
+}
+
+function deleteDec(id) {
+  if (!confirm('Supprimer cette décision ?')) return;
+  var raid = getRaidData();
+  raid.decisions = (raid.decisions||[]).filter(function(x) { return String(x.id) !== String(id); });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Décision supprimée');
 }
 
 function cycleDec(id) {
   var raid = getRaidData();
-  var d    = (raid.decisions||[]).find(function(x) { return x.id === id; });
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
   if (!d) return;
   d.status = DEC_CYCLE[d.status] || 'open';
   saveRaidData(raid);
@@ -414,36 +466,93 @@ function cycleDec(id) {
 // ══════════════════════════════════════════════════════
 // TAB 3 — ACTIONS
 // ══════════════════════════════════════════════════════
+var SEV_OPTS = ['low','medium','high','critical'];
 function renderActions() {
   var raid  = getRaidData();
-  var items = (raid.actions || []).sort(function(a,b) {
+  var items = (raid.actions || []).slice().sort(function(a,b) {
     var aOD = isOverdue(a) ? 0 : 1;
     var bOD = isOverdue(b) ? 0 : 1;
     return aOD - bOD;
   });
-  var html = '<div class="sec-hdr"><span class="sec-title">Actions de gouvernance</span></div>';
-  if (!items.length) return html + '<div class="empty-state">✅<br>Aucune action en cours.<br>Ajoutez des actions depuis l\'onglet RAID du projet.</div>';
+  var html = '<div class="sec-hdr"><span class="sec-title">Actions de gouvernance</span><button class="sec-btn" onclick="addAct()">＋ Ajouter</button></div>';
+  if (!items.length) return html + '<div class="empty-state">✅<br>Aucune action en cours.<br>Cliquez sur "＋ Ajouter" pour créer une action.</div>';
   var rows = items.map(function(a) {
     var od  = isOverdue(a);
     var sev = a.severity || 'medium';
     var sevColor = { critical:'var(--danger)', high:'#f09090', medium:'var(--accent2)', low:'var(--success)' }[sev] || 'var(--accent2)';
-    return '<tr class="' + (a.status==='closed'?'":"") + '">' +
+    return '<tr data-actid="' + a.id + '" style="' + (a.status==='closed'?'opacity:.5;':'') + '">' +
       '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (a.desc||'').replace(/</g,'&lt;') + '</div>' +
         (a.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + a.mitigation.replace(/</g,'&lt;').slice(0,80) + '</div>' : '') +
       '</td>' +
       '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + sevColor + ';">' + (sev.charAt(0).toUpperCase()+sev.slice(1)) + '</span></td>' +
       '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (a.owner||'—') + '</span></td>' +
-      '<td><span class="st-badge ' + statusClass(a.status) + '" onclick="cycleAct(' + a.id + ')" title="Clic pour changer">' + statusLabel(a.status) + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(a.status) + '" onclick="cycleAct(\'' + a.id + '\')" title="Clic pour changer">' + statusLabel(a.status) + '</span></td>' +
       '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od?'⚠ ':'') + fmtDate(a.due) + (od?'<span class="g-overdue">+'+daysLate(a)+'j</span>':'') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editAct(\'' + a.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteAct(\'' + a.id + '\')" title="Supprimer">🗑️</button></div></td>' +
     '</tr>';
   }).join('');
-  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Plan</th><th style="width:90px">Priorité</th><th style="width:120px">Responsable</th><th style="width:110px">Statut</th><th style="width:120px">Échéance</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Plan</th><th style="width:90px">Priorité</th><th style="width:120px">Responsable</th><th style="width:110px">Statut</th><th style="width:110px">Échéance</th><th style="width:70px"></th></tr></thead><tbody id="actTbody">' + rows + '</tbody></table></div>';
   return html;
+}
+
+function addAct() {
+  var raid = getRaidData();
+  if (!raid.actions) raid.actions = [];
+  var today = new Date().toISOString().split('T')[0];
+  var newId = 'A' + Date.now();
+  raid.actions.push({ id: newId, desc:'Nouvelle action', owner:'', status:'open', severity:'medium', due: today, mitigation:'' });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  editAct(newId);
+}
+
+function editAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!a) return;
+  var row  = document.querySelector('tr[data-actid="' + id + '"]');
+  if (!row) return;
+  var sevOpts = SEV_OPTS.map(function(s) { return '<option value="' + s + '"' + (a.severity===s?' selected':'') + '>' + s.charAt(0).toUpperCase()+s.slice(1) + '</option>'; }).join('');
+  var stOpts  = ['open','progress','watch','closed'].map(function(s) { return '<option value="' + s + '"' + (a.status===s?' selected':'') + '>' + statusLabel(s) + '</option>'; }).join('');
+  row.innerHTML =
+    '<td><input class="g-input" id="ea_desc" value="' + (a.desc||'').replace(/"/g,'&quot;') + '" placeholder="Description…" style="margin-bottom:4px;"><input class="g-input" id="ea_mit" value="' + (a.mitigation||'').replace(/"/g,'&quot;') + '" placeholder="Plan d\'action…"></td>' +
+    '<td><select class="g-select" id="ea_sev">' + sevOpts + '</select></td>' +
+    '<td><input class="g-input" id="ea_owner" value="' + (a.owner||'').replace(/"/g,'&quot;') + '" placeholder="Responsable…"></td>' +
+    '<td><select class="g-select" id="ea_status">' + stOpts + '</select></td>' +
+    '<td><input class="g-input" id="ea_due" type="date" value="' + (a.due||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveAct(\'' + id + '\')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!a) return;
+  a.desc       = document.getElementById('ea_desc')?.value.trim()  || '';
+  a.mitigation = document.getElementById('ea_mit')?.value.trim()   || '';
+  a.owner      = document.getElementById('ea_owner')?.value.trim() || '';
+  a.severity   = document.getElementById('ea_sev')?.value    || 'medium';
+  a.status     = document.getElementById('ea_status')?.value || 'open';
+  a.due        = document.getElementById('ea_due')?.value    || '';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Action mise à jour');
+}
+
+function deleteAct(id) {
+  if (!confirm('Supprimer cette action ?')) return;
+  var raid = getRaidData();
+  raid.actions = (raid.actions||[]).filter(function(x) { return String(x.id) !== String(id); });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Action supprimée');
 }
 
 function cycleAct(id) {
   var raid = getRaidData();
-  var a    = (raid.actions||[]).find(function(x) { return x.id === id; });
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
   if (!a) return;
   a.status = ACT_CYCLE[a.status] || 'open';
   saveRaidData(raid);
