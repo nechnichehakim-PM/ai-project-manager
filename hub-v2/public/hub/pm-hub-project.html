@@ -662,18 +662,7 @@ function initProjectDashboard() {
       <div class="chart-title">RAID — Répartition</div>
       <div class="chart-sub">${raidTotal} points · <a href="${raidUrl}" style="color:var(--accent);text-decoration:none;">Voir tout →</a></div>
     </div>
-    <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
-      <div style="flex-shrink:0;text-align:center;">
-        ${raidPieHtml}
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;justify-content:center;max-width:90px;">
-          <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(239,68,68,0.9);">⬤ R</span>
-          <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(134,239,172,0.9);">⬤ A</span>
-          <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(245,158,11,0.9);">⬤ I</span>
-          <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(99,210,180,0.9);">⬤ D</span>
-        </div>
-      </div>
-      <div style="flex:1;">${raidChartHtml}</div>
-    </div>
+    ${raidChartHtml}
     <div style="padding-top:14px;border-top:1px solid var(--border);">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Sévérité des risques</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">${riskSevHtml}</div>
