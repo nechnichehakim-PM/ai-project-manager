@@ -406,8 +406,11 @@ async function generateWizardWithAI() {
   if (!desc || desc.length < 10) {
     showToast('Décrivez votre projet en au moins quelques mots avant de générer.'); return;
   }
-  if (!window.PMHUB || !PMHUB.callAI) {
+  if (typeof PMHUB === 'undefined' || !PMHUB.callAI) {
     showToast('Module IA non disponible — vérifiez les paramètres API.'); return;
+  }
+  if (!PMHUB.isAIEnabled()) {
+    showToast('IA non activée — allez dans Paramètres → IA et activez un provider avec votre clé API.'); return;
   }
 
   wizardData._aiDesc = desc;
