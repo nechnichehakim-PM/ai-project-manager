@@ -533,19 +533,45 @@ function deleteLine(id) {
 // ══════════════════════════════════════════════════════
 // EVM CHART
 // ══════════════════════════════════════════════════════
+function buildMonthLabels(proj) {
+  var MS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  var start = proj && proj.start ? new Date(proj.start) : new Date();
+  var end   = proj && proj.end   ? new Date(proj.end)   : new Date(start.getTime() + 8 * 30 * 86400000);
+  var labels = [];
+  var cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  var max = 24; // safety cap
+  while (cur <= end && labels.length < max) {
+    labels.push(MS[cur.getMonth()] + ' ' + String(cur.getFullYear()).slice(2));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  if (!labels.length) labels = ['M1','M2','M3','M4','M5','M6','M7','M8'];
+  return labels;
+}
+
 function renderChart() {
   var evm = getEVM();
   var proj = getProject();
   var progress = proj ? (proj.progress || 0) : 0;
   var bac = evm.bac || 0;
-  var n = 8;
-  var labels = ['M1','M2','M3','M4','M5','M6','M7','M8'];
+  var labels = buildMonthLabels(proj);
+  var n = labels.length;
+
+  // Current month index based on today vs project timeline
+  var curM;
+  if (proj && proj.start && proj.end) {
+    var start   = new Date(proj.start);
+    var end     = new Date(proj.end);
+    var today   = new Date();
+    var totalMs = end - start;
+    var elapsedMs = Math.min(today - start, totalMs);
+    var ratio = totalMs > 0 ? Math.max(0, elapsedMs / totalMs) : (progress / 100);
+    curM = Math.max(1, Math.min(Math.round(ratio * n), n));
+  } else {
+    curM = Math.max(1, Math.round(n * progress / 100));
+  }
 
   // PV: linear 0 → BAC
   var pvData = labels.map(function(_, i) { return Math.round(bac * (i + 1) / n); });
-
-  // Current position in months
-  var curM = Math.max(1, Math.round(n * progress / 100));
 
   // EV: grows from 0 to evm.ev at curM, then null
   var evData = labels.map(function(_, i) {
