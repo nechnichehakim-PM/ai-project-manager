@@ -13,7 +13,18 @@
       "Bash(node --check _wizard_script.js)",
       "Bash(wc -l C:UsershakimDownloadsPM Projecthub-v2publichub/*.js C:UsershakimDownloadsPM Projecthub-v2publichub/*.html C:UsershakimDownloadsPM Projecthub-v2publichub/*.css)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//c/Users/hakim/Downloads/PM Project/hub-v2/public/**)",
+      "Bash(done)",
+      "Bash(do echo:*)",
+      "Bash(do grep:*)",
+      "Bash(path=\"C:/Users/hakim/Downloads/PM Project/hub-v2/public/hub/$f\")",
+      "Bash(sed -i 's|<aside class=\"\"sidebar\"\" id=\"\"pmhub-sidebar\"\"></aside>\\\\n  <main class=\"\"main\"\">|<aside class=\"\"sidebar\"\" id=\"\"pmhub-sidebar\"\"></aside>\\\\n  <div class=\"\"main-col\"\">\\\\n  <main class=\"\"main\"\">|' \"$path\")",
+      "Bash(echo \"sed failed for $f\")",
+      "Bash(node scripts/build-hub.js)"
     ]
   }
 }

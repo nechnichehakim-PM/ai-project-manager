@@ -381,23 +381,13 @@ function onSprintChange() {
 // ── COMPLETE SPRINT ───────────────────────────────────────────────
 function completeSprint() {
   if (!activeSprint || activeSprint.status !== 'active') return;
+  if (!confirm('Clôturer "' + activeSprint.name + '" ? Cette action est irréversible.')) return;
   var pts = calcDonePoints(activeSprint);
   activeSprint.completed = pts;
   activeSprint.status = 'closed';
-  // Create next sprint
-  var nextNum = sprintData.sprints.length + 1;
-  var prevEnd = new Date(activeSprint.end);
-  var nextStart = new Date(prevEnd); nextStart.setDate(nextStart.getDate() + 1);
-  var nextEnd = new Date(nextStart); nextEnd.setDate(nextEnd.getDate() + (sprintData.config.duration || 14) - 1);
-  var newSprint = {
-    id: nextNum, name: 'Sprint ' + nextNum, goal: '',
-    start: nextStart.toISOString().slice(0,10), end: nextEnd.toISOString().slice(0,10),
-    capacity: sprintData.config.velocity_target || 20, completed: null, taskIds: [], status: 'active'
-  };
-  sprintData.sprints.push(newSprint);
   saveSprintData(sprintData);
   populateSprintSelector();
-  document.getElementById('sprintSelector').value = newSprint.id;
+  document.getElementById('sprintSelector').value = String(activeSprint.id);
   onSprintChange();
 }
 
@@ -723,7 +713,7 @@ function saveSprint() {
   sprintData.sprints.push(newSprint);
   saveSprintData(sprintData);
   populateSprintSelector();
-  document.getElementById('sprintSelector').value = newSprint.id;
+  document.getElementById('sprintSelector').value = String(newSprint.id);
   closeModal();
   onSprintChange();
 }
