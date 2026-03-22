@@ -917,6 +917,21 @@ function showToast(msg) {
 }
 
 // ── BOOT ──
+(function debugRes() {
+  var raw = localStorage.getItem('pmhub_resources');
+  var parsed = raw ? JSON.parse(raw) : null;
+  var msg = raw
+    ? 'localStorage pmhub_resources : ' + (parsed ? parsed.length : '?') + ' entrées → [' + (parsed||[]).map(function(r){return r.id;}).join(', ') + ']'
+    : 'localStorage pmhub_resources : ABSENT (DEFAULT_RESOURCES utilisé)';
+  var dbg = document.createElement('div');
+  dbg.id = 'res-debug-banner';
+  dbg.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#111822;border:1px solid rgba(99,210,180,.3);color:#63d2b4;font-family:DM Mono,monospace;font-size:10px;padding:8px 16px;border-radius:6px;z-index:9999;white-space:nowrap;cursor:pointer;max-width:90vw;overflow:hidden;text-overflow:ellipsis;';
+  dbg.textContent = msg;
+  dbg.title = 'Clic pour masquer';
+  dbg.onclick = function(){ dbg.remove(); };
+  document.body.appendChild(dbg);
+  setTimeout(function(){ if(dbg.parentNode) dbg.remove(); }, 10000);
+})();
 populateSkillFilter();
 renderCurrent();
 </script>
