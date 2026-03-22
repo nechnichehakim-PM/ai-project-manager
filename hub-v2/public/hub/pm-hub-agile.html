@@ -275,7 +275,7 @@ function loadAndRender() {
 // ── BUILD DEFAULT SPRINTS FROM TASKS ─────────────────────────────
 function buildDefaultSprintData(project) {
   var gantt  = PMHUB.getGanttTasks(projectId);
-  var tasks  = (gantt && gantt.tasks) ? gantt.tasks : [];
+  var tasks  = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
   var config = PMHUB.getTemplate(projectId, 'sprints_config') || {};
   var durationDays = parseInt(config.duration) || 14;
   var velocityTarget = 20;
@@ -404,7 +404,7 @@ function completeSprint() {
 // ── HELPERS ───────────────────────────────────────────────────────
 function calcDonePoints(sprint) {
   var gantt = PMHUB.getGanttTasks(projectId);
-  var tasks = (gantt && gantt.tasks) ? gantt.tasks : [];
+  var tasks = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
   var sprintTasks = sprint.taskIds && sprint.taskIds.length
     ? tasks.filter(function(t){ return sprint.taskIds.indexOf(t.id) !== -1; })
     : tasks.filter(function(t){ var ts = new Date(t.start||t.end); var se = new Date(sprint.start); var ee = new Date(sprint.end); return ts >= se && ts <= ee; });
@@ -414,7 +414,7 @@ function calcDonePoints(sprint) {
 
 function getSprintTasks(sprint) {
   var gantt = PMHUB.getGanttTasks(projectId);
-  var tasks = (gantt && gantt.tasks) ? gantt.tasks : [];
+  var tasks = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
   if (sprint.taskIds && sprint.taskIds.length) {
     return tasks.filter(function(t){ return sprint.taskIds.indexOf(t.id) !== -1; });
   }
@@ -440,23 +440,73 @@ function priorityColor(p) {
   return 'var(--text-muted)';
 }
 
+// ── HELPERS HTML ─────────────────────────────────────────────────
+function sprintStatusBadge(s) {
+  if (s === 'active')  return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--accent);background:rgba(99,210,180,0.1);padding:2px 10px;border-radius:4px;border:1px solid rgba(99,210,180,0.3);">EN COURS</span>';
+  if (s === 'planned') return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text-muted);background:var(--surface2);padding:2px 10px;border-radius:4px;">PLANIFIÉ</span>';
+  return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text-muted);">CLÔTURÉ</span>';
+}
+
+function renderSprintBacklogTable(tasks) {
+  if (!tasks.length) return '<div class="empty-block">Aucune story dans ce sprint.</div>';
+  var rows = tasks.map(function(t) {
+    var st = (t.kanbanStatus==='done'||t.progress>=100) ? 'done'
+           : (t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100)) ? 'inprogress' : 'todo';
+    var stLabel = st==='done' ? 'Terminé' : st==='inprogress' ? 'En cours' : 'À faire';
+    var pts = t.storyPoints || defaultPoints(t);
+    return '<tr>'
+      + '<td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
+      + '<td><span class="pts-badge">'+pts+'</span></td>'
+      + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
+      + '<td><span class="status-chip '+st+'">'+stLabel+'</span></td>'
+      + '</tr>';
+  }).join('');
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Statut</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderProductBacklogTable(tasks) {
+  if (!tasks.length) return '<div class="empty-block">Toutes les stories sont assignées à des sprints.</div>';
+  var rows = tasks.map(function(t) {
+    var pts  = t.storyPoints || defaultPoints(t);
+    var prio = t.priority || 'Moyenne';
+    return '<tr>'
+      + '<td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
+      + '<td><span class="priority-dot" style="background:'+priorityColor(prio)+';display:inline-block;"></span><span style="font-size:10px;font-family:\'DM Mono\',monospace;">'+escHtml(prio)+'</span></td>'
+      + '<td><span class="pts-badge">'+pts+'</span></td>'
+      + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
+      + '</tr>';
+  }).join('');
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Priorité</th><th>Pts</th><th>Owner</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderDodList(dodItems, done) {
+  return dodItems.map(function(item) {
+    return '<div class="dod-item">'
+      + '<div class="dod-check'+(done?' checked':'')+'">'+(done?'✓':'')+'</div>'
+      + escHtml(item)
+      + '</div>';
+  }).join('');
+}
+
 // ── RENDER ALL ────────────────────────────────────────────────────
 function renderAll() {
   if (!activeSprint) return;
   var sprint = activeSprint;
   var tasks  = getSprintTasks(sprint);
-  var ganttAll = PMHUB.getGanttTasks(projectId);
-  var allTasks = (ganttAll && ganttAll.tasks) ? ganttAll.tasks : [];
+
+  // Fix: getGanttTasks retourne un tableau directement (pas {tasks:[...]})
+  var ganttRaw = PMHUB.getGanttTasks(projectId);
+  var allTasks = Array.isArray(ganttRaw) ? ganttRaw : (ganttRaw && Array.isArray(ganttRaw.tasks) ? ganttRaw.tasks : []);
 
   var totalPts = tasks.reduce(function(a,t){ return a+(t.storyPoints||defaultPoints(t)); }, 0);
   var donePts  = sprint.status === 'closed' ? (sprint.completed || 0)
                : tasks.filter(function(t){ return t.progress>=100||t.kanbanStatus==='done'; })
                       .reduce(function(a,t){ return a+(t.storyPoints||defaultPoints(t)); }, 0);
-  var inProg   = tasks.filter(function(t){ return t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100); }).length;
-  var todo     = tasks.filter(function(t){ return !t.kanbanStatus||t.kanbanStatus==='todo'; }).length;
+  var inProg = tasks.filter(function(t){ return t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100); }).length;
+  var todo   = tasks.filter(function(t){ return t.kanbanStatus==='todo'||(!t.kanbanStatus&&(t.progress||0)===0); }).length;
 
   var today   = new Date(); today.setHours(0,0,0,0);
-  var spEnd   = new Date(sprint.end); spEnd.setHours(0,0,0,0);
+  var spEnd   = new Date(sprint.end);   spEnd.setHours(0,0,0,0);
   var spStart = new Date(sprint.start); spStart.setHours(0,0,0,0);
   var totalDays = Math.max(1, Math.round((spEnd - spStart) / 86400000) + 1);
   var daysGone  = Math.max(0, Math.min(totalDays, Math.round((today - spStart) / 86400000)));
@@ -464,139 +514,75 @@ function renderAll() {
   var pctTime   = Math.round(daysGone / totalDays * 100);
   var pctDone   = totalPts > 0 ? Math.round(donePts / totalPts * 100) : 0;
 
-  // Velocity history
   var closedSprints = sprintData.sprints.filter(function(s){ return s.status === 'closed'; });
   var avgVelocity = closedSprints.length
     ? Math.round(closedSprints.reduce(function(a,s){ return a+(s.completed||0); }, 0) / closedSprints.length)
     : (sprintData.config.velocity_target || 20);
 
-  // DoD
   var dod = PMHUB.getTemplate(projectId, 'definition_of_done');
-  var dodItems = dod && dod.items ? dod.items : ['Tests unitaires ≥ 80% coverage','Code review approuvé','Tests fonctionnels passants','Documentation à jour','Démo Sprint Review réalisée'];
+  var dodItems = (dod && dod.items && dod.items.length) ? dod.items
+    : ['Tests unitaires ≥ 80% coverage','Code review approuvé','Tests fonctionnels passants','Documentation à jour','Démo Sprint Review réalisée'];
 
-  // Product Backlog (tasks not in any sprint)
   var assignedIds = sprintData.sprints.reduce(function(acc,s){ return acc.concat(s.taskIds||[]); }, []);
   var backlogTasks = allTasks.filter(function(t){
     return t.type !== 'milestone' && assignedIds.indexOf(t.id) === -1 && (t.kanbanStatus === 'todo' || !t.kanbanStatus);
   });
 
-  document.getElementById('agileRoot').innerHTML = `
-  <!-- SPRINT HEADER -->
-  <div class="sprint-header">
-    <div class="sprint-info">
-      <div class="sprint-name">${sprint.name}${sprint.status==='active' ? ' <span style="font-size:12px;font-family:DM Mono,monospace;color:var(--accent);background:rgba(99,210,180,0.1);padding:2px 10px;border-radius:4px;border:1px solid rgba(99,210,180,0.3);">EN COURS</span>' : sprint.status==='planned' ? ' <span style="font-size:12px;font-family:DM Mono,monospace;color:var(--text-muted);background:var(--surface2);padding:2px 10px;border-radius:4px;">PLANIFIÉ</span>' : ' <span style="font-size:12px;font-family:DM Mono,monospace;color:var(--text-muted);">CLÔTURÉ</span>'}</div>
-      <div class="sprint-goal">${sprint.goal || 'Objectif du sprint non défini'}</div>
-      <div class="sprint-dates">📅 ${fmtDate(sprint.start)} → ${fmtDate(sprint.end)}</div>
-      <div class="sprint-prog-track"><div class="sprint-prog-fill" style="width:${pctDone}%;"></div></div>
-      <div class="sprint-prog-label"><span>${donePts} pts terminés / ${totalPts} pts total</span><span>${pctDone}%</span></div>
-    </div>
-    <div class="sprint-stats">
-      <div class="sprint-counter">
-        <div class="sprint-counter-val">${sprint.status==='closed'?'✓':daysLeft}</div>
-        <div class="sprint-counter-label">${sprint.status==='closed'?'Clôturé':'Jours restants'}</div>
-      </div>
-      <div class="sprint-badges">
-        <span class="sprint-chip">⏱ ${totalDays}j sprint</span>
-        <span class="sprint-chip">🎯 ${sprint.capacity||totalPts} pts cible</span>
-        <span class="sprint-chip">📊 ${pctTime}% temps écoulé</span>
-      </div>
-    </div>
-  </div>
+  var html = '';
 
-  <!-- KPIs -->
-  <div class="grid-kpi">
-    <div class="kpi g"><div class="kpi-label">Points terminés</div><div class="kpi-val">${donePts}</div><div class="kpi-sub">/ ${totalPts} pts sprint</div></div>
-    <div class="kpi y"><div class="kpi-label">En cours</div><div class="kpi-val">${inProg}</div><div class="kpi-sub">stories actives</div></div>
-    <div class="kpi b"><div class="kpi-label">À faire</div><div class="kpi-val">${todo}</div><div class="kpi-sub">stories restantes</div></div>
-    <div class="kpi p"><div class="kpi-label">Vélocité moy.</div><div class="kpi-val">${avgVelocity}</div><div class="kpi-sub">pts · ${closedSprints.length} sprint(s)</div></div>
-  </div>
+  // SPRINT HEADER
+  html += '<div class="sprint-header">';
+  html += '<div class="sprint-info">';
+  html += '<div class="sprint-name">'+escHtml(sprint.name)+sprintStatusBadge(sprint.status)+'</div>';
+  html += '<div class="sprint-goal">'+escHtml(sprint.goal||'Objectif du sprint non défini')+'</div>';
+  html += '<div class="sprint-dates">📅 '+fmtDate(sprint.start)+' → '+fmtDate(sprint.end)+'</div>';
+  html += '<div class="sprint-prog-track"><div class="sprint-prog-fill" style="width:'+pctDone+'%;"></div></div>';
+  html += '<div class="sprint-prog-label"><span>'+donePts+' pts terminés / '+totalPts+' pts total</span><span>'+pctDone+'%</span></div>';
+  html += '</div>';
+  html += '<div class="sprint-stats">';
+  html += '<div class="sprint-counter"><div class="sprint-counter-val">'+(sprint.status==='closed'?'✓':daysLeft)+'</div>';
+  html += '<div class="sprint-counter-label">'+(sprint.status==='closed'?'Clôturé':'Jours restants')+'</div></div>';
+  html += '<div class="sprint-badges">';
+  html += '<span class="sprint-chip">⏱ '+totalDays+'j sprint</span>';
+  html += '<span class="sprint-chip">🎯 '+(sprint.capacity||totalPts)+' pts cible</span>';
+  html += '<span class="sprint-chip">📊 '+pctTime+'% temps écoulé</span>';
+  html += '</div></div></div>';
 
-  <!-- BURNDOWN + VELOCITY -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-head">
-        <div><div class="card-title">Burndown Chart</div><div class="card-sub">${sprint.name} — points restants</div></div>
-        <span class="card-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Sprint actif</span>
-      </div>
-      <div class="card-body">
-        ${renderBurndownSVG(sprint, tasks, totalPts, daysGone, totalDays)}
-        <div class="burndown-legend">
-          <div class="bd-legend-item"><div class="bd-legend-dot" style="background:var(--accent);"></div>Réel</div>
-          <div class="bd-legend-item"><div class="bd-legend-dot" style="background:rgba(212,175,100,0.5);border-top:1px dashed rgba(212,175,100,0.5);"></div>Idéal</div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <div><div class="card-title">Vélocité</div><div class="card-sub">Story points terminés par sprint</div></div>
-        <span class="card-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">Moy. ${avgVelocity} pts</span>
-      </div>
-      <div class="card-body">
-        ${renderVelocityChart()}
-      </div>
-    </div>
-  </div>
+  // KPIs
+  html += '<div class="grid-kpi">';
+  html += '<div class="kpi g"><div class="kpi-label">Points terminés</div><div class="kpi-val">'+donePts+'</div><div class="kpi-sub">/ '+totalPts+' pts sprint</div></div>';
+  html += '<div class="kpi y"><div class="kpi-label">En cours</div><div class="kpi-val">'+inProg+'</div><div class="kpi-sub">stories actives</div></div>';
+  html += '<div class="kpi b"><div class="kpi-label">À faire</div><div class="kpi-val">'+todo+'</div><div class="kpi-sub">stories restantes</div></div>';
+  html += '<div class="kpi p"><div class="kpi-label">Vélocité moy.</div><div class="kpi-val">'+avgVelocity+'</div><div class="kpi-sub">pts · '+closedSprints.length+' sprint(s)</div></div>';
+  html += '</div>';
 
-  <!-- SPRINT BACKLOG + DOD -->
-  <div class="grid-2" style="margin-bottom:20px;">
-    <div class="card" style="grid-column:1/2;">
-      <div class="card-head">
-        <div><div class="card-title">Backlog du sprint</div><div class="card-sub">${tasks.length} stories · ${totalPts} pts</div></div>
-      </div>
-      <div class="card-body" style="padding:0;">
-        ${tasks.length === 0
-          ? '<div class="empty-block">Aucune story dans ce sprint.</div>'
-          : `<table class="backlog-table">
-              <thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Statut</th></tr></thead>
-              <tbody>${tasks.map(function(t){
-                var st = t.kanbanStatus==='done'||t.progress>=100 ? 'done' : t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100) ? 'inprogress' : 'todo';
-                var stLabel = st==='done'?'Terminé':st==='inprogress'?'En cours':'À faire';
-                var pts = t.storyPoints || defaultPoints(t);
-                return '<tr><td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
-                  +'<td><span class="pts-badge">'+pts+'</span></td>'
-                  +'<td style="color:var(--text-soft);">'+escHtml(t.owner||'—')+'</td>'
-                  +'<td><span class="status-chip '+st+'">'+stLabel+'</span></td></tr>';
-              }).join('')}</tbody>
-            </table>`}
-      </div>
-    </div>
-    <div class="card" style="grid-column:2/3;">
-      <div class="card-head">
-        <div><div class="card-title">Definition of Done</div><div class="card-sub">Critères de complétion</div></div>
-      </div>
-      <div class="card-body">
-        <div class="dod-list">
-          ${dodItems.map(function(item){
-            var done = donePts >= totalPts * 0.8;
-            return '<div class="dod-item"><div class="dod-check'+(done?' checked':'')+'">'+( done?'✓':'')+'</div>'+escHtml(item)+'</div>';
-          }).join('')}
-        </div>
-      </div>
-    </div>
-  </div>
+  // BURNDOWN + VELOCITY
+  html += '<div class="grid-2">';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Burndown Chart</div><div class="card-sub">'+escHtml(sprint.name)+' — points restants</div></div>';
+  html += '<span class="card-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">'+escHtml(sprint.status==='active'?'Sprint actif':sprint.status==='planned'?'Planifié':'Clôturé')+'</span></div>';
+  html += '<div class="card-body">'+renderBurndownSVG(sprint, tasks, totalPts, daysGone, totalDays);
+  html += '<div class="burndown-legend">';
+  html += '<div class="bd-legend-item"><div class="bd-legend-dot" style="background:var(--accent);"></div>Réel</div>';
+  html += '<div class="bd-legend-item"><div class="bd-legend-dot" style="background:rgba(212,175,100,0.5);"></div>Idéal</div>';
+  html += '</div></div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Vélocité</div><div class="card-sub">Story points terminés par sprint</div></div>';
+  html += '<span class="card-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">Moy. '+avgVelocity+' pts</span></div>';
+  html += '<div class="card-body">'+renderVelocityChart()+'</div></div>';
+  html += '</div>';
 
-  <!-- PRODUCT BACKLOG -->
-  <div class="card">
-    <div class="card-head">
-      <div><div class="card-title">Product Backlog</div><div class="card-sub">Stories non assignées à un sprint · ${backlogTasks.length} éléments</div></div>
-    </div>
-    <div class="card-body" style="padding:0;">
-      ${backlogTasks.length === 0
-        ? '<div class="empty-block">Toutes les stories sont assignées à des sprints.</div>'
-        : `<table class="backlog-table">
-            <thead><tr><th>Story</th><th>Priorité</th><th>Pts</th><th>Owner</th></tr></thead>
-            <tbody>${backlogTasks.map(function(t){
-              var pts = t.storyPoints || defaultPoints(t);
-              var prio = t.priority || 'Moyenne';
-              return '<tr><td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
-                +'<td><span class="priority-dot" style="background:'+priorityColor(prio)+';"></span><span style="font-size:10px;">'+escHtml(prio)+'</span></td>'
-                +'<td><span class="pts-badge">'+pts+'</span></td>'
-                +'<td style="color:var(--text-soft);">'+escHtml(t.owner||'—')+'</td></tr>';
-            }).join('')}</tbody>
-          </table>`}
-    </div>
-  </div>
-  `;
+  // SPRINT BACKLOG + DOD
+  html += '<div class="grid-2" style="margin-bottom:20px;">';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Backlog du sprint</div><div class="card-sub">'+tasks.length+' stories · '+totalPts+' pts</div></div></div>';
+  html += '<div class="card-body" style="padding:0;">'+renderSprintBacklogTable(tasks)+'</div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Definition of Done</div><div class="card-sub">Critères de complétion</div></div></div>';
+  html += '<div class="card-body"><div class="dod-list">'+renderDodList(dodItems, donePts >= totalPts * 0.8)+'</div></div></div>';
+  html += '</div>';
+
+  // PRODUCT BACKLOG
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Product Backlog</div><div class="card-sub">Stories non assignées à un sprint · '+backlogTasks.length+' éléments</div></div></div>';
+  html += '<div class="card-body" style="padding:0;">'+renderProductBacklogTable(backlogTasks)+'</div></div>';
+
+  document.getElementById('agileRoot').innerHTML = html;
 }
 
 // ── BURNDOWN SVG ──────────────────────────────────────────────────
