@@ -703,6 +703,23 @@ function loadDemoProjects() {
       localStorage.setItem('pmhub_rr_' + id, JSON.stringify(DEMO_RR[id]));
     });
 
+    // 11b. Sprints Agile — projet 9002 (App Mobile Scrum)
+    var DEMO_SPRINTS_9002 = {
+      config: { duration: 14, velocity_target: 20 },
+      sprints: [
+        { id:1, name:'Sprint 1', goal:'Connexion OAuth2, catalogue produits — fondations UX',             start:'2025-12-01', end:'2025-12-14', capacity:22, completed:21, taskIds:[1,2],  status:'closed' },
+        { id:2, name:'Sprint 2', goal:'Panier d\'achats — flux complet ajout/modification/suppression',   start:'2025-12-15', end:'2025-12-28', capacity:20, completed:19, taskIds:[3],    status:'closed' },
+        { id:3, name:'Sprint 3', goal:'Intégration Stripe — paiement sécurisé 3DS2',                      start:'2026-01-05', end:'2026-01-18', capacity:20, completed:18, taskIds:[4],    status:'closed' },
+        { id:4, name:'Sprint 4', goal:'Profil utilisateur et historique des commandes',                    start:'2026-01-19', end:'2026-02-01', capacity:20, completed:17, taskIds:[5],    status:'closed' },
+        { id:5, name:'Sprint 5', goal:'Notifications push Firebase — engagement post-achat',               start:'2026-02-02', end:'2026-02-15', capacity:20, completed:20, taskIds:[6],    status:'closed' },
+        { id:6, name:'Sprint 6', goal:'Système de points fidélité — gamification & rétention',             start:'2026-02-16', end:'2026-03-01', capacity:20, completed:16, taskIds:[7],    status:'closed' },
+        { id:7, name:'Sprint 7', goal:'Recherche avancée & filtres — expérience découverte catalogue',     start:'2026-03-09', end:'2026-03-28', capacity:20, completed:null, taskIds:[8,9], status:'active' },
+        { id:8, name:'Sprint 8', goal:'Tableau de bord analytics & export RGPD',                           start:'2026-03-29', end:'2026-04-11', capacity:20, completed:null, taskIds:[10,11],status:'planned'},
+        { id:9, name:'Sprint 9', goal:'Tests de charge, beta & corrections — prêt release',                start:'2026-04-12', end:'2026-04-25', capacity:20, completed:null, taskIds:[12,13],status:'planned'}
+      ]
+    };
+    localStorage.setItem('pmhub_sprints_9002', JSON.stringify(DEMO_SPRINTS_9002));
+
     // 11. Ressources — écriture directe de la liste complète (4 membres existants + 9 démo)
     var ALL_RESOURCES = [
       { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',         level:'Senior',   availability:80,  skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'],          color:'#63d2b4' },
@@ -737,6 +754,7 @@ function loadDemoProjects() {
       stampKeys.push('pmhub_lessons_' + id);
       stampKeys.push('pmhub_rr_' + id);
     });
+    stampKeys.push('pmhub_sprints_9002');
     stampKeys.forEach(function(k) { syncTs[k] = nowIso; });
     localStorage.setItem('pmhub_sync_ts', JSON.stringify(syncTs));
 
