@@ -116,6 +116,8 @@ nav{position:relative;z-index:100;display:flex;align-items:center;justify-conten
 .kc-owner-name{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .kc-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);display:flex;align-items:center;gap:2px;flex-shrink:0;}
 .kc-date.late{color:var(--danger);}
+.kc-sp{font-family:'DM Mono',monospace;font-size:9px;background:rgba(99,210,180,.12);border:1px solid rgba(99,210,180,.25);color:var(--accent);padding:1px 6px;border-radius:4px;flex-shrink:0;cursor:pointer;}
+.kc-sp:hover{background:rgba(99,210,180,.22);}
 
 /* Empty state */
 .kanban-empty{padding:24px 12px;text-align:center;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;opacity:.6;}
@@ -479,7 +481,18 @@ function render() {
           '<div class="kc-avatar" style="background:' + avatarColor + '" title="' + (t.owner||'Non assigné') + '">' + ownerInitials + '</div>' +
           '<span class="kc-owner-name">' + (t.owner || '—') + '</span>' +
           (dateStr ? '<span class="kc-date' + (isOD ? ' late' : '') + '">' + (isOD ? '⚠ ' : '📅 ') + dateStr + '</span>' : '') +
+          (t.type !== 'milestone' ? '<span class="kc-sp" title="Story points — clic pour modifier">' + (t.storyPoints || '?') + ' pts</span>' : '') +
         '</div>';
+
+      // Story points click → open modal focused on SP
+      const spBadge = card.querySelector('.kc-sp');
+      if (spBadge) {
+        spBadge.addEventListener('click', e => {
+          e.stopPropagation();
+          openCardModal(t.id);
+          setTimeout(() => { const f = document.getElementById('cm_sp'); if(f){ f.focus(); f.select(); } }, 80);
+        });
+      }
 
       // Priority click → cycle
       const priBadge = card.querySelector('.kc-priority');
@@ -697,6 +710,7 @@ function openCardModal(id) {
   document.getElementById('cm_id').value        = t.id;
   document.getElementById('cm_name').value      = t.name || '';
   document.getElementById('cm_type').value      = t.type || 'task';
+  document.getElementById('cm_sp').value        = t.storyPoints || '';
   document.getElementById('cm_priority').value  = t.priority || 'medium';
   document.getElementById('cm_status').value    = t.kanbanStatus || 'todo';
   document.getElementById('cm_start').value     = t.start || '';
@@ -721,6 +735,8 @@ function saveCardModal() {
   if (!t) return;
   t.name         = document.getElementById('cm_name').value.trim() || t.name;
   t.type         = document.getElementById('cm_type').value;
+  const spVal    = parseInt(document.getElementById('cm_sp').value);
+  if (spVal > 0) t.storyPoints = spVal; else delete t.storyPoints;
   t.priority     = document.getElementById('cm_priority').value;
   t.kanbanStatus = document.getElementById('cm_status').value;
   t.start        = document.getElementById('cm_start').value;
@@ -778,6 +794,10 @@ if (typeof PMHUB !== 'undefined') {
             <option value="task">Tâche</option>
             <option value="milestone">Jalon</option>
           </select>
+        </div>
+        <div class="cm-group">
+          <label class="cm-label">Story Points</label>
+          <input class="cm-input" id="cm_sp" type="number" min="1" max="100" placeholder="ex: 5" style="max-width:100px;">
         </div>
         <div class="cm-group">
           <label class="cm-label">Priorité</label>

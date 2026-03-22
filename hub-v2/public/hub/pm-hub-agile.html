@@ -110,7 +110,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .backlog-table tr:hover td{background:rgba(255,255,255,0.015);}
 .story-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;}
 .story-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:2px;}
-.pts-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;font-weight:700;}
+.pts-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 4px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;font-weight:700;}
+.pts-badge.estimated{color:var(--text-muted);border-style:dashed;}
 .status-chip{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;}
 .status-chip.done{color:var(--accent);border-color:rgba(99,210,180,0.3);background:rgba(99,210,180,0.07);}
 .status-chip.inprogress{color:var(--accent2);border-color:rgba(212,175,100,0.3);background:rgba(212,175,100,0.07);}
@@ -496,36 +497,72 @@ function sprintStatusBadge(s) {
   return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text-muted);">CLÔTURÉ</span>';
 }
 
-function renderSprintBacklogTable(tasks) {
-  if (!tasks.length) return '<div class="empty-block">Aucune story dans ce sprint.</div>';
+function ptsDisplay(t) {
+  if (t.storyPoints) return '<span class="pts-badge">'+t.storyPoints+'</span>';
+  return '<span class="pts-badge estimated" title="Estimé depuis la durée">~'+defaultPoints(t)+'</span>';
+}
+
+function renderSprintBacklogTable(tasks, canEdit) {
+  if (!tasks.length) return '<div class="empty-block">Aucune story — <a href="#" onclick="document.getElementById(\'sprintForm\').scrollIntoView();return false;" style="color:var(--accent);">assignez des tâches depuis le Product Backlog</a>.</div>';
   var rows = tasks.map(function(t) {
     var st = (t.kanbanStatus==='done'||t.progress>=100) ? 'done'
            : (t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100)) ? 'inprogress' : 'todo';
     var stLabel = st==='done' ? 'Terminé' : st==='inprogress' ? 'En cours' : 'À faire';
-    var pts = t.storyPoints || defaultPoints(t);
+    var removeBtn = canEdit
+      ? '<button onclick="removeFromSprint('+JSON.stringify(t.id)+')" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;" title="Retirer du sprint">✕</button>'
+      : '';
     return '<tr>'
-      + '<td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
-      + '<td><span class="pts-badge">'+pts+'</span></td>'
+      + '<td><div class="story-title">'+escHtml(t.name||'—')+'</div></td>'
+      + '<td>'+ptsDisplay(t)+'</td>'
       + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
       + '<td><span class="status-chip '+st+'">'+stLabel+'</span></td>'
+      + '<td>'+removeBtn+'</td>'
       + '</tr>';
   }).join('');
-  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Statut</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function renderProductBacklogTable(tasks) {
-  if (!tasks.length) return '<div class="empty-block">Toutes les stories sont assignées à des sprints.</div>';
+  if (!tasks.length) return '<div class="empty-block">Toutes les stories sont assignées à un sprint.</div>';
   var rows = tasks.map(function(t) {
-    var pts  = t.storyPoints || defaultPoints(t);
-    var prio = t.priority || 'Moyenne';
+    var prio = t.priority || 'medium';
+    var prioLabel = prio==='high'||prio==='haute'||prio==='critique' ? '🔴' : prio==='medium'||prio==='moyenne' ? '🟡' : '🟢';
     return '<tr>'
-      + '<td><div class="story-title">'+escHtml(t.name||t.label||'—')+'</div></td>'
-      + '<td><span class="priority-dot" style="background:'+priorityColor(prio)+';display:inline-block;"></span><span style="font-size:10px;font-family:\'DM Mono\',monospace;">'+escHtml(prio)+'</span></td>'
-      + '<td><span class="pts-badge">'+pts+'</span></td>'
+      + '<td><div class="story-title">'+escHtml(t.name||'—')+'</div></td>'
+      + '<td>'+ptsDisplay(t)+'</td>'
       + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
+      + '<td><span style="font-size:12px;">'+prioLabel+'</span></td>'
+      + '<td><button onclick="addToSprint('+JSON.stringify(t.id)+')" style="background:rgba(99,210,180,.1);border:1px solid rgba(99,210,180,.3);color:var(--accent);cursor:pointer;font-family:\'DM Mono\',monospace;font-size:10px;padding:3px 10px;border-radius:4px;" title="Ajouter au sprint actif">+ Sprint</button></td>'
       + '</tr>';
   }).join('');
-  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Priorité</th><th>Pts</th><th>Owner</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Prio</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// ── SPRINT PLANNING ───────────────────────────────────────────────
+function addToSprint(taskId) {
+  if (!activeSprint || activeSprint.status === 'closed') return;
+  // Passer en mode taskIds explicite : seed depuis date-range si vide
+  if (!activeSprint.taskIds || !activeSprint.taskIds.length) {
+    var current = getSprintTasks(activeSprint);
+    activeSprint.taskIds = current.map(function(t){ return t.id; });
+  }
+  if (activeSprint.taskIds.indexOf(taskId) === -1) {
+    activeSprint.taskIds.push(taskId);
+    saveSprintData(sprintData);
+  }
+  renderAll();
+}
+
+function removeFromSprint(taskId) {
+  if (!activeSprint || activeSprint.status === 'closed') return;
+  // Passer en mode taskIds explicite si besoin
+  if (!activeSprint.taskIds || !activeSprint.taskIds.length) {
+    var current = getSprintTasks(activeSprint);
+    activeSprint.taskIds = current.map(function(t){ return t.id; });
+  }
+  activeSprint.taskIds = activeSprint.taskIds.filter(function(id){ return id !== taskId; });
+  saveSprintData(sprintData);
+  renderAll();
 }
 
 function renderDodList(dodItems, done) {
@@ -619,17 +656,23 @@ function renderAll() {
   html += '<div class="card-body">'+renderVelocityChart()+'</div></div>';
   html += '</div>';
 
+  var canEdit = sprint.status !== 'closed';
+
   // SPRINT BACKLOG + DOD
   html += '<div class="grid-2" style="margin-bottom:20px;">';
   html += '<div class="card"><div class="card-head"><div><div class="card-title">Backlog du sprint</div><div class="card-sub">'+tasks.length+' stories · '+totalPts+' pts</div></div></div>';
-  html += '<div class="card-body" style="padding:0;">'+renderSprintBacklogTable(tasks)+'</div></div>';
+  html += '<div class="card-body" style="padding:0;">'+renderSprintBacklogTable(tasks, canEdit)+'</div></div>';
   html += '<div class="card"><div class="card-head"><div><div class="card-title">Definition of Done</div><div class="card-sub">Critères de complétion</div></div></div>';
   html += '<div class="card-body"><div class="dod-list">'+renderDodList(dodItems, donePts >= totalPts * 0.8)+'</div></div></div>';
   html += '</div>';
 
-  // PRODUCT BACKLOG
-  html += '<div class="card"><div class="card-head"><div><div class="card-title">Product Backlog</div><div class="card-sub">Stories non assignées à un sprint · '+backlogTasks.length+' éléments</div></div></div>';
-  html += '<div class="card-body" style="padding:0;">'+renderProductBacklogTable(backlogTasks)+'</div></div>';
+  // PRODUCT BACKLOG (uniquement si sprint non clôturé)
+  if (canEdit) {
+    html += '<div class="card"><div class="card-head"><div><div class="card-title">Product Backlog</div>';
+    html += '<div class="card-sub">'+backlogTasks.length+' tâches non assignées — cliquez "+ Sprint" pour les ajouter</div></div>';
+    html += '<a href="pm-hub-kanban.html?project='+projectId+'" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent);text-decoration:none;flex-shrink:0;" title="Éditer les story points sur le Kanban">✏ Éditer sur Kanban</a>';
+    html += '</div><div class="card-body" style="padding:0;">'+renderProductBacklogTable(backlogTasks)+'</div></div>';
+  }
 
   document.getElementById('agileRoot').innerHTML = html;
 }
