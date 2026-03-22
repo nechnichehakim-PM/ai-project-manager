@@ -720,8 +720,9 @@ function loadDemoProjects() {
       { id:'EB', name:'Emma Bertrand',        role:'Data Migration Analyst',   level:'Confirmé', availability:90,  skills:['ETL Talend','SQL','SAP HANA','Qualité données','Migration'],   color:'#38bdf8' },
     ];
     localStorage.setItem('pmhub_resources', JSON.stringify(ALL_RESOURCES));
+    var verifyRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]');
 
-    showStatus('✓ 3 projets démo chargés — 13 ressources enregistrées — redirection…', 'ok');
+    showStatus('✓ Chargé — ressources localStorage: ' + verifyRes.length + ' → [' + verifyRes.map(function(r){return r.id;}).join(',') + '] — redirection…', 'ok');
     setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1800);
 
   } catch(e) {
