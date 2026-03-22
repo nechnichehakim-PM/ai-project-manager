@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PM Hub — Rapports & tableaux de bord</title>
+<title>PM Hub — Rapport de statut</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
@@ -19,106 +19,151 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .nav-links{display:flex;gap:6px;align-items:center;}
 .nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
 .nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
-.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
-.layout{display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
-.sidebar{height:100%;overflow-y:auto;border-right:1px solid var(--border);padding:24px 0;background:rgba(12,17,24,0.7);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
 .main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
-.sb-section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:0 20px 8px;margin-top:8px;}
-.sb-item{display:flex;align-items:center;gap:11px;padding:10px 20px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);text-decoration:none;}
-.sb-item:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
-.sb-item.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
-.sb-item-icon{font-size:15px;width:18px;text-align:center;}
-.main{flex:1;min-height:0;overflow-y:auto;padding:40px 48px;padding-bottom:90px;position:relative;z-index:1;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:40px 48px 100px;position:relative;z-index:1;}
+
+/* PAGE HEADER */
 .page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
 .page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
 .page-h1 em{font-style:italic;color:var(--accent2);}
 .page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:32px;}
 
-/* REPORT SELECTOR */
-.report-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;flex-wrap:wrap;gap:14px;}
+/* CONTROLS BAR */
+.controls-bar{display:flex;align-items:center;gap:12px;margin-bottom:36px;flex-wrap:wrap;}
+.ctrl-select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;border-radius:6px;cursor:pointer;outline:none;transition:border-color .2s;min-width:200px;}
+.ctrl-select:focus{border-color:var(--accent);}
 .period-chips{display:flex;gap:6px;}
-.period-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:7px 15px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
+.period-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:7px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
 .period-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,0.06);}
-.print-btn{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text-soft);padding:9px 18px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
-.print-btn:hover{border-color:var(--accent);color:var(--accent);}
+.spacer{flex:1;}
+.btn-ai-gen{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(99,210,180,0.12),rgba(99,210,180,0.06));border:1px solid rgba(99,210,180,0.3);color:var(--accent);padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;cursor:pointer;transition:all .2s;}
+.btn-ai-gen:hover{background:rgba(99,210,180,0.15);border-color:var(--accent);}
+.btn-ai-gen:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-export{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text-soft);padding:9px 16px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.btn-export:hover{border-color:var(--accent);color:var(--accent);}
 
-/* BIG KPIs */
-.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px;}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px 24px;position:relative;overflow:hidden;}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.kpi.g::before{background:var(--accent);}
-.kpi.b::before{background:var(--accent3);}
-.kpi.y::before{background:var(--accent2);}
-.kpi.r::before{background:var(--danger);}
-.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
-.kpi-val{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:600;line-height:1;}
-.kpi.g .kpi-val{color:var(--accent);}
-.kpi.b .kpi-val{color:var(--accent3);}
-.kpi.y .kpi-val{color:var(--accent2);}
-.kpi.r .kpi-val{color:var(--danger);}
-.kpi-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:6px;}
-.kpi-trend{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);margin-top:4px;}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:80px 40px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);}
+.empty-state-icon{font-size:36px;margin-bottom:16px;opacity:0.4;}
 
-/* GRID 2 cols */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:24px;}
+/* REPORT DOCUMENT */
+.report-doc{max-width:860px;display:flex;flex-direction:column;gap:20px;}
 
-/* CHART CARD */
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;}
-.chart-card-header{margin-bottom:22px;}
-.chart-title{font-size:14px;font-weight:700;margin-bottom:4px;}
-.chart-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
-.chart-area{position:relative;}
+/* REPORT HEADER CARD */
+.report-header-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;}
+.report-meta{display:flex;flex-direction:column;gap:6px;}
+.report-project-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;line-height:1.1;}
+.report-meta-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:6px;}
+.report-meta-item{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.report-meta-item span{color:var(--text-soft);}
+.rag-badge{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
+.rag-circle{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;border:2px solid;}
+.rag-circle.vert{background:rgba(99,210,180,0.1);border-color:var(--accent);color:var(--accent);}
+.rag-circle.ambre{background:rgba(212,175,100,0.1);border-color:var(--accent2);color:var(--accent2);}
+.rag-circle.rouge{background:rgba(232,100,100,0.1);border-color:var(--danger);color:var(--danger);}
+.rag-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
 
-/* BAR CHART */
-.bar-chart{display:flex;align-items:flex-end;gap:10px;height:140px;}
-.bar-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
-.bar-fill{width:100%;border-radius:3px 3px 0 0;transition:height .8s ease;min-height:4px;position:relative;}
-.bar-fill:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text);white-space:nowrap;}
-.bar-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);text-align:center;}
+/* SECTION CARD */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);}
+.section-head-left{display:flex;align-items:center;gap:10px;}
+.section-icon{font-size:16px;width:20px;text-align:center;}
+.section-title{font-size:13px;font-weight:700;letter-spacing:0.02em;}
+.section-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;}
+.section-body{padding:20px 24px;}
 
-/* LINE CHART (SVG) */
-.line-chart-svg{width:100%;height:140px;}
+/* EXECUTIVE SUMMARY */
+.summary-area{width:100%;min-height:100px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;outline:none;}
+.summary-area::placeholder{color:var(--text-muted);}
+.summary-ai-hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.ai-loading{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);display:flex;align-items:center;gap:8px;padding:12px 0;}
 
-/* DONUT */
-.donut-wrap{display:flex;align-items:center;gap:28px;}
-.donut-svg{flex-shrink:0;}
-.donut-legend{display:flex;flex-direction:column;gap:10px;}
-.legend-item{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);}
-.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* PROGRESS SECTION */
+.progress-row{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.progress-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);width:120px;flex-shrink:0;}
+.progress-bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.progress-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);width:40px;text-align:right;flex-shrink:0;}
+.kpi-mini-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;}
+.kpi-mini{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;flex:1;min-width:120px;}
+.kpi-mini-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.kpi-mini-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;}
+.kpi-mini-val.ok{color:var(--accent);}
+.kpi-mini-val.warn{color:var(--accent2);}
+.kpi-mini-val.bad{color:var(--danger);}
+.kpi-mini-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:3px;}
 
-/* STATUS TABLE */
-.status-table{width:100%;border-collapse:collapse;}
-.status-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;}
-.status-table td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;}
-.status-table tr:hover td{background:rgba(255,255,255,0.015);}
-.prog-cell{display:flex;align-items:center;gap:10px;}
-.prog-mini{flex:1;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
-.prog-mini-fill{height:100%;border-radius:2px;}
-.health-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
-
-/* MILESTONE STATUS */
+/* MILESTONES */
 .ms-list{display:flex;flex-direction:column;gap:0;}
-.ms-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
-.ms-indicator{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.ms-label{flex:1;font-size:12px;font-weight:600;}
-.ms-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
-.ms-status{font-family:'DM Mono',monospace;font-size:9px;padding:2px 9px;border-radius:3px;border:1px solid;}
+.ms-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.ms-row:last-child{border-bottom:none;}
+.ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ms-name{flex:1;font-size:12px;font-weight:600;}
+.ms-proj{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.ms-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;}
+.ms-chip{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;}
+
+/* RISKS TABLE */
+.risk-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.risk-row:last-child{border-bottom:none;}
+.risk-level{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.risk-body{flex:1;}
+.risk-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.risk-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* DECISIONS */
+.decision-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.decision-row:last-child{border-bottom:none;}
+.decision-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;margin-top:2px;min-width:70px;}
+.decision-body{flex:1;}
+.decision-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.decision-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* ACTIONS */
+.action-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.action-row:last-child{border-bottom:none;}
+.action-overdue{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(232,100,100,0.1);border:1px solid rgba(232,100,100,0.3);color:var(--danger);white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.action-body{flex:1;}
+.action-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.action-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* NEXT STEPS */
+.next-steps-area{width:100%;min-height:80px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;outline:none;}
+.next-steps-area::placeholder{color:var(--text-muted);}
+.auto-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.auto-step-row{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;}
+.auto-step-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0;}
+.auto-step-text{flex:1;color:var(--text-soft);}
+.auto-step-date{color:var(--text-muted);font-size:10px;}
+
+/* EMPTY SECTION */
+.section-empty{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);padding:12px 0;}
+
+/* AI FLOAT */
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
 
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
 
-/* Print: masquer nav/sidebar, garder le contenu principal */
-.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
-.ai-float-btn:hover{transform:scale(1.08);}
+/* ── PRINT ─────────────────────────────────────────── */
 @media print {
-  body::before, nav, .sidebar, .report-bar .period-chips, .print-btn, .no-print { display:none !important; }
-  .layout { display:block !important; padding-top:0 !important; }
-  .main { padding:0 !important; }
-  body { background:#fff; color:#111; }
-  .kpi, .chart-card { break-inside:avoid; }
+  body::before,nav,.sidebar,.controls-bar .btn-ai-gen,.controls-bar .btn-export,.controls-bar .period-chips,.ai-float-btn{display:none!important;}
+  body{background:#fff;color:#111;overflow:visible;}
+  .layout{display:block;margin-top:0;height:auto;}
+  .main{padding:0;overflow:visible;}
+  .report-doc{max-width:100%;}
+  .section-card,.report-header-card{border:1px solid #ddd;break-inside:avoid;background:#fff;}
+  .rag-circle.vert{border-color:#2a9d6e;color:#2a9d6e;background:#f0fdf9;}
+  .rag-circle.ambre{border-color:#c48a00;color:#c48a00;background:#fffbf0;}
+  .rag-circle.rouge{border-color:#c0392b;color:#c0392b;background:#fff5f5;}
+  .kpi-mini{background:#f8f8f8;border-color:#ddd;}
+  .summary-area,.next-steps-area{color:#333;}
+  .section-title,.report-project-name{color:#111;}
+  .section-icon,.section-badge,.ms-chip,.risk-level{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
 </style>
 </head>
@@ -132,132 +177,36 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
     <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
   </div>
 </nav>
-<a href="pm-hub-ai.html?from=Reporting" class="ai-float-btn" title="Assistant IA">🤖</a>
+<a href="pm-hub-ai.html?from=Rapports" class="ai-float-btn" title="Assistant IA">🤖</a>
+
 <div class="layout">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
   <div class="main-col">
   <main class="main">
-    <div class="page-tag">Documents & Connaissance</div>
-    <h1 class="page-h1">Rapports & <em>tableaux de bord</em></h1>
-    <p class="page-sub">Vue synthétique de la santé du portefeuille : KPIs, avancement par projet, jalons et alertes. Export et impression disponibles.</p>
 
-    <div class="report-bar no-print">
-      <div class="period-chips">
-        <button class="period-chip active">Semaine</button>
-        <button class="period-chip">Mois</button>
-        <button class="period-chip">Trimestre</button>
-        <button class="period-chip">Projet</button>
+    <div class="page-tag">Gouvernance projet</div>
+    <h1 class="page-h1">Rapport de <em>statut</em></h1>
+    <p class="page-sub">Document de statut formel par projet et par période — à destination du sponsor, du comité ou du PMO.</p>
+
+    <div class="controls-bar no-print">
+      <select class="ctrl-select" id="projectSelect" onchange="onProjectChange()">
+        <option value="">— Sélectionner un projet —</option>
+      </select>
+      <div class="period-chips" id="periodChips">
+        <button class="period-chip active" onclick="setPeriod('semaine',this)">Semaine</button>
+        <button class="period-chip" onclick="setPeriod('mois',this)">Mois</button>
+        <button class="period-chip" onclick="setPeriod('trimestre',this)">Trimestre</button>
       </div>
-      <div style="display:flex;gap:10px;">
-        <button class="print-btn" onclick="exportReportPDF()">🖨️ Exporter PDF</button>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);display:flex;align-items:center;">Mis à jour : <span id="reportDate" style="color:var(--text-soft);margin-left:6px;"></span></div>
-      </div>
+      <div class="spacer"></div>
+      <button class="btn-ai-gen" id="btnAiGen" onclick="generateAI()" disabled>✨ Générer avec l'IA</button>
+      <button class="btn-export" onclick="window.print()">🖨 Exporter PDF</button>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-strip">
-      <div class="kpi g">
-        <div class="kpi-label">Projets actifs</div>
-        <div class="kpi-val" id="kActive">—</div>
-        <div class="kpi-sub" id="kActiveSub">En cours</div>
-        <div class="kpi-trend">↑ Stable</div>
+    <div id="reportRoot">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        Sélectionnez un projet pour générer le rapport de statut.
       </div>
-      <div class="kpi y">
-        <div class="kpi-label">Avancement global</div>
-        <div class="kpi-val" id="kProgress">—</div>
-        <div class="kpi-sub">Progression moyenne</div>
-        <div class="kpi-trend" id="kProgressTrend">—</div>
-      </div>
-      <div class="kpi r">
-        <div class="kpi-label">Risques critiques</div>
-        <div class="kpi-val" id="kCriticalRisks">—</div>
-        <div class="kpi-sub">Ouverts · RAID</div>
-        <div class="kpi-trend" style="color:var(--danger);">⚠ Surveillance</div>
-      </div>
-      <div class="kpi b">
-        <div class="kpi-label">Budget consommé</div>
-        <div class="kpi-val" id="kBudgetPct">—</div>
-        <div class="kpi-sub" id="kBudgetSub">vs plan</div>
-        <div class="kpi-trend" id="kBudgetTrend">—</div>
-      </div>
-    </div>
-
-    <!-- ROW 1 -->
-    <div class="grid-2">
-      <!-- Avancement par projet -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Avancement par projet</div>
-          <div class="chart-sub">Progression globale vs plan</div>
-        </div>
-        <div id="barChartContainer"></div>
-      </div>
-
-      <!-- Santé du portefeuille (donut) -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Santé du portefeuille</div>
-          <div class="chart-sub">Répartition par statut</div>
-        </div>
-        <div class="donut-wrap" id="donutWrap">
-          <svg class="donut-svg" width="130" height="130" viewBox="0 0 130 130" id="donutSvg"></svg>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ROW 2 -->
-    <div class="grid-3">
-      <!-- Budget tracking -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Suivi budget</div>
-          <div class="chart-sub" id="budgetChartSub">Consommé vs prévu</div>
-        </div>
-        <div id="budgetChart"></div>
-      </div>
-
-      <!-- RAID résumé -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">RAID — Résumé</div>
-          <div class="chart-sub">État des risques & actions</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;" id="raidSummary"></div>
-      </div>
-
-      <!-- Équipe -->
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-title">Disponibilité équipe</div>
-          <div class="chart-sub">Ressources actives</div>
-        </div>
-        <div id="teamAvailChart"></div>
-      </div>
-    </div>
-
-    <!-- STATUT PROJETS TABLE -->
-    <div class="chart-card" style="margin-bottom:24px;">
-      <div class="chart-card-header">
-        <div class="chart-title">Tableau de bord projets</div>
-        <div class="chart-sub">État complet du portefeuille</div>
-      </div>
-      <table class="status-table" id="projStatusTable">
-        <thead><tr>
-          <th>Projet</th><th>Phase</th><th>Avancement</th>
-          <th>Fin prévue</th><th>Budget</th><th>Santé</th>
-        </tr></thead>
-        <tbody id="projStatusBody"></tbody>
-      </table>
-    </div>
-
-    <!-- JALONS -->
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <div class="chart-title" id="jalonsTitle">Jalons à venir</div>
-        <div class="chart-sub">Prochains jalons critiques du portefeuille</div>
-      </div>
-      <div class="ms-list" id="jalonsList"></div>
     </div>
 
   </main>
@@ -265,256 +214,508 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 </div>
 
 <script>
-let reportPeriod = 'Semaine'; // Semaine | Mois | Trimestre | Projet
+// ── STATE ────────────────────────────────────────────────────────
+let currentProjectId = null;
+let currentPeriod    = 'semaine'; // semaine | mois | trimestre
+let summaryText      = '';
+let nextStepsText    = '';
 
-function setReportDateLabel() {
-  const el = document.getElementById('reportDate');
-  if (!el) return;
-  const d = new Date();
-  if (reportPeriod === 'Semaine') {
-    const start = new Date(d); start.setDate(d.getDate() - d.getDay() + 1);
-    const end = new Date(start); end.setDate(start.getDate() + 6);
-    el.textContent = start.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + ' – ' + end.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
-  } else if (reportPeriod === 'Mois') {
-    el.textContent = d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
-  } else if (reportPeriod === 'Trimestre') {
-    const q = Math.floor(d.getMonth()/3)+1;
-    el.textContent = 'T' + q + ' ' + d.getFullYear();
+// ── INIT ─────────────────────────────────────────────────────────
+(function init() {
+  const projects = PMHUB.getProjects().filter(p => p.status !== 'archived');
+  const sel = document.getElementById('projectSelect');
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.icon || '📁') + ' ' + p.name;
+    sel.appendChild(opt);
+  });
+
+  // Auto-select from URL ?project=
+  const urlId = new URLSearchParams(window.location.search).get('project');
+  if (urlId) {
+    sel.value = urlId;
+    onProjectChange();
+  }
+})();
+
+// ── CONTROLS ─────────────────────────────────────────────────────
+function onProjectChange() {
+  const sel = document.getElementById('projectSelect');
+  currentProjectId = sel.value || null;
+  summaryText  = '';
+  nextStepsText = '';
+  renderReport();
+  const btn = document.getElementById('btnAiGen');
+  btn.disabled = !currentProjectId || !PMHUB.isAIEnabled();
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderReport();
+}
+
+// ── PERIOD HELPERS ────────────────────────────────────────────────
+function getPeriodRange() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  let start = new Date(now), end = new Date(now);
+  if (currentPeriod === 'semaine') {
+    const day = now.getDay() || 7;
+    start.setDate(now.getDate() - day + 1);
+    end.setDate(start.getDate() + 6);
+  } else if (currentPeriod === 'mois') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   } else {
-    el.textContent = 'Portefeuille global · ' + d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+    const q = Math.floor(now.getMonth() / 3);
+    start = new Date(now.getFullYear(), q * 3, 1);
+    end   = new Date(now.getFullYear(), q * 3 + 3, 0);
   }
+  return { start, end };
 }
 
-setReportDateLabel();
-
-function exportReportPDF() {
-  try {
-    window.print();
-  } catch (e) {
-    alert('Impossible d\'ouvrir l\'impression. Utilisez Ctrl+P (ou Cmd+P sur Mac), puis choisissez "Enregistrer en PDF".');
-  }
+function fmtPeriodLabel() {
+  const { start, end } = getPeriodRange();
+  const opts = { day: 'numeric', month: 'short' };
+  if (currentPeriod === 'semaine')
+    return 'Semaine du ' + start.toLocaleDateString('fr-FR', opts) + ' au ' + end.toLocaleDateString('fr-FR', { ...opts, year: 'numeric' });
+  if (currentPeriod === 'mois')
+    return start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  return 'T' + (Math.floor(start.getMonth() / 3) + 1) + ' ' + start.getFullYear();
 }
 
-document.querySelectorAll('.period-chip').forEach((c, i) => {
-  const periods = ['Semaine','Mois','Trimestre','Projet'];
-  c.onclick = function() {
-    document.querySelectorAll('.period-chip').forEach(x=>x.classList.remove('active'));
-    this.classList.add('active');
-    reportPeriod = periods[Array.from(document.querySelectorAll('.period-chip')).indexOf(this)];
-    setReportDateLabel();
-    renderBarChart();
-    renderDonut();
-    renderProjTable();
-    renderRaidSummary();
-    renderJalons();
-    renderBudget();
-  };
-});
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return isNaN(d) ? str : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
-function renderBarChart() {
-  const projects = PMHUB.getProjects().filter(p=>p.status!=='closed');
-  const container = document.getElementById('barChartContainer');
-  const maxH = 130;
-  container.innerHTML = `<div class="bar-chart" style="height:${maxH}px;">
-    ${projects.map(p => `
-      <div class="bar-col">
-        <div class="bar-fill" style="height:${Math.max(4,p.progress)}%;background:${p.status==='risk'?'var(--danger)':p.color||'var(--accent)'}88;" data-val="${p.progress}%"></div>
-        <div class="bar-label" style="font-size:8px;">${p.name.split(' ').slice(0,2).join(' ')}</div>
+function inPeriod(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const { start, end } = getPeriodRange();
+  return d >= start && d <= end;
+}
+
+function isPast(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return d < now;
+}
+
+// ── RAG CALCULATION ───────────────────────────────────────────────
+function calcRAG(project, raid, evm) {
+  let score = 0; // 0=vert 1=ambre 2=rouge
+  // Risks critiques
+  const criticalRisks = (raid.risks || []).filter(r => {
+    const sev = (r.probability || 0) * (r.impact || 0);
+    return r.status !== 'closed' && sev >= 9;
+  });
+  if (criticalRisks.length >= 3) score = Math.max(score, 2);
+  else if (criticalRisks.length >= 1) score = Math.max(score, 1);
+
+  // Budget CPI
+  if (evm && evm.cpi) {
+    if (evm.cpi < 0.85) score = Math.max(score, 2);
+    else if (evm.cpi < 0.95) score = Math.max(score, 1);
+  }
+
+  // Jalons en retard
+  if (project.status === 'risk') score = Math.max(score, 2);
+  else if (project.progress < 20 && project.status === 'active') score = Math.max(score, 1);
+
+  // Issues ouvertes bloquantes
+  const blockingIssues = (raid.issues || []).filter(i => i.status !== 'closed' && i.priority === 'critical');
+  if (blockingIssues.length > 0) score = Math.max(score, 2);
+
+  return score === 0 ? 'vert' : score === 1 ? 'ambre' : 'rouge';
+}
+
+function ragLabel(rag) {
+  return rag === 'vert' ? 'VERT' : rag === 'ambre' ? 'AMBRE' : 'ROUGE';
+}
+
+// ── RENDER REPORT ─────────────────────────────────────────────────
+function renderReport() {
+  const root = document.getElementById('reportRoot');
+  if (!currentProjectId) {
+    root.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div>Sélectionnez un projet pour générer le rapport de statut.</div>';
+    return;
+  }
+
+  const project  = PMHUB.getProjectById(currentProjectId);
+  if (!project) {
+    root.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div>Projet introuvable.</div>';
+    return;
+  }
+
+  const raid     = PMHUB.getRaids(currentProjectId);
+  const gantt    = PMHUB.getGanttTasks(currentProjectId);
+  const tasks    = (gantt && gantt.tasks) ? gantt.tasks : [];
+  const evm      = (typeof PMHUB.getBudgetEVM === 'function') ? PMHUB.getBudgetEVM(currentProjectId) : null;
+  const rag      = calcRAG(project, raid, evm);
+  const today    = new Date(); today.setHours(0,0,0,0);
+
+  // Changes & Lessons from governance (direct localStorage)
+  let changes  = [];
+  let lessons  = [];
+  try { changes = JSON.parse(localStorage.getItem('pmhub_changes_' + currentProjectId) || '[]'); } catch(e) {}
+  try { lessons = JSON.parse(localStorage.getItem('pmhub_lessons_' + currentProjectId) || '[]'); } catch(e) {}
+
+  // ── SECTION: ACCOMPLISSEMENTS (milestones + tasks achevés dans la période) ──
+  const completedMilestones = tasks.filter(t => (t.milestone || t.type === 'milestone') && inPeriod(t.end) && (t.progress || 0) >= 100);
+  const completedTasks = tasks.filter(t => !(t.milestone || t.type === 'milestone') && inPeriod(t.end) && (t.progress || 0) >= 100);
+
+  // ── SECTION: JALONS À VENIR ──
+  const upcomingMilestones = tasks
+    .filter(t => (t.milestone || t.type === 'milestone') && (t.progress || 0) < 100)
+    .sort((a, b) => new Date(a.end) - new Date(b.end))
+    .slice(0, 5);
+
+  // ── SECTION: RISQUES ESCALADÉS (critique/élevé, non fermés) ──
+  const escalatedRisks = (raid.risks || [])
+    .filter(r => r.status !== 'closed' && ((r.probability || 0) * (r.impact || 0) >= 6))
+    .sort((a, b) => (b.probability * b.impact) - (a.probability * a.impact))
+    .slice(0, 5);
+
+  // ── SECTION: DÉCISIONS DE LA PÉRIODE ──
+  const periodDecisions = (raid.decisions || []).filter(d => inPeriod(d.date));
+  // Changements de gouvernance dans la période
+  const periodChanges = changes.filter(c => inPeriod(c.date || c.createdAt));
+
+  // ── SECTION: ACTIONS EN RETARD ──
+  const overdueActions = (raid.actions || [])
+    .filter(a => a.status !== 'closed' && a.due && isPast(a.due))
+    .sort((a, b) => new Date(a.due) - new Date(b.due))
+    .slice(0, 6);
+
+  // ── SECTION: PROCHAINES ÉTAPES (tasks non terminées, les plus proches) ──
+  const nextTasks = tasks
+    .filter(t => !(t.milestone || t.type === 'milestone') && (t.progress || 0) < 100 && t.end)
+    .sort((a, b) => new Date(a.end) - new Date(b.end))
+    .slice(0, 5);
+
+  // ── BUDGET KPI ──
+  const budgetPct = (evm && evm.bac) ? Math.round((evm.ac || 0) / evm.bac * 100) : null;
+  const cpiVal    = (evm && evm.cpi) ? evm.cpi.toFixed(2) : null;
+  const spiVal    = (evm && evm.spi) ? evm.spi.toFixed(2) : null;
+
+  // ── BUILD HTML ──────────────────────────────────────────────────
+  root.innerHTML = `
+  <div class="report-doc">
+
+    <!-- HEADER -->
+    <div class="report-header-card">
+      <div class="report-meta">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Rapport de statut · ${fmtPeriodLabel()}</div>
+        <div class="report-project-name">${project.icon || '📁'} ${project.name}</div>
+        <div class="report-meta-row">
+          <div class="report-meta-item">Statut <span>${statusLabel(project.status)}</span></div>
+          <div class="report-meta-item">Avancement <span>${project.progress || 0}%</span></div>
+          ${project.end ? `<div class="report-meta-item">Fin prévue <span>${fmtDate(project.end)}</span></div>` : ''}
+          ${project.manager ? `<div class="report-meta-item">Chef de projet <span>${project.manager}</span></div>` : ''}
+          <div class="report-meta-item">Généré le <span>${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</span></div>
+        </div>
       </div>
-    `).join('')}
-  </div>
-  <div style="margin-top:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);">
-    Avancement en % — ${projects.length} projets actifs/risque
+      <div class="rag-badge">
+        <div class="rag-circle ${rag}">${ragLabel(rag).charAt(0)}</div>
+        <div class="rag-label">Statut ${ragLabel(rag)}</div>
+      </div>
+    </div>
+
+    <!-- RÉSUMÉ EXÉCUTIF -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📝</span>
+          <span class="section-title">Résumé exécutif</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Éditable</span>
+      </div>
+      <div class="section-body">
+        <textarea class="summary-area" id="summaryArea" placeholder="Saisissez un résumé du statut du projet pour cette période, ou utilisez le bouton ✨ Générer avec l'IA..."
+          oninput="summaryText=this.value">${summaryText}</textarea>
+        <div id="aiLoadingIndicator" style="display:none;" class="ai-loading">⟳ Génération en cours…</div>
+        <div class="summary-ai-hint">💡 Utilisez "✨ Générer avec l'IA" pour rédiger automatiquement ce résumé à partir des données du projet.</div>
+      </div>
+    </div>
+
+    <!-- AVANCEMENT -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📊</span>
+          <span class="section-title">Avancement du projet</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">${project.progress || 0}% global</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-row">
+          <div class="progress-label">Avancement global</div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${project.progress||0}%;background:${project.status==='risk'?'var(--danger)':'var(--accent)'};"></div></div>
+          <div class="progress-val">${project.progress || 0}%</div>
+        </div>
+        ${budgetPct !== null ? `
+        <div class="progress-row">
+          <div class="progress-label">Budget consommé</div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${Math.min(budgetPct,100)}%;background:${budgetPct>100?'var(--danger)':budgetPct>80?'var(--warning)':'var(--accent3)'};"></div></div>
+          <div class="progress-val">${budgetPct}%</div>
+        </div>` : ''}
+        ${(cpiVal || spiVal) ? `
+        <div class="kpi-mini-row">
+          ${cpiVal ? `<div class="kpi-mini"><div class="kpi-mini-label">CPI</div><div class="kpi-mini-val ${parseFloat(cpiVal)>=1?'ok':parseFloat(cpiVal)>=0.9?'warn':'bad'}">${cpiVal}</div><div class="kpi-mini-sub">Cost Perf. Index</div></div>` : ''}
+          ${spiVal ? `<div class="kpi-mini"><div class="kpi-mini-label">SPI</div><div class="kpi-mini-val ${parseFloat(spiVal)>=1?'ok':parseFloat(spiVal)>=0.9?'warn':'bad'}">${spiVal}</div><div class="kpi-mini-sub">Schedule Perf. Index</div></div>` : ''}
+          ${(escalatedRisks.length) ? `<div class="kpi-mini"><div class="kpi-mini-label">Risques escaladés</div><div class="kpi-mini-val ${escalatedRisks.length>2?'bad':escalatedRisks.length>0?'warn':'ok'}">${escalatedRisks.length}</div><div class="kpi-mini-sub">Critique / Élevé</div></div>` : ''}
+          ${(overdueActions.length) ? `<div class="kpi-mini"><div class="kpi-mini-label">Actions en retard</div><div class="kpi-mini-val ${overdueActions.length>0?'bad':'ok'}">${overdueActions.length}</div><div class="kpi-mini-sub">Échéance dépassée</div></div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- ACCOMPLISSEMENTS DE LA PÉRIODE -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">✅</span>
+          <span class="section-title">Accompli sur la période</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">${completedMilestones.length + completedTasks.length} élément(s)</span>
+      </div>
+      <div class="section-body">
+        ${completedMilestones.length === 0 && completedTasks.length === 0
+          ? `<div class="section-empty">Aucun jalon ou livrable achevé durant cette période.</div>`
+          : `<div class="ms-list">
+              ${completedMilestones.map(t => `
+                <div class="ms-row">
+                  <div class="ms-dot" style="background:var(--accent);"></div>
+                  <div class="ms-name">🏁 ${t.name||t.label||'Jalon'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Jalon atteint</span>
+                </div>`).join('')}
+              ${completedTasks.map(t => `
+                <div class="ms-row">
+                  <div class="ms-dot" style="background:var(--accent3);"></div>
+                  <div class="ms-name">${t.name||t.label||'Tâche'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:var(--accent3);border-color:rgba(122,184,232,0.3);">Terminé</span>
+                </div>`).join('')}
+            </div>`}
+      </div>
+    </div>
+
+    <!-- JALONS À VENIR -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🎯</span>
+          <span class="section-title">Jalons à venir</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">${upcomingMilestones.length} jalon(s)</span>
+      </div>
+      <div class="section-body">
+        ${upcomingMilestones.length === 0
+          ? `<div class="section-empty">Aucun jalon à venir. Définissez des jalons dans le Gantt.</div>`
+          : `<div class="ms-list">
+              ${upcomingMilestones.map(t => {
+                const d = new Date(t.end); d.setHours(0,0,0,0);
+                const daysLeft = Math.round((d - today) / 86400000);
+                const isPastMs = daysLeft < 0;
+                const isUrgent = !isPastMs && daysLeft <= 14;
+                const color = isPastMs ? 'var(--danger)' : isUrgent ? 'var(--accent2)' : 'var(--accent3)';
+                const chip  = isPastMs ? 'En retard' : isUrgent ? `J-${daysLeft}` : `J-${daysLeft}`;
+                return `<div class="ms-row">
+                  <div class="ms-dot" style="background:${color};"></div>
+                  <div class="ms-name">${t.name||t.label||'Jalon'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:${color};border-color:${color}33;">${chip}</span>
+                </div>`;
+              }).join('')}
+            </div>`}
+      </div>
+    </div>
+
+    <!-- RISQUES ESCALADÉS -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">⚠️</span>
+          <span class="section-title">Risques escaladés</span>
+        </div>
+        <span class="section-badge" style="color:${escalatedRisks.length>0?'var(--danger)':'var(--accent)'};border-color:${escalatedRisks.length>0?'rgba(232,100,100,0.3)':'rgba(99,210,180,0.3)'};">${escalatedRisks.length} critique(s)/élevé(s)</span>
+      </div>
+      <div class="section-body">
+        ${escalatedRisks.length === 0
+          ? `<div class="section-empty">Aucun risque critique ou élevé en cours.</div>`
+          : escalatedRisks.map(r => {
+              const sev = (r.probability || 0) * (r.impact || 0);
+              const isCrit = sev >= 9;
+              const c = isCrit ? 'var(--danger)' : 'var(--accent2)';
+              return `<div class="risk-row">
+                <span class="risk-level" style="color:${c};border-color:${c}44;">${isCrit ? '🔴 CRITIQUE' : '🟠 ÉLEVÉ'}</span>
+                <div class="risk-body">
+                  <div class="risk-title">${r.title || r.description || '—'}</div>
+                  <div class="risk-owner">Responsable : ${r.owner || r.responsible || '—'} · P×I = ${sev} · Plan : ${r.mitigation || r.response || '—'}</div>
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>
+
+    <!-- DÉCISIONS & CHANGEMENTS DE LA PÉRIODE -->
+    ${(periodDecisions.length > 0 || periodChanges.length > 0) ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📌</span>
+          <span class="section-title">Décisions & changements de la période</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent3);border-color:rgba(122,184,232,0.3);">${periodDecisions.length + periodChanges.length} élément(s)</span>
+      </div>
+      <div class="section-body">
+        ${periodDecisions.map(d => `
+          <div class="decision-row">
+            <div class="decision-date">${fmtDate(d.date)}</div>
+            <div class="decision-body">
+              <div class="decision-title">${d.title || d.description || '—'}</div>
+              <div class="decision-owner">Décision · ${d.owner || d.responsible || '—'}</div>
+            </div>
+          </div>`).join('')}
+        ${periodChanges.map(c => `
+          <div class="decision-row">
+            <div class="decision-date">${fmtDate(c.date || c.createdAt)}</div>
+            <div class="decision-body">
+              <div class="decision-title">${c.title || c.description || '—'}</div>
+              <div class="decision-owner">Demande de changement · Statut : ${c.status || '—'}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- ACTIONS EN RETARD -->
+    ${overdueActions.length > 0 ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🔴</span>
+          <span class="section-title">Actions en retard</span>
+        </div>
+        <span class="section-badge" style="color:var(--danger);border-color:rgba(232,100,100,0.3);">${overdueActions.length} en retard</span>
+      </div>
+      <div class="section-body">
+        ${overdueActions.map(a => {
+          const d = new Date(a.due); d.setHours(0,0,0,0);
+          const daysLate = Math.round((today - d) / 86400000);
+          return `<div class="action-row">
+            <span class="action-overdue">J+${daysLate}</span>
+            <div class="action-body">
+              <div class="action-title">${a.title || a.description || '—'}</div>
+              <div class="action-meta">Responsable : ${a.owner || a.responsible || '—'} · Échéance : ${fmtDate(a.due)}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- PROCHAINES ÉTAPES -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🚀</span>
+          <span class="section-title">Prochaines étapes</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Éditable</span>
+      </div>
+      <div class="section-body">
+        <textarea class="next-steps-area" id="nextStepsArea" placeholder="Saisissez les prochaines étapes manuellement, ou laissez l'IA les générer..."
+          oninput="nextStepsText=this.value">${nextStepsText}</textarea>
+        ${nextTasks.length > 0 ? `
+        <div class="auto-steps">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Tâches planifiées (Gantt)</div>
+          ${nextTasks.map(t => `
+            <div class="auto-step-row">
+              <div class="auto-step-dot"></div>
+              <div class="auto-step-text">${t.name||t.label||'Tâche'}</div>
+              <div class="auto-step-date">${fmtDate(t.end)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>
+    </div>
+
   </div>`;
 }
 
-function renderDonut() {
-  const stats = PMHUB.getStats();
-  const segments = [
-    {label:'En cours', val:stats.active, color:'var(--success)'},
-    {label:'À risque', val:stats.risk, color:'var(--danger)'},
-    {label:'En attente', val:stats.hold, color:'var(--warning)'},
-    {label:'Clôturés', val:stats.closed, color:'var(--text-muted)'},
-  ].filter(s=>s.val>0);
-
-  const total = segments.reduce((s,x)=>s+x.val,0);
-  const svg = document.getElementById('donutSvg');
-  const cx=65,cy=65,r=50,stroke=18;
-  let startAngle = -90;
-  const paths = segments.map(seg => {
-    const pct = seg.val / total;
-    const angle = pct * 360;
-    const start = startAngle * Math.PI / 180;
-    const end = (startAngle + angle) * Math.PI / 180;
-    const x1 = cx + r*Math.cos(start), y1 = cy + r*Math.sin(start);
-    const x2 = cx + r*Math.cos(end),   y2 = cy + r*Math.sin(end);
-    const large = angle > 180 ? 1 : 0;
-    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
-    startAngle += angle;
-    return `<path d="${path}" fill="${seg.color}" opacity="0.8"/>`;
-  });
-  svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r-stroke/2}" fill="${'var(--surface)'}" stroke="none"/>
-    ${paths.join('')}
-    <circle cx="${cx}" cy="${cy}" r="${r-stroke}" fill="var(--surface)"/>
-    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="Cormorant Garamond" font-size="22" fill="var(--text)" font-weight="600">${total}</text>
-    <text x="${cx}" y="${cy+18}" text-anchor="middle" font-family="DM Mono" font-size="8" fill="var(--text-muted)">projets</text>`;
-
-  document.getElementById('donutLegend').innerHTML = segments.map(s=>`
-    <div class="legend-item">
-      <div class="legend-dot" style="background:${s.color}"></div>
-      <span>${s.label}</span>
-      <span style="margin-left:auto;color:var(--text);font-weight:700;">${s.val}</span>
-    </div>
-  `).join('');
+// ── HELPERS ───────────────────────────────────────────────────────
+function statusLabel(s) {
+  return { active: 'En cours', risk: 'À risque', hold: 'En pause', closed: 'Clôturé' }[s] || s;
 }
 
-function renderTeamAvail() {
-  const resources = PMHUB.getResources();
-  const container = document.getElementById('teamAvailChart');
-  container.innerHTML = resources.map(r => `
-    <div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;margin-bottom:5px;">
-        <span style="color:var(--text-soft);">${r.id} · ${r.role.split(' ')[0]}</span>
-        <span style="color:${r.availability>=70?'var(--accent)':r.availability>=40?'var(--warning)':'var(--danger)'};">${r.availability}%</span>
-      </div>
-      <div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;width:${r.availability}%;background:${r.availability>=70?'var(--accent)':r.availability>=40?'var(--warning)':'var(--danger)'};border-radius:2px;"></div>
-      </div>
-    </div>
-  `).join('');
-}
+// ── AI GENERATION ─────────────────────────────────────────────────
+async function generateAI() {
+  if (!currentProjectId || typeof PMHUB === 'undefined' || !PMHUB.isAIEnabled()) return;
 
-function renderProjTable() {
-  const projects = PMHUB.getProjects();
-  const health = { active:'var(--success)', risk:'var(--danger)', hold:'var(--warning)', closed:'var(--text-muted)' };
-  const healthLabel = { active:'Sain', risk:'À risque', hold:'En pause', closed:'Clôturé' };
-  const phaseMap = { active:'Exécution', risk:'Crise', hold:'Attente', closed:'Clôturé' };
-  document.getElementById('projStatusBody').innerHTML = projects.map(p => `
-    <tr>
-      <td style="font-weight:700;font-family:'Syne',sans-serif;font-size:12px;">${p.icon||'📁'} ${p.name}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:10px;">${p.phase||phaseMap[p.status]}</td>
-      <td>
-        <div class="prog-cell">
-          <div class="prog-mini"><div class="prog-mini-fill" style="width:${p.progress||0}%;background:${p.status==='risk'?'var(--danger)':p.status==='closed'?'var(--text-muted)':'var(--accent)'};"></div></div>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);width:32px;">${p.progress||0}%</span>
-        </div>
-      </td>
-      <td style="font-family:'DM Mono',monospace;color:var(--text-muted);font-size:10px;">${p.end ? new Date(p.end).toLocaleDateString('fr-FR',{month:'short',year:'numeric'}) : '—'}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--text-soft);font-size:10px;">${p.budget||'—'} €</td>
-      <td><span style="display:inline-flex;align-items:center;"><span class="health-dot" style="background:${health[p.status]}"></span><span style="font-family:'DM Mono',monospace;font-size:10px;color:${health[p.status]};">${healthLabel[p.status]}</span></span></td>
-    </tr>
-  `).join('');
-}
+  const project = PMHUB.getProjectById(currentProjectId);
+  if (!project) return;
 
-const stats = PMHUB.getStats();
-document.getElementById('kActive').textContent = stats.active;
-document.getElementById('kProgress').textContent = stats.avgProgress+'%';
-document.getElementById('kProgressTrend').textContent = stats.avgProgress > 50 ? '↑ Bonne progression' : '→ En cours';
+  const raid   = PMHUB.getRaids(currentProjectId);
+  const gantt  = PMHUB.getGanttTasks(currentProjectId);
+  const tasks  = (gantt && gantt.tasks) ? gantt.tasks : [];
+  const evm    = (typeof PMHUB.getBudgetEVM === 'function') ? PMHUB.getBudgetEVM(currentProjectId) : null;
+  const rag    = calcRAG(project, raid, evm);
 
-function renderRaidSummary() {
-  const projects = PMHUB.getProjects().filter(p => p.status !== 'closed');
-  let risks = 0, actions = 0, issues = 0, decisions = 0;
-  let riskTotal = 0, actionTotal = 0, issueTotal = 0, decisionTotal = 0;
-  projects.forEach(p => {
-    const raid = PMHUB.getRaids(p.id);
-    risks    += (raid.risks     || []).filter(r => r.status !== 'closed').length;
-    riskTotal+= (raid.risks     || []).length;
-    actions  += (raid.actions   || []).filter(a => a.status !== 'closed').length;
-    actionTotal+=(raid.actions  || []).length;
-    issues   += (raid.issues    || []).filter(i => i.status !== 'closed').length;
-    issueTotal+= (raid.issues   || []).length;
-    decisions+= (raid.decisions || []).length;
-    decisionTotal+=(raid.decisions||[]).length;
-  });
-  // Update KPI risques critiques
-  document.getElementById('kCriticalRisks').textContent = risks;
-  const rows = [
-    ['Risques ouverts',  risks,     'var(--danger)',  riskTotal     + ' total'],
-    ['Actions en cours', actions,   'var(--accent3)', actionTotal   + ' total'],
-    ['Issues actives',   issues,    'var(--warning)', issueTotal    + ' total'],
-    ['Décisions prises', decisions, 'var(--accent)',  decisionTotal + ' total'],
-  ];
-  document.getElementById('raidSummary').innerHTML = rows.map(([l,v,c,s]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
-      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);">${l}</span>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${c};">${v}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);">${s}</span>
-      </div>
-    </div>
-  `).join('');
-}
+  const critRisks = (raid.risks || []).filter(r => r.status !== 'closed' && (r.probability||0)*(r.impact||0) >= 6).slice(0,3);
+  const overdueActs = (raid.actions || []).filter(a => a.status !== 'closed' && a.due && isPast(a.due)).length;
+  const upcomingMs = tasks.filter(t => (t.milestone||t.type==='milestone') && (t.progress||0)<100).sort((a,b)=>new Date(a.end)-new Date(b.end)).slice(0,3);
 
-function renderJalons() {
-  const projects = PMHUB.getProjects().filter(p => p.status === 'active');
-  const today = new Date(); today.setHours(0,0,0,0);
-  let milestones = [];
-  projects.forEach(p => {
-    const gantt = PMHUB.getGanttTasks(p.id);
-    const tasks = (gantt && gantt.tasks) ? gantt.tasks : [];
-    tasks.forEach(t => {
-      if ((t.milestone || t.type === 'milestone') && (t.progress || 0) < 100) {
-        milestones.push({ name: t.name || t.label || 'Jalon', end: t.end, projectName: p.name, progress: t.progress || 0 });
-      }
-    });
-  });
-  milestones.sort((a, b) => new Date(a.end) - new Date(b.end));
-  milestones = milestones.slice(0, 8);
+  const btn = document.getElementById('btnAiGen');
+  const loadingEl = document.getElementById('aiLoadingIndicator');
+  btn.disabled = true;
+  if (loadingEl) loadingEl.style.display = 'flex';
 
-  if (!milestones.length) {
-    document.getElementById('jalonsList').innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);padding:16px 0;">Aucun jalon à venir. Créez des tâches jalon dans le Gantt.</div>';
-    return;
+  const systemPrompt = `Tu es un assistant PM expert (PMP®, PRINCE2). Tu rédiges des rapports de statut projet professionnels, concis et orientés décision. Réponds toujours en français.`;
+
+  const userPrompt = `Rédige le résumé exécutif et les prochaines étapes du rapport de statut suivant :
+
+Projet : ${project.name} (${statusLabel(project.status)})
+Période : ${fmtPeriodLabel()}
+Avancement : ${project.progress || 0}%
+Statut RAG : ${ragLabel(rag)}
+${evm ? `CPI : ${evm.cpi?.toFixed(2)||'N/A'} · SPI : ${evm.spi?.toFixed(2)||'N/A'}` : ''}
+Risques escaladés (${critRisks.length}) : ${critRisks.map(r=>`"${r.title||r.description}" (P${r.probability}×I${r.impact})`).join(', ') || 'Aucun'}
+Actions en retard : ${overdueActs}
+Jalons à venir : ${upcomingMs.map(m=>`"${m.name||m.label}" le ${fmtDate(m.end)}`).join(', ') || 'Aucun'}
+
+Réponds en JSON strict :
+{
+  "resume": "3-4 phrases de résumé exécutif professionnel (statut, points d'attention, message clé au sponsor)",
+  "prochaines_etapes": "3-5 prochaines étapes concrètes, une par ligne (format: - Action)"
+}`;
+
+  try {
+    const raw = await PMHUB.callAI(systemPrompt, userPrompt);
+    let parsed;
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    } catch(e) {
+      parsed = { resume: raw, prochaines_etapes: '' };
+    }
+
+    summaryText   = parsed.resume || '';
+    nextStepsText = parsed.prochaines_etapes || '';
+
+    const sa = document.getElementById('summaryArea');
+    const na = document.getElementById('nextStepsArea');
+    if (sa) sa.value = summaryText;
+    if (na) na.value = nextStepsText;
+  } catch(e) {
+    alert('Erreur IA : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    if (loadingEl) loadingEl.style.display = 'none';
   }
-  document.getElementById('jalonsList').innerHTML = milestones.map(m => {
-    const d = new Date(m.end); d.setHours(0,0,0,0);
-    const daysLeft = Math.round((d - today) / 86400000);
-    const isPast   = daysLeft < 0;
-    const isUrgent = !isPast && daysLeft <= 30;
-    const color = isPast ? 'var(--danger)' : isUrgent ? 'var(--warning)' : 'var(--accent3)';
-    const label = isPast ? 'En retard' : isUrgent ? 'Urgent' : 'Planifié';
-    return `<div class="ms-row">
-      <div class="ms-indicator" style="background:${color}"></div>
-      <div class="ms-label">${m.name} <span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-muted);">· ${m.projectName}</span></div>
-      <div class="ms-date">${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-      <span class="ms-status" style="color:${color};border-color:${color}33;background:${color}11;">${label}</span>
-    </div>`;
-  }).join('');
 }
-
-function renderBudget() {
-  var projects = PMHUB.getProjects().filter(function(p){return p.status!=='closed';});
-  var totalBAC=0, totalAC=0, totalEAC=0;
-  projects.forEach(function(p){
-    var evm = (typeof PMHUB.getBudgetEVM === 'function') ? PMHUB.getBudgetEVM(p.id) : null;
-    if(evm && evm.bac){totalBAC+=evm.bac; totalAC+=evm.ac||0; totalEAC+=evm.eac||evm.bac;}
-    else { var b=(typeof PMHUB.getBudget==='function')?PMHUB.getBudget(p.id):null; if(b&&b.planned){totalBAC+=b.planned;totalAC+=b.consumed||0;totalEAC+=b.planned;} }
-  });
-  var pct = totalBAC>0 ? Math.round(totalAC/totalBAC*100) : 0;
-  var rest = Math.max(0, totalBAC - totalAC);
-  var fmt = function(v){return v>=1e6?(v/1e6).toFixed(1)+'M€':v>=1000?Math.round(v/1000)+'K€':v+'€';};
-  // KPI
-  var kEl=document.getElementById('kBudgetPct'); if(kEl) kEl.textContent=pct+'%';
-  var kSub=document.getElementById('kBudgetSub'); if(kSub) kSub.textContent='Consommé · BAC '+fmt(totalBAC);
-  var kTr=document.getElementById('kBudgetTrend'); if(kTr) kTr.textContent=pct<=80?'✓ Dans les limites':pct<=100?'⚠ Surveillance':'⚠ Dépassement';
-  // Chart
-  var sub=document.getElementById('budgetChartSub'); if(sub) sub.textContent='Consommé '+fmt(totalAC)+' / Prévu '+fmt(totalBAC);
-  var bars=[
-    {label:'Prévu', h:100, bg:'rgba(99,210,180,0.25)', val:fmt(totalBAC)},
-    {label:'Consommé', h:Math.max(4,pct), bg:'var(--accent)', val:fmt(totalAC)},
-    {label:'Restant', h:Math.max(4,100-pct), bg:'rgba(122,184,232,0.3)', val:fmt(rest)},
-  ];
-  document.getElementById('budgetChart').innerHTML='<div class="bar-chart" style="height:100px;align-items:flex-end;gap:16px;">'
-    +bars.map(function(b){return '<div class="bar-col"><div class="bar-fill" style="height:'+b.h+'%;background:'+b.bg+';" data-val="'+b.val+'"></div><div class="bar-label">'+b.label+'</div></div>';}).join('')
-    +'</div>';
-}
-
-renderBarChart();
-renderDonut();
-renderTeamAvail();
-renderProjTable();
-renderRaidSummary();
-renderJalons();
-renderBudget();
 </script>
 <div id="ai-suggestions-bar"></div>
 <script src="pmhub-ai-suggestions.js"></script>
