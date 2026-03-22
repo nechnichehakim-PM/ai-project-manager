@@ -126,18 +126,18 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 /* EMPTY */
 .empty-block{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);padding:20px 0;text-align:center;}
 
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:400;display:flex;align-items:center;justify-content:center;}
-.modal-overlay.hidden{display:none;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:480px;max-width:95vw;}
-.modal-title{font-size:18px;font-weight:700;margin-bottom:20px;}
-.form-row{margin-bottom:16px;}
-.form-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
-.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:10px 14px;border-radius:6px;outline:none;transition:border-color .2s;}
+/* FORMULAIRE INLINE NOUVEAU SPRINT */
+.sprint-form{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:20px 24px;margin-bottom:24px;display:none;}
+.sprint-form.open{display:block;}
+.sprint-form-title{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+.sprint-form-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;align-items:end;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.form-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;border-radius:6px;outline:none;transition:border-color .2s;width:100%;}
 .form-input:focus{border-color:var(--accent);}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;}
-.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
-.btn-save{background:var(--accent);border:none;color:#060a0d;padding:9px 20px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;}
+.sprint-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:7px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
+.btn-save{background:var(--accent);border:none;color:#060a0d;padding:7px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;}
 
 .ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
 .ai-float-btn:hover{transform:scale(1.08);}
@@ -158,23 +158,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 </nav>
 <a href="pm-hub-ai.html?from=Agile" class="ai-float-btn" title="Assistant IA">🤖</a>
 
-<!-- MODAL NOUVEAU SPRINT (overlay fixe + inline backup) -->
-<div class="modal-overlay hidden" id="modalOverlay">
-  <div class="modal">
-    <div class="modal-title">Nouveau sprint</div>
-    <div class="form-row"><div class="form-label">Nom du sprint</div><input class="form-input" id="mSprintName" placeholder="Sprint 5"></div>
-    <div class="form-row"><div class="form-label">Objectif</div><input class="form-input" id="mSprintGoal" placeholder="Finaliser le module paiement…"></div>
-    <div class="form-row" style="display:flex;gap:12px;">
-      <div style="flex:1"><div class="form-label">Date de début</div><input class="form-input" type="date" id="mSprintStart"></div>
-      <div style="flex:1"><div class="form-label">Date de fin</div><input class="form-input" type="date" id="mSprintEnd"></div>
-    </div>
-    <div class="form-row"><div class="form-label">Capacité (story points)</div><input class="form-input" type="number" id="mSprintCap" placeholder="20" style="max-width:160px;"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn-save" onclick="saveSprint()">Créer le sprint</button>
-    </div>
-  </div>
-</div>
 
 <div class="layout">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
@@ -193,6 +176,37 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
       <button class="btn-reopen-sprint" id="btnReopen" onclick="reopenSprint()" style="display:none;">↩ Réouvrir</button>
       <button class="btn-delete-sprint" id="btnDelete" onclick="deleteSprint()" style="display:none;">🗑 Supprimer</button>
       <button class="btn-new-sprint" onclick="openModal()">+ Nouveau sprint</button>
+    </div>
+
+    <!-- FORMULAIRE INLINE NOUVEAU SPRINT -->
+    <div class="sprint-form" id="sprintForm">
+      <div class="sprint-form-title">+ Nouveau sprint</div>
+      <div class="sprint-form-grid">
+        <div class="form-field">
+          <div class="form-label">Nom</div>
+          <input class="form-input" id="mSprintName" placeholder="Sprint X">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Début</div>
+          <input class="form-input" type="date" id="mSprintStart">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Fin</div>
+          <input class="form-input" type="date" id="mSprintEnd">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Capacité (pts)</div>
+          <input class="form-input" type="number" id="mSprintCap" placeholder="20">
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:10px;">
+        <div class="form-label">Objectif</div>
+        <input class="form-input" id="mSprintGoal" placeholder="Objectif du sprint…">
+      </div>
+      <div class="sprint-form-actions">
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-save" onclick="saveSprint()">Créer le sprint</button>
+      </div>
     </div>
 
     <div id="agileRoot"></div>
@@ -721,7 +735,6 @@ function renderVelocityChart() {
 // ── MODAL ─────────────────────────────────────────────────────────
 function openModal() {
   try {
-    // Sécurité : si sprintData non chargé, relancer
     if (!sprintData || !sprintData.sprints) {
       if (projectId) loadAndRender();
       if (!sprintData || !sprintData.sprints) {
@@ -748,19 +761,16 @@ function openModal() {
     document.getElementById('mSprintEnd').value   = endDate.toISOString().slice(0,10);
     document.getElementById('mSprintCap').value   = (sprintData.config && sprintData.config.velocity_target) || 20;
 
-    var overlay = document.getElementById('modalOverlay');
-    overlay.classList.remove('hidden');
-    overlay.style.display = 'flex'; // forcer display au cas où .hidden CSS aurait un problème
-    // Focus premier champ
-    setTimeout(function(){ var el = document.getElementById('mSprintName'); if(el) el.focus(); }, 50);
+    var form = document.getElementById('sprintForm');
+    form.classList.add('open');
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(function(){ var el = document.getElementById('mSprintName'); if(el) el.focus(); }, 100);
   } catch(e) {
     alert('Erreur openModal : ' + e.message);
   }
 }
 function closeModal() {
-  var overlay = document.getElementById('modalOverlay');
-  overlay.classList.add('hidden');
-  overlay.style.display = '';
+  document.getElementById('sprintForm').classList.remove('open');
 }
 function saveSprint() {
   try {
@@ -808,9 +818,9 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Close modal on overlay click
-document.getElementById('modalOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+// Fermer le formulaire avec Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
 });
 </script>
 <div id="ai-suggestions-bar"></div>
