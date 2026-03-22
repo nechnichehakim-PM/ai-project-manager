@@ -720,6 +720,20 @@ function loadDemoProjects() {
     };
     localStorage.setItem('pmhub_sprints_9002', JSON.stringify(DEMO_SPRINTS_9002));
 
+    // 11c. Sprints Hybride — projet 9003 (ERP SAP S/4HANA)
+    // Partie Agile du projet : itérations de recette UAT + configuration modulaire
+    var DEMO_SPRINTS_9003 = {
+      config: { duration: 14, velocity_target: 18 },
+      sprints: [
+        { id:1, name:'Itération 1', goal:'Recette modules RH — paramétrage paie et congés',              start:'2026-02-16', end:'2026-03-01', capacity:18, completed:16, taskIds:[12],   status:'closed' },
+        { id:2, name:'Itération 2', goal:'Recette modules Finance — comptabilité & reporting',            start:'2026-03-02', end:'2026-03-15', capacity:18, completed:14, taskIds:[13],   status:'closed' },
+        { id:3, name:'Itération 3', goal:'UAT vague 1 — 150 utilisateurs RH, corrections bloquants',     start:'2026-03-16', end:'2026-03-29', capacity:18, completed:null, taskIds:[13],  status:'active' },
+        { id:4, name:'Itération 4', goal:'Formation pilote & documentation utilisateur finale',           start:'2026-03-30', end:'2026-04-12', capacity:16, completed:null, taskIds:[15],  status:'planned'},
+        { id:5, name:'Itération 5', goal:'Go-Live préparation — cutover plan, bascule production',       start:'2026-04-13', end:'2026-04-26', capacity:14, completed:null, taskIds:[],    status:'planned'}
+      ]
+    };
+    localStorage.setItem('pmhub_sprints_9003', JSON.stringify(DEMO_SPRINTS_9003));
+
     // 11. Ressources — écriture directe de la liste complète (4 membres existants + 9 démo)
     var ALL_RESOURCES = [
       { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',         level:'Senior',   availability:80,  skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'],          color:'#63d2b4' },
@@ -755,6 +769,7 @@ function loadDemoProjects() {
       stampKeys.push('pmhub_rr_' + id);
     });
     stampKeys.push('pmhub_sprints_9002');
+    stampKeys.push('pmhub_sprints_9003');
     stampKeys.forEach(function(k) { syncTs[k] = nowIso; });
     localStorage.setItem('pmhub_sync_ts', JSON.stringify(syncTs));
 
