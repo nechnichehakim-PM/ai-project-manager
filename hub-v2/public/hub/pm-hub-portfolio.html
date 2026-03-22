@@ -102,7 +102,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .timeline-wrap{padding:16px 20px 20px;}
 .tl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
 .tl-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tl-bar-wrap{flex:1;height:16px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;}
+.tl-bar-wrap{flex:1;height:16px;background:var(--surface2);border-radius:4px;position:relative;}
 .tl-bar{position:absolute;top:0;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;}
 .tl-bar-label{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;}
 .tl-axis{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:6px;padding-left:140px;}
@@ -166,9 +166,12 @@ var allProjs     = allProjects; // for charts
 var enriched = activeProjs.map(function(p) {
   var raids  = PMHUB.getRaids ? PMHUB.getRaids(p.id) : {};
   var health = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : { rag: 'amber', score: 50 };
-  var budgetTpl = PMHUB.getTemplate ? PMHUB.getTemplate(p.id, 'budget') : null;
-  var budgetPlanned  = budgetTpl && budgetTpl.planned  ? parseBudget(budgetTpl.planned)  : parseBudget(p.budget);
-  var budgetConsumed = budgetTpl && budgetTpl.consumed ? parseBudget(budgetTpl.consumed) : 0;
+  var bData = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+  var budgetPlanned  = parseBudget(bData.planned) || parseBudget(p.budget);
+  var budgetConsumedReal = parseBudget(bData.consumed);
+  // Si aucune donnée consommée, estimer via avancement (comme getEVM)
+  var budgetConsumed = budgetConsumedReal > 0 ? budgetConsumedReal : Math.round(budgetPlanned * (p.progress || 0) / 100 * 0.7);
+  var budgetEstimated = budgetConsumedReal === 0 && budgetPlanned > 0 && (p.progress || 0) > 0;
   var budgetPct  = budgetPlanned > 0 ? Math.round(budgetConsumed / budgetPlanned * 100) : null;
   var endDate    = p.end ? new Date(p.end) : null;
   var daysLeft   = endDate ? Math.round((endDate - today) / 86400000) : null;
@@ -181,6 +184,7 @@ var enriched = activeProjs.map(function(p) {
     score: health.score || 50,
     budgetPlanned: budgetPlanned,
     budgetConsumed: budgetConsumed,
+    budgetEstimated: budgetEstimated,
     budgetPct: budgetPct,
     daysLeft: daysLeft,
     openRisks: openRisks,
@@ -253,7 +257,8 @@ html += '<div class="kpi-card"><div class="kpi-label">Projets actifs</div><div c
 html += '<div class="kpi-card g"><div class="kpi-label">Santé OK</div><div class="kpi-val g">' + healthyCount + '</div><div class="kpi-sub">projets en vert</div></div>';
 html += '<div class="kpi-card a"><div class="kpi-label">À surveiller</div><div class="kpi-val a">' + atRiskCount + '</div><div class="kpi-sub">projets ambre</div></div>';
 html += '<div class="kpi-card r"><div class="kpi-label">Critiques</div><div class="kpi-val r">' + criticalCount + '</div><div class="kpi-sub">' + totalCritRisks + ' risque(s) crit.</div></div>';
-html += '<div class="kpi-card"><div class="kpi-label">Budget consommé</div><div class="kpi-val">' + budgetGlobal + '%</div><div class="kpi-sub">' + fmtBudget(totalConsumed) + ' / ' + fmtBudget(totalBudget) + '</div></div>';
+var budgetKpiCls = budgetGlobal > 90 ? ' r' : budgetGlobal > 70 ? ' a' : ' g';
+html += '<div class="kpi-card' + budgetKpiCls + '"><div class="kpi-label">Budget consommé</div><div class="kpi-val' + budgetKpiCls + '">' + budgetGlobal + '%</div><div class="kpi-sub">' + fmtBudget(totalConsumed) + ' / ' + fmtBudget(totalBudget) + '</div></div>';
 html += '<div class="kpi-card"><div class="kpi-label">Jalons 30j</div><div class="kpi-val">' + milestones30 + '</div><div class="kpi-sub">jalons imminents</div></div>';
 html += '</div>';
 
@@ -270,8 +275,10 @@ enriched.forEach(function(e) {
     : e.daysLeft < 0 ? '<span style="color:var(--danger);">⚠ +' + Math.abs(e.daysLeft) + 'j</span>'
     : e.daysLeft <= 14 ? '<span style="color:#f59e0b;">' + e.daysLeft + 'j</span>'
     : e.daysLeft + 'j';
+  var pctColor = e.budgetPct === null ? '' : e.budgetPct > 90 ? 'var(--danger)' : e.budgetPct > 70 ? '#f59e0b' : '#22c55e';
+  var pctLabel = e.budgetPct !== null ? (e.budgetEstimated ? '~' : '') + e.budgetPct + '%' : null;
   var budgetStr = e.budgetPlanned > 0
-    ? fmtBudget(e.budgetConsumed) + ' / ' + fmtBudget(e.budgetPlanned) + (e.budgetPct !== null ? ' <span style="font-family:\'DM Mono\',monospace;font-size:9px;color:' + (e.budgetPct > 90 ? 'var(--danger)' : e.budgetPct > 70 ? '#f59e0b' : 'var(--text-muted)') + ';">(' + e.budgetPct + '%)</span>' : '')
+    ? fmtBudget(e.budgetConsumed) + (e.budgetEstimated ? '<span style="font-size:8px;color:var(--text-muted);">\u00a0est.</span>' : '') + ' / ' + fmtBudget(e.budgetPlanned) + (pctLabel ? ' <span style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:' + pctColor + ';">(' + pctLabel + ')</span>' : '')
     : '—';
   var riskStr = e.openRisks > 0
     ? '<span class="risk-chip has">' + e.openRisks + ' ouvert' + (e.openRisks > 1 ? 's' : '') + (e.critRisks > 0 ? ' · ' + e.critRisks + ' crit.' : '') + '</span>'
@@ -306,28 +313,42 @@ if (enriched.length) {
     if (e.p.start) allDates.push(new Date(e.p.start).getTime());
     if (e.p.end)   allDates.push(new Date(e.p.end).getTime());
   });
-  var minTs = Math.min.apply(null, allDates);
-  var maxTs = Math.max.apply(null, allDates);
-  var span  = maxTs - minTs || 1;
+  // Fallback si pas de dates : fenêtre de 18 mois centrée sur aujourd'hui
+  var minTs, maxTs;
+  if (allDates.length >= 2) {
+    minTs = Math.min.apply(null, allDates);
+    maxTs = Math.max.apply(null, allDates);
+  } else {
+    minTs = today.getTime() - 182*86400000;
+    maxTs = today.getTime() + 182*86400000;
+  }
+  // Etendre légèrement pour éviter que les barres soient collées aux bords
+  var padding = (maxTs - minTs) * 0.04;
+  minTs -= padding; maxTs += padding;
+  var span = Math.max(maxTs - minTs, 1);
+  var todayPct = Math.round((today.getTime() - minTs) / span * 100);
+  var fmtY = function(ts) { return new Date(ts).toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}); };
+
+  var todayLine = (todayPct >= 0 && todayPct <= 100)
+    ? '<div style="position:absolute;left:' + todayPct + '%;top:-1px;bottom:-1px;width:2px;background:rgba(212,175,100,.55);border-radius:1px;z-index:2;pointer-events:none;"></div>'
+    : '';
   enriched.forEach(function(e) {
-    var s = e.p.start ? new Date(e.p.start).getTime() : minTs;
-    var end = e.p.end   ? new Date(e.p.end).getTime()   : maxTs;
-    var left  = Math.round((s - minTs) / span * 100);
-    var width = Math.max(4, Math.round((end - s) / span * 100));
+    var s   = e.p.start ? new Date(e.p.start).getTime() : minTs + padding;
+    var end = e.p.end   ? new Date(e.p.end).getTime()   : maxTs - padding;
+    if (end <= s) end = s + span * 0.05; // barre minimum visible
+    var left  = Math.max(0, Math.round((s   - minTs) / span * 100));
+    var right = Math.min(100, Math.round((end - minTs) / span * 100));
+    var width = Math.max(3, right - left);
     var color = ragColor(e.rag);
-    var todayPct = Math.round((today.getTime() - minTs) / span * 100);
     html += '<div class="tl-row">';
     html += '<div class="tl-label" title="' + esc(e.p.name) + '">' + esc((e.p.name||e.p.ref).slice(0,18)) + '</div>';
     html += '<div class="tl-bar-wrap">';
-    if (todayPct >= 0 && todayPct <= 100) {
-      html += '<div style="position:absolute;left:' + todayPct + '%;top:0;bottom:0;width:1px;background:rgba(212,175,100,.6);z-index:1;"></div>';
-    }
-    html += '<div class="tl-bar" style="left:' + left + '%;width:' + width + '%;background:' + color + '22;border:1px solid ' + color + '55;">';
+    html += todayLine;
+    html += '<div class="tl-bar" style="left:' + left + '%;width:' + width + '%;background:' + color + '28;border:1px solid ' + color + '66;">';
     html += '<span class="tl-bar-label" style="color:' + color + ';">' + (e.p.progress||0) + '%</span>';
     html += '</div></div></div>';
   });
-  var fmtY = function(ts) { return new Date(ts).toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}); };
-  html += '<div class="tl-axis"><span>' + fmtY(minTs) + '</span><span>Aujourd\'hui</span><span>' + fmtY(maxTs) + '</span></div>';
+  html += '<div class="tl-axis"><span>' + fmtY(minTs + padding) + '</span><span style="color:rgba(212,175,100,.8);">▼ Aujourd\'hui</span><span>' + fmtY(maxTs - padding) + '</span></div>';
 } else {
   html += '<div style="padding:20px;text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);">Aucun projet actif</div>';
 }
