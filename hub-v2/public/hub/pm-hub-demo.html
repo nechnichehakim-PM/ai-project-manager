@@ -703,25 +703,25 @@ function loadDemoProjects() {
       localStorage.setItem('pmhub_rr_' + id, JSON.stringify(DEMO_RR[id]));
     });
 
-    // 11. Ressources — fusionner avec les ressources existantes
-    var existingRes = [];
-    try { existingRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]'); } catch(e){}
-    // Si vide utiliser les defaults (AN, ML, KB, SC)
-    if (!existingRes.length) {
-      existingRes = [
-        { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',      level:'Senior',   availability:80,  skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'],   color:'#63d2b4' },
-        { id:'ML', name:'Marc Leblanc',         role:'Data Architect',        level:'Senior',   availability:60,  skills:['Data Engineering','Python','SQL','Azure'],       color:'#7ab8e8' },
-        { id:'KB', name:'Karim Benali',         role:'Infrastructure Engineer',level:'Confirmé',availability:80,  skills:['Datacenter','Réseau','VMware','Linux'],          color:'#e8c97a' },
-        { id:'SC', name:'Sophie Carré',         role:'AI/ML Engineer',        level:'Confirmé', availability:70,  skills:['ML','Python','TensorFlow','MLOps'],              color:'#e07070' },
-      ];
-    }
-    // Retirer les démo existants puis rajouter
-    existingRes = existingRes.filter(function(r){ return DEMO_RESOURCE_IDS.indexOf(r.id) === -1; });
-    var mergedRes = existingRes.concat(DEMO_RESOURCES);
-    localStorage.setItem('pmhub_resources', JSON.stringify(mergedRes));
-    var savedRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]');
+    // 11. Ressources — écriture directe de la liste complète (4 membres existants + 9 démo)
+    var ALL_RESOURCES = [
+      { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',         level:'Senior',   availability:80,  skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'],          color:'#63d2b4' },
+      { id:'ML', name:'Marc Leblanc',         role:'Data Architect',           level:'Senior',   availability:60,  skills:['Data Engineering','Python','SQL','Azure'],              color:'#7ab8e8' },
+      { id:'KB', name:'Karim Benali',         role:'Infrastructure Engineer',  level:'Confirmé', availability:80,  skills:['Datacenter','Réseau','VMware','Linux'],                 color:'#e8c97a' },
+      { id:'SC', name:'Sophie Carré',         role:'AI/ML Engineer',           level:'Confirmé', availability:70,  skills:['ML','Python','TensorFlow','MLOps'],                     color:'#e07070' },
+      { id:'FD', name:'Fatima Diallo',        role:'RF Engineer',              level:'Confirmé', availability:90,  skills:['5G NR','Drive Test','Antennes','Nokia RAN','Couverture RF'], color:'#63d2b4' },
+      { id:'PL', name:'Pierre Laurent',       role:'Network Architect',        level:'Senior',   availability:75,  skills:['5G Core','NSA/SA','3GPP','AMF/SMF','Architecture réseau'],  color:'#7ab8e8' },
+      { id:'MR', name:'Mounir Rachedi',       role:'Integration Engineer',     level:'Confirmé', availability:80,  skills:['Nokia NSN','Configuration réseau','IPRAN','Tests QA réseau'], color:'#e8c97a' },
+      { id:'TC', name:'Thomas Chen',          role:'Lead Dev React Native',    level:'Senior',   availability:100, skills:['React Native','TypeScript','iOS','Android','CI/CD','Jest'],   color:'#a78bfa' },
+      { id:'NB', name:'Nadia Bouchard',       role:'Product Owner',            level:'Confirmé', availability:60,  skills:['Scrum','User Stories','Figma','Backlog','Roadmap produit'],   color:'#f472b6' },
+      { id:'RL', name:'Romain Lefebvre',      role:'QA Engineer Mobile',       level:'Junior',   availability:100, skills:['Tests automatisés','Detox','Appium','Performance','SonarQube'], color:'#34d399' },
+      { id:'CV', name:'Christine Vidal',      role:'SAP HCM Consultant',       level:'Expert',   availability:80,  skills:['SAP S/4HANA','SAP HR','Paie','SuccessFactors','ABAP'],         color:'#fb923c' },
+      { id:'DD', name:'Didier Dupont',        role:'Change Manager',           level:'Senior',   availability:70,  skills:['Conduite du changement','PROSCI','Formation','Communication','ADKAR'], color:'#c084fc' },
+      { id:'EB', name:'Emma Bertrand',        role:'Data Migration Analyst',   level:'Confirmé', availability:90,  skills:['ETL Talend','SQL','SAP HANA','Qualité données','Migration'],   color:'#38bdf8' },
+    ];
+    localStorage.setItem('pmhub_resources', JSON.stringify(ALL_RESOURCES));
 
-    showStatus('✓ 3 projets démo chargés — ' + savedRes.length + ' ressources enregistrées (' + savedRes.map(function(r){return r.id;}).join(', ') + ') — redirection…', 'ok');
+    showStatus('✓ 3 projets démo chargés — 13 ressources enregistrées — redirection…', 'ok');
     setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1800);
 
   } catch(e) {
@@ -755,11 +755,14 @@ function deleteDemoProjects() {
       suffixes.forEach(function(s){ localStorage.removeItem(s + id); });
     });
 
-    // Ressources — retirer les membres démo ajoutés
-    var currentRes = [];
-    try { currentRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]'); } catch(e){}
-    var cleanedRes = currentRes.filter(function(r){ return DEMO_RESOURCE_IDS.indexOf(r.id) === -1; });
-    localStorage.setItem('pmhub_resources', JSON.stringify(cleanedRes));
+    // Ressources — restaurer les 4 membres d'origine
+    var BASE_RESOURCES = [
+      { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',        level:'Senior',   availability:80, skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'], color:'#63d2b4' },
+      { id:'ML', name:'Marc Leblanc',         role:'Data Architect',          level:'Senior',   availability:60, skills:['Data Engineering','Python','SQL','Azure'],    color:'#7ab8e8' },
+      { id:'KB', name:'Karim Benali',         role:'Infrastructure Engineer', level:'Confirmé', availability:80, skills:['Datacenter','Réseau','VMware','Linux'],        color:'#e8c97a' },
+      { id:'SC', name:'Sophie Carré',         role:'AI/ML Engineer',          level:'Confirmé', availability:70, skills:['ML','Python','TensorFlow','MLOps'],            color:'#e07070' },
+    ];
+    localStorage.setItem('pmhub_resources', JSON.stringify(BASE_RESOURCES));
 
     showStatus('✓ Projets démo supprimés — redirection…', 'ok');
     setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1500);
