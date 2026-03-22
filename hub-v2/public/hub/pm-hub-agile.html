@@ -674,15 +674,15 @@ function renderBurndownSVG(sprint, tasks, totalPts, daysGone, totalDays) {
     return (i===0?'M':'L') + xScale(p.day).toFixed(1) + ' ' + yScale(p.remaining).toFixed(1);
   }).join(' ');
 
-  // Axis labels
+  // Axis labels (protection contre totalDays/totalPts = 0 → boucle infinie)
   var xLabels = '';
-  var step = Math.ceil(totalDays / 5);
+  var step = Math.max(1, Math.ceil(totalDays / 5));
   for (var i = 0; i <= totalDays; i += step) {
     var x = xScale(i);
     xLabels += '<text x="'+x.toFixed(0)+'" y="'+(H-6)+'" text-anchor="middle" font-family="DM Mono" font-size="8" fill="var(--text-muted)">J'+i+'</text>';
   }
   var yLabels = '';
-  var ystep = Math.ceil(totalPts / 4);
+  var ystep = Math.max(1, Math.ceil(totalPts / 4));
   for (var j = 0; j <= totalPts; j += ystep) {
     var y = yScale(j);
     yLabels += '<text x="'+(PL-4)+'" y="'+(y+3).toFixed(0)+'" text-anchor="end" font-family="DM Mono" font-size="8" fill="var(--text-muted)">'+j+'</text>';
@@ -746,6 +746,13 @@ function openModal() {
     var last = sprintData.sprints[sprintData.sprints.length-1];
     var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
     var nextNum = maxId + 1;
+    // Détecter le préfixe utilisé par les sprints existants
+    var sprintPrefix = 'Sprint';
+    if (sprintData.sprints.length > 0) {
+      var firstName = sprintData.sprints[0].name || '';
+      var m = firstName.match(/^([A-ZÀ-Ÿa-zà-ÿ]+\s*[A-ZÀ-Ÿa-zà-ÿ]*)\s*\d/);
+      if (m) sprintPrefix = m[1].trim();
+    }
     var startDate = today;
     if (last && last.end) {
       var d = new Date(last.end); d.setDate(d.getDate()+1);
@@ -755,7 +762,7 @@ function openModal() {
     var endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + dur - 1);
 
-    document.getElementById('mSprintName').value  = 'Sprint ' + nextNum;
+    document.getElementById('mSprintName').value  = sprintPrefix + ' ' + nextNum;
     document.getElementById('mSprintGoal').value  = '';
     document.getElementById('mSprintStart').value = startDate;
     document.getElementById('mSprintEnd').value   = endDate.toISOString().slice(0,10);
