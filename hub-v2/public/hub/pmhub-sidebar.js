@@ -33,8 +33,9 @@
           { name: 'Synthèse projet', href: 'pm-hub-project.html', icon: '📋' }
         ]},
         { label: 'Planification', links: [
-          { name: 'Gantt',   href: 'pm-hub-gantt.html',   icon: '📅' },
-          { name: 'Kanban',  href: 'pm-hub-kanban.html',  icon: '🔲' }
+          { name: 'Gantt',             href: 'pm-hub-gantt.html',  icon: '📅' },
+          { name: 'Kanban',            href: 'pm-hub-kanban.html', icon: '🔲' },
+          { name: 'Sprints & Métriques', href: 'pm-hub-agile.html', icon: '🔄', agileOnly: true }
         ]},
         { label: 'Suivi & Contrôle', links: [
           { name: 'RAID',        href: 'pm-hub-raid.html',       icon: '⚠️' },
@@ -112,6 +113,17 @@
     if (!el) return;
     var profile = (typeof PMHUB !== 'undefined' && PMHUB.getProfile) ? PMHUB.getProfile() : { initials: 'AN', name: 'Abdelhakim Nechniche', title: 'PM Telecom & IT · PMP® · PRINCE2 7th', badges: ['PMP®', 'PRINCE2 7th'] };
     var projects = (typeof PMHUB !== 'undefined' && PMHUB.getProjects) ? PMHUB.getProjects().filter(function(p) { return p.status === 'active'; }) : [];
+
+    // Détection de la méthodologie du projet courant (via ?project= dans l'URL)
+    var currentMethodology = '';
+    try {
+      var urlProjectId = new URLSearchParams(window.location.search).get('project');
+      if (urlProjectId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
+        var currentProj = PMHUB.getProjectById(urlProjectId);
+        if (currentProj) currentMethodology = currentProj.methodology || '';
+      }
+    } catch(e) {}
+    var isAgileProject = (currentMethodology === 'agile' || currentMethodology === 'hybride');
     var raidCount = 0;
     if (typeof PMHUB !== 'undefined' && PMHUB.getRaids) {
       projects.slice(0, 1).forEach(function(p) {
@@ -157,6 +169,7 @@
         html += '</div>';
         html += '<div class="sb-section-content">';
         grp.links.forEach(function(link) {
+          if (link.agileOnly && !isAgileProject) return;
           var active = isActive(link.href) ? ' active' : '';
           var badge = link.href === 'pm-hub-raid.html' && raidCount > 0 ? ' <span class="sb-badge-count red" id="sbRaidCount">' + raidCount + '</span>' : '';
           html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + (link.href || '#') + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';

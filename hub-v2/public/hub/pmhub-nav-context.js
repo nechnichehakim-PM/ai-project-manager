@@ -10,7 +10,7 @@
 
   var GROUPS = [
     { id: 'dashboard',  label: 'Dashboard', first: 'pm-hub.html', pages: [{ name: 'Vue d\'ensemble', href: 'pm-hub.html', icon: '🏠' }] },
-    { id: 'planning',   label: 'Planning', first: 'pm-hub-gantt.html', pages: [{ name: 'Gantt', href: 'pm-hub-gantt.html', icon: '📅' }, { name: 'Kanban', href: 'pm-hub-kanban.html', icon: '📋' }] },
+    { id: 'planning',   label: 'Planning', first: 'pm-hub-gantt.html', pages: [{ name: 'Gantt', href: 'pm-hub-gantt.html', icon: '📅' }, { name: 'Kanban', href: 'pm-hub-kanban.html', icon: '📋' }, { name: 'Sprints', href: 'pm-hub-agile.html', icon: '🔄', agileOnly: true }] },
     { id: 'raid',       label: 'RAID', first: 'pm-hub-raid.html', pages: [{ name: 'RAID Log', href: 'pm-hub-raid.html', icon: '⚠️' }, { name: 'Dashboard RAID', href: 'pm-hub-raid.html', icon: '📊' }] },
     { id: 'resources',  label: 'Ressources', first: 'pm-hub-resources.html', pages: [{ name: 'Ressources', href: 'pm-hub-resources.html', icon: '👥' }, { name: 'Capacité', href: 'pm-hub-resources.html', icon: '📈' }] },
     { id: 'budget',     label: 'Budget', first: 'pm-hub-budget.html', pages: [{ name: 'Budget / EVM', href: 'pm-hub-budget.html', icon: '💰' }] },
@@ -24,7 +24,7 @@
       { name: 'Briefing', panel: 'briefing', icon: '📊' },
       { name: 'Livrables', panel: 'livrable', icon: '⚡' }
     ]},
-    { id: 'documents',  label: 'Documents', first: 'pm-hub-report.html', pages: [{ name: 'Reporting', href: 'pm-hub-report.html', icon: '📄' }, { name: 'Templates', href: 'pm-hub-templates.html', icon: '📋' }] },
+    { id: 'documents',  label: 'Documents', first: 'pm-hub-report.html', pages: [{ name: 'Rapport de statut', href: 'pm-hub-report.html', icon: '📄' }] },
     { id: 'governance', label: 'Gouvernance', first: 'pm-hub-governance.html', pages: [{ name: 'Gouvernance', href: 'pm-hub-governance.html', icon: '🏛️' }, { name: 'Pilotage', href: 'pm-hub-transverse.html', icon: '🎯' }] },
     { id: 'knowledge',  label: 'Base de connaissance', first: 'pm-hub-knowledge.html', pages: [{ name: 'Lessons learned', href: 'pm-hub-knowledge.html', icon: '📚' }] },
     { id: 'config',     label: 'Paramètres', first: 'pm-hub-settings.html', pages: [{ name: 'Paramètres', href: 'pm-hub-settings.html', icon: '⚙️' }] }
@@ -46,6 +46,7 @@
   PAGE_TO_GROUP['pm-hub-governance.html'] = 'governance';
   PAGE_TO_GROUP['pm-hub-knowledge.html'] = 'knowledge';
   PAGE_TO_GROUP['pm-hub-raid.html'] = 'raid';
+  PAGE_TO_GROUP['pm-hub-agile.html'] = 'planning';
   PAGE_TO_GROUP['pm-hub-report.html'] = 'documents';
   PAGE_TO_GROUP['pm-hub-templates.html'] = 'documents';
   PAGE_TO_GROUP['pm-hub-transverse.html'] = 'governance';
@@ -69,7 +70,17 @@
       var activeEl = document.querySelector('.panel.active');
       activePanel = activeEl ? (activeEl.id || '').replace('panel-', '') : 'chat';
     }
-    var html = g.pages.map(function(p, i) {
+    // Détection méthodologie projet courant
+    var isAgileProject = false;
+    try {
+      var urlProjectId = new URLSearchParams(window.location.search).get('project');
+      if (urlProjectId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
+        var cp = PMHUB.getProjectById(urlProjectId);
+        if (cp) isAgileProject = (cp.methodology === 'agile' || cp.methodology === 'hybride');
+      }
+    } catch(e) {}
+    var pages = g.pages.filter(function(p) { return !p.agileOnly || isAgileProject; });
+    var html = pages.map(function(p, i) {
       var isActive;
       var attrs;
       if (p.panel) {
