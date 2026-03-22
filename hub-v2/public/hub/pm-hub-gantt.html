@@ -429,6 +429,7 @@ function init() {
 
 function switchProject(id) {
   activeProjectId = parseInt(id);
+  try { localStorage.setItem('pmhub_current_project', id); } catch(e) {}
   const p = PMHUB.getProjectById(id);
   if (!p) return;
 

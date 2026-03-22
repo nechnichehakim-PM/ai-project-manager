@@ -649,6 +649,7 @@ function loadProjects() {
 
 function switchProject(id) {
   activeProjectId = parseInt(id);
+  try { localStorage.setItem('pmhub_current_project', id); } catch(e) {}
   const p = typeof PMHUB !== 'undefined' ? PMHUB.getProjectById(id) : null;
   const badge = document.getElementById('projectBadge');
   if (p && badge) {

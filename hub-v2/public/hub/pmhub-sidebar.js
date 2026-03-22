@@ -33,9 +33,9 @@
           { name: 'Synthèse projet', href: 'pm-hub-project.html', icon: '📋' }
         ]},
         { label: 'Planification', links: [
-          { name: 'Gantt',             href: 'pm-hub-gantt.html',  icon: '📅' },
-          { name: 'Kanban',            href: 'pm-hub-kanban.html', icon: '🔲' },
-          { name: 'Sprints & Métriques', href: 'pm-hub-agile.html', icon: '🔄', agileOnly: true }
+          { name: 'Gantt',               href: 'pm-hub-gantt.html',  icon: '📅', methodologies: ['waterfall','hybride'] },
+          { name: 'Kanban',              href: 'pm-hub-kanban.html', icon: '🔲', methodologies: ['agile','hybride'] },
+          { name: 'Sprints & Métriques', href: 'pm-hub-agile.html',  icon: '🔄', methodologies: ['agile','hybride'] }
         ]},
         { label: 'Suivi & Contrôle', links: [
           { name: 'RAID',        href: 'pm-hub-raid.html',       icon: '⚠️' },
@@ -114,16 +114,18 @@
     var profile = (typeof PMHUB !== 'undefined' && PMHUB.getProfile) ? PMHUB.getProfile() : { initials: 'AN', name: 'Abdelhakim Nechniche', title: 'PM Telecom & IT · PMP® · PRINCE2 7th', badges: ['PMP®', 'PRINCE2 7th'] };
     var projects = (typeof PMHUB !== 'undefined' && PMHUB.getProjects) ? PMHUB.getProjects().filter(function(p) { return p.status === 'active'; }) : [];
 
-    // Détection de la méthodologie du projet courant (via ?project= dans l'URL)
+    // Détection de la méthodologie du projet courant
+    // Priorité : ?project= URL → pmhub_current_project localStorage → pas de filtre
     var currentMethodology = '';
     try {
       var urlProjectId = new URLSearchParams(window.location.search).get('project');
-      if (urlProjectId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
-        var currentProj = PMHUB.getProjectById(urlProjectId);
+      var storedId = localStorage.getItem('pmhub_current_project');
+      var resolvedId = urlProjectId || storedId;
+      if (resolvedId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
+        var currentProj = PMHUB.getProjectById(resolvedId);
         if (currentProj) currentMethodology = currentProj.methodology || '';
       }
     } catch(e) {}
-    var isAgileProject = (currentMethodology === 'agile' || currentMethodology === 'hybride');
     var raidCount = 0;
     if (typeof PMHUB !== 'undefined' && PMHUB.getRaids) {
       projects.slice(0, 1).forEach(function(p) {
@@ -169,14 +171,16 @@
         html += '</div>';
         html += '<div class="sb-section-content">';
         grp.links.forEach(function(link) {
-          if (link.agileOnly && !isAgileProject) return;
+          // Filtrage par méthodologie : si le lien a une liste de méthodologies autorisées
+          // et qu'on connaît la méthodologie du projet courant, masquer si pas dans la liste
+          if (link.methodologies && currentMethodology && link.methodologies.indexOf(currentMethodology) === -1) return;
           var active = isActive(link.href) ? ' active' : '';
           var badge = link.href === 'pm-hub-raid.html' && raidCount > 0 ? ' <span class="sb-badge-count red" id="sbRaidCount">' + raidCount + '</span>' : '';
-          // Pour les liens agileOnly, préserver le ?project= courant dans l'URL
+          // Pour les liens avec methodologies, préserver le ?project= courant dans l'URL
           var href = link.href || '#';
           try {
-            var curProjectId = new URLSearchParams(window.location.search).get('project');
-            if (link.agileOnly && curProjectId) href = link.href + '?project=' + curProjectId;
+            var curProjectId = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+            if (link.methodologies && curProjectId) href = link.href + '?project=' + curProjectId;
           } catch(e) {}
           html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + href + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';
         });

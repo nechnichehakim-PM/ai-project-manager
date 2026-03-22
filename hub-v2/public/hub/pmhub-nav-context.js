@@ -10,7 +10,11 @@
 
   var GROUPS = [
     { id: 'dashboard',  label: 'Dashboard', first: 'pm-hub.html', pages: [{ name: 'Vue d\'ensemble', href: 'pm-hub.html', icon: '🏠' }] },
-    { id: 'planning',   label: 'Planning', first: 'pm-hub-gantt.html', pages: [{ name: 'Gantt', href: 'pm-hub-gantt.html', icon: '📅' }, { name: 'Kanban', href: 'pm-hub-kanban.html', icon: '📋' }, { name: 'Sprints', href: 'pm-hub-agile.html', icon: '🔄', agileOnly: true }] },
+    { id: 'planning',   label: 'Planning', first: 'pm-hub-gantt.html', pages: [
+      { name: 'Gantt',    href: 'pm-hub-gantt.html',  icon: '📅', methodologies: ['waterfall','hybride'] },
+      { name: 'Kanban',   href: 'pm-hub-kanban.html', icon: '📋', methodologies: ['agile','hybride'] },
+      { name: 'Sprints',  href: 'pm-hub-agile.html',  icon: '🔄', methodologies: ['agile','hybride'] }
+    ]},
     { id: 'raid',       label: 'RAID', first: 'pm-hub-raid.html', pages: [{ name: 'RAID Log', href: 'pm-hub-raid.html', icon: '⚠️' }, { name: 'Dashboard RAID', href: 'pm-hub-raid.html', icon: '📊' }] },
     { id: 'resources',  label: 'Ressources', first: 'pm-hub-resources.html', pages: [{ name: 'Ressources', href: 'pm-hub-resources.html', icon: '👥' }, { name: 'Capacité', href: 'pm-hub-resources.html', icon: '📈' }] },
     { id: 'budget',     label: 'Budget', first: 'pm-hub-budget.html', pages: [{ name: 'Budget / EVM', href: 'pm-hub-budget.html', icon: '💰' }] },
@@ -70,16 +74,19 @@
       var activeEl = document.querySelector('.panel.active');
       activePanel = activeEl ? (activeEl.id || '').replace('panel-', '') : 'chat';
     }
-    // Détection méthodologie projet courant
-    var isAgileProject = false;
+    // Détection méthodologie projet courant (URL > localStorage)
+    var currentMethodologyNav = '';
     try {
-      var urlProjectId = new URLSearchParams(window.location.search).get('project');
-      if (urlProjectId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
-        var cp = PMHUB.getProjectById(urlProjectId);
-        if (cp) isAgileProject = (cp.methodology === 'agile' || cp.methodology === 'hybride');
+      var urlProjId = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+      if (urlProjId && typeof PMHUB !== 'undefined' && PMHUB.getProjectById) {
+        var cp = PMHUB.getProjectById(urlProjId);
+        if (cp) currentMethodologyNav = cp.methodology || '';
       }
     } catch(e) {}
-    var pages = g.pages.filter(function(p) { return !p.agileOnly || isAgileProject; });
+    var pages = g.pages.filter(function(p) {
+      if (!p.methodologies || !isAgileProject && !currentMethodologyNav) return true;
+      return !p.methodologies || p.methodologies.indexOf(currentMethodologyNav) !== -1;
+    });
     var html = pages.map(function(p, i) {
       var isActive;
       var attrs;
