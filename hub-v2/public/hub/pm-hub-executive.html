@@ -4,21 +4,122 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PM Hub — Vue COMEX</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="themes/pmhub-theme.css">
 <script src="pmhub-data.js"></script>
 <script src="pmhub-nav-context.js"></script>
 <script src="pmhub-sidebar.js"></script>
 <script src="pmhub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-context{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;}
+.nav-tab{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-icon{font-size:16px;color:var(--text-muted);text-decoration:none;padding:7px 10px;border-radius:5px;}
+.nav-back{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:5px;transition:all .2s;}
+.nav-back:hover{color:var(--text);border-color:var(--text-muted);}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,.35);border:1px solid rgba(99,210,180,.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
+.main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:36px 40px 100px;}
+
+/* HERO COMEX */
+.comex-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:32px;padding:28px 32px;border-radius:14px;border:1px solid var(--border);background:var(--surface);position:relative;overflow:hidden;}
+.comex-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 80% 50%, rgba(212,175,100,.04) 0%, transparent 60%);pointer-events:none;}
+.comex-hero-left{flex:1;}
+.comex-date{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.comex-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;line-height:1.1;margin-bottom:8px;}
+.comex-title em{font-style:italic;color:var(--accent2);}
+.comex-sentence{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-soft);line-height:1.6;max-width:520px;}
+.comex-hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex-shrink:0;}
+.rag-pill{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;}
+.rag-pill.g{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#22c55e;}
+.rag-pill.a{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:#f59e0b;}
+.rag-pill.r{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--danger);}
+.rag-dot-lg{width:10px;height:10px;border-radius:50%;}
+.rag-pill.g .rag-dot-lg{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.6);}
+.rag-pill.a .rag-dot-lg{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.6);}
+.rag-pill.r .rag-dot-lg{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.6);}
+.comex-actions{display:flex;gap:8px;}
+.btn-comex{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;padding:8px 16px;border-radius:7px;text-decoration:none;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;background:transparent;transition:all .2s;white-space:nowrap;}
+.btn-comex:hover{color:var(--text);border-color:var(--text-soft);}
+.btn-comex.primary{background:rgba(99,210,180,.1);border-color:rgba(99,210,180,.3);color:var(--accent);}
+.btn-comex.primary:hover{background:rgba(99,210,180,.18);}
+
+/* SECTION */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;margin-top:32px;}
+.section-hd h2{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-soft);}
+.section-hd .section-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.section-empty{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);padding:20px 0;text-align:center;}
+
+/* DÉCISIONS */
+.decision-list{display:flex;flex-direction:column;gap:10px;}
+.decision-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:flex;align-items:flex-start;gap:16px;transition:border-color .15s;}
+.decision-card:hover{border-color:rgba(255,255,255,.12);}
+.decision-card.urgent{border-left:3px solid var(--danger);}
+.decision-card.high{border-left:3px solid #f59e0b;}
+.decision-card.normal{border-left:3px solid rgba(99,210,180,.4);}
+.decision-meta{flex:1;}
+.decision-proj{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.decision-desc{font-size:13px;font-weight:500;margin-bottom:6px;line-height:1.45;}
+.decision-footer{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.prio-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:4px;}
+.prio-badge.urgente{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.prio-badge.haute{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.2);}
+.prio-badge.normale{background:rgba(99,210,180,.08);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+.decision-deadline{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.decision-btns{display:flex;gap:6px;flex-shrink:0;}
+.dec-btn{font-family:'DM Mono',monospace;font-size:9px;padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.dec-btn:hover{color:var(--text);border-color:var(--text-soft);}
+.dec-btn.approve{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.25);color:#22c55e;}
+.dec-btn.approve:hover{background:rgba(34,197,94,.18);}
+.dec-btn.close-btn{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.2);color:var(--danger);}
+
+/* ALERTES */
+.alert-proj-list{display:flex;flex-direction:column;gap:8px;}
+.alert-proj-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:14px;cursor:pointer;text-decoration:none;transition:border-color .15s;color:inherit;}
+.alert-proj-card:hover{border-color:rgba(255,255,255,.12);}
+.alert-proj-name{font-size:13px;font-weight:600;}
+.alert-proj-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.alert-proj-reason{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);}
+.alert-proj-link{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);}
+.rag-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.rag-g{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);}
+.rag-a{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5);}
+.rag-r{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5);}
+
+/* SESSION COMEX */
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;}
+.session-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.session-field{display:flex;flex-direction:column;gap:6px;}
+.session-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);}
+.session-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);outline:none;transition:border-color .15s;}
+.session-input:focus{border-color:rgba(99,210,180,.4);}
+.session-textarea{min-height:72px;resize:vertical;line-height:1.5;}
+.session-save{margin-top:14px;display:flex;align-items:center;gap:10px;}
+.session-saved{font-family:'DM Mono',monospace;font-size:10px;color:#22c55e;opacity:0;transition:opacity .3s;}
+
+/* IA BLOCK */
+.ia-block{margin-top:32px;background:linear-gradient(135deg,rgba(99,210,180,.06) 0%,rgba(212,175,100,.04) 100%);border:1px solid rgba(99,210,180,.2);border-radius:12px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;}
+.ia-block-left{flex:1;}
+.ia-block-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.ia-block-desc{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.6;}
+.ia-block-btns{display:flex;gap:8px;flex-shrink:0;}
+</style>
 </head>
 <body>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
 <nav>
-  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
-  <div class="nav-logo"><div class="nav-logo-dot"></div><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <a href="pm-hub.html" class="nav-back">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
   <div class="nav-context" id="nav-context"></div>
   <div class="nav-links">
-    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
     <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
   </div>
 </nav>
@@ -27,61 +128,224 @@
   <aside class="sidebar" id="pmhub-sidebar"></aside>
   <div class="main-col">
   <main class="main">
-    <div class="hero-bar">
-      <div class="hero-left">
-        <span class="hero-badge">Direction</span>
-        <h1 class="hero-title">Vue <span class="hero-title-accent">COMEX</span></h1>
-        <p class="hero-sub">Synthèse portefeuille, risques majeurs et décisions.</p>
-      </div>
-    </div>
-    <div class="exec-tiles">
-      <div class="exec-tile"><div class="exec-tile-label">État portefeuille</div><div class="exec-tile-value" id="execState">—</div><div class="exec-tile-sub" id="execStateSub">—</div></div>
-      <div class="exec-tile"><div class="exec-tile-label">Budget global</div><div class="exec-tile-value" id="execBudget">—</div></div>
-      <div class="exec-tile"><div class="exec-tile-label">Projets actifs</div><div class="exec-tile-value" id="execActive">—</div></div>
-      <div class="exec-tile exec-tile-alert"><div class="exec-tile-label">Risques critiques</div><div class="exec-tile-value" id="execRisks">—</div></div>
-    </div>
-    <div class="section-title-row"><h2 class="section-title">Top 5 projets sensibles</h2></div>
-    <div class="exec-list" id="execProjects"></div>
-    <div class="section-title-row"><h2 class="section-title">Décisions attendues</h2></div>
-    <div class="exec-list" id="execDecisions"></div>
-    <div class="ai-insight-card">
-      <span class="ai-insight-icon">🤖</span>
-      <div><div class="ai-insight-title">Synthèse IA</div><div class="ai-insight-text">Générez un briefing hebdomadaire ou un rapport COMEX depuis le <a href="pm-hub-ai.html">Centre IA</a>.</div></div>
-    </div>
+    <div id="comexRoot"></div>
   </main>
   </div>
 </div>
 <script>
-(function(){
-  var k = PMHUB.getPortfolioKpis();
-  document.getElementById('execState').textContent = k.criticalCount > 0 ? 'Attention' : (k.atRiskCount > 0 ? 'Vigilance' : 'Stable');
-  document.getElementById('execStateSub').textContent = k.activeProjects + ' projets · ' + k.avgProgress + '% moyen';
-  document.getElementById('execBudget').textContent = (k.totalBudget || 0) + ' €';
-  document.getElementById('execActive').textContent = k.activeProjects;
-  var raidCount = 0;
-  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
-    var r = PMHUB.getRaids(p.id);
-    raidCount += (r.risks || []).filter(function(x){ return x.severity === 'critical'; }).length;
-  });
-  document.getElementById('execRisks').textContent = raidCount;
+(function() {
+'use strict';
 
-  var projs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).slice(0, 5);
-  document.getElementById('execProjects').innerHTML = projs.length ? projs.map(function(p){
-    var h = PMHUB.getProjectHealth(p.id);
-    return '<div class="exec-row"><span class="exec-row-name">' + (p.name || p.ref) + '</span><span class="exec-row-rag rag-' + h.rag + '">' + (h.rag === 'green' ? 'Vert' : h.rag === 'red' ? 'Rouge' : 'Orange') + '</span><span class="exec-row-pct">' + (p.progress || 0) + '%</span></div>';
-  }).join('') : '<p class="exec-empty">Aucun projet actif</p>';
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+}
+function fmtDateShort(s) {
+  if (!s) return '';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+function ragClass(rag) { return rag === 'green' ? 'g' : rag === 'red' ? 'r' : 'a'; }
+function ragLabel(rag) { return rag === 'green' ? 'Portefeuille stable' : rag === 'red' ? 'Situation critique' : 'Vigilance requise'; }
+function ragText(rag, stats) {
+  if (rag === 'green') return stats.activeProjects + ' projet(s) actif(s) · Avancement moyen ' + stats.avgProgress + '% · Aucun risque critique bloquant.';
+  if (rag === 'red')   return stats.critProjects + ' projet(s) en situation critique nécessitant une décision immédiate du COMEX.';
+  return stats.atRiskProjects + ' projet(s) à surveiller · ' + stats.pendingDecisions + ' décision(s) en attente.';
+}
 
-  var decisions = [];
-  PMHUB.getProjects().filter(function(p){ return p.status === 'active'; }).forEach(function(p){
-    var r = PMHUB.getRaids(p.id);
-    (r.decisions || []).filter(function(d){ return d.status !== 'closed'; }).forEach(function(d){
-      decisions.push({ project: p.name, desc: d.desc });
-    });
+// ── DATA ─────────────────────────────────────────────────────────
+var today = new Date();
+var activeProjs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
+
+// Enrichir chaque projet
+var enriched = activeProjs.map(function(p) {
+  var h    = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : { rag: 'amber', score: 50 };
+  var raid = PMHUB.getRaids ? PMHUB.getRaids(p.id) : {};
+  var critRisks  = (raid.risks||[]).filter(function(r){ return r.status !== 'closed' && (r.severity === 'critical' || r.severity === 'haute' || r.severity === 'Critique' || r.severity === 'Haute'); });
+  var openIssues = (raid.issues||[]).filter(function(i){ return i.status !== 'closed'; });
+  var pendingDec = (raid.decisions||[]).filter(function(d){ return d.status !== 'closed' && d.status !== 'approuvée'; });
+  var b = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+  var budgetPlanned  = Number(String(b.planned || p.budget || 0).replace(/\s/g,'').replace(/[^\d.]/g,'')) || 0;
+  var budgetConsumed = b.consumed || Math.round(budgetPlanned * (p.progress||0) / 100 * 0.7);
+  var budgetPct = budgetPlanned > 0 ? Math.round(budgetConsumed / budgetPlanned * 100) : null;
+  return { p: p, rag: h.rag, score: h.score, critRisks: critRisks, openIssues: openIssues, pendingDec: pendingDec, budgetPct: budgetPct };
+});
+
+// Projets alertes (rouge ou amber avec risques critiques)
+var alertProjs = enriched.filter(function(e){
+  return e.rag === 'red' || (e.rag === 'amber' && (e.critRisks.length > 0 || e.openIssues.length > 0));
+});
+
+// Décisions toutes sources
+var allDecisions = [];
+enriched.forEach(function(e) {
+  e.pendingDec.forEach(function(d) {
+    allDecisions.push({ proj: e.p, d: d });
   });
-  document.getElementById('execDecisions').innerHTML = decisions.length ? decisions.slice(0, 5).map(function(d){
-    return '<div class="exec-row"><span class="exec-row-name">' + d.project + '</span><span class="exec-row-desc">' + (d.desc || '—') + '</span></div>';
-  }).join('') : '<p class="exec-empty">Aucune décision en attente</p>';
+});
+// Trier urgentes en premier
+allDecisions.sort(function(a, b) {
+  var pOrder = { 'urgente': 0, 'haute': 1, 'normale': 2 };
+  return (pOrder[(a.d.priority||'normale').toLowerCase()] || 2) - (pOrder[(b.d.priority||'normale').toLowerCase()] || 2);
+});
+
+// RAG global
+var critCount = enriched.filter(function(e){ return e.rag === 'red'; }).length;
+var amberCount = enriched.filter(function(e){ return e.rag === 'amber'; }).length;
+var globalRag = critCount > 0 ? 'red' : amberCount > 1 ? 'amber' : 'green';
+var stats = {
+  activeProjects: activeProjs.length,
+  avgProgress: activeProjs.length ? Math.round(activeProjs.reduce(function(s,p){ return s + (p.progress||0); }, 0) / activeProjs.length) : 0,
+  critProjects: critCount,
+  atRiskProjects: amberCount,
+  pendingDecisions: allDecisions.length
+};
+
+// Session COMEX sauvegardée
+var SESSION_KEY = 'pmhub_comex_session';
+function loadSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'); } catch(e) { return {}; } }
+function saveSession(data) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(e) {} }
+
+// ── RENDER ───────────────────────────────────────────────────────
+var rc = ragClass(globalRag);
+var html = '';
+
+// HERO
+html += '<div class="comex-hero">';
+html += '<div class="comex-hero-left">';
+html += '<div class="comex-date">COMEX · ' + today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + '</div>';
+html += '<h1 class="comex-title">Vue <em>COMEX</em></h1>';
+html += '<p class="comex-sentence">' + ragText(globalRag, stats) + '</p>';
+html += '</div>';
+html += '<div class="comex-hero-right">';
+html += '<div class="rag-pill ' + rc + '"><div class="rag-dot-lg"></div>' + ragLabel(globalRag) + '</div>';
+html += '<div class="comex-actions">';
+html += '<a href="pm-hub-ai-briefing.html" class="btn-comex primary">📊 Générer briefing</a>';
+html += '<a href="pm-hub-portfolio.html" class="btn-comex">Vue portefeuille →</a>';
+html += '</div>';
+html += '</div>';
+html += '</div>';
+
+// DÉCISIONS EN ATTENTE
+html += '<div class="section-hd"><h2>🎯 Décisions en attente</h2><span class="section-count">' + allDecisions.length + ' item(s)</span></div>';
+if (allDecisions.length) {
+  html += '<div class="decision-list" id="decisionList">';
+  allDecisions.forEach(function(item, idx) {
+    var d = item.d;
+    var prio = (d.priority || 'normale').toLowerCase();
+    var prioClass = prio === 'urgente' ? 'urgente' : prio === 'haute' ? 'haute' : 'normale';
+    var deadlineStr = d.deadline ? ' · Échéance : ' + fmtDateShort(d.deadline) : '';
+    var isLate = d.deadline && new Date(d.deadline) < today;
+    html += '<div class="decision-card ' + prioClass + '" id="dec_' + idx + '">';
+    html += '<div class="decision-meta">';
+    html += '<div class="decision-proj">' + esc(item.proj.name || item.proj.ref) + '</div>';
+    html += '<div class="decision-desc">' + esc(d.desc || d.title || '(description manquante)') + '</div>';
+    html += '<div class="decision-footer">';
+    html += '<span class="prio-badge ' + prioClass + '">' + (d.priority || 'Normale') + '</span>';
+    if (d.owner) html += '<span class="decision-deadline">→ ' + esc(d.owner) + '</span>';
+    html += '<span class="decision-deadline' + (isLate ? '" style="color:var(--danger);"' : '"') + '>' + (d.deadline ? (isLate ? '⚠ ' : '') + fmtDate(d.deadline) : '') + '</span>';
+    html += '</div></div>';
+    html += '<div class="decision-btns">';
+    html += '<button class="dec-btn approve" onclick="approveDecision(' + idx + ')">Approuver</button>';
+    html += '<button class="dec-btn" onclick="deferDecision(' + idx + ')">Reporter</button>';
+    html += '<button class="dec-btn close-btn" onclick="closeDecision(' + idx + ')">Clore</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+} else {
+  html += '<p class="section-empty">✅ Aucune décision en attente — portefeuille sous contrôle.</p>';
+}
+
+// ALERTES PROJETS
+html += '<div class="section-hd"><h2>⚠️ Points d\'attention</h2><span class="section-count">' + alertProjs.length + ' projet(s)</span></div>';
+if (alertProjs.length) {
+  html += '<div class="alert-proj-list">';
+  alertProjs.forEach(function(e) {
+    var reasons = [];
+    if (e.critRisks.length > 0) reasons.push(e.critRisks.length + ' risque(s) critique(s)');
+    if (e.openIssues.length > 0) reasons.push(e.openIssues.length + ' issue(s) ouverte(s)');
+    if (e.budgetPct !== null && e.budgetPct > 85) reasons.push('Budget à ' + e.budgetPct + '%');
+    if (e.rag === 'red') reasons.push('Santé critique (score ' + e.score + ')');
+    html += '<a class="alert-proj-card" href="pm-hub-project.html?project=' + e.p.id + '">';
+    html += '<span class="rag-dot rag-' + ragClass(e.rag) + '"></span>';
+    html += '<div><div class="alert-proj-name">' + esc(e.p.name || e.p.ref) + '</div>';
+    html += '<div class="alert-proj-sub">' + esc(e.p.ref || '') + ' · Avancement ' + (e.p.progress||0) + '%</div></div>';
+    html += '<div class="alert-proj-reason">' + esc(reasons.join(' · ') || '—') + '</div>';
+    html += '<div class="alert-proj-link">Voir →</div>';
+    html += '</a>';
+  });
+  html += '</div>';
+} else {
+  html += '<p class="section-empty">✅ Aucun projet nécessitant une intervention COMEX.</p>';
+}
+
+// SESSION COMEX
+html += '<div class="section-hd" style="margin-top:32px;"><h2>📅 Prochaine session COMEX</h2></div>';
+html += '<div class="session-card">';
+html += '<div class="session-grid">';
+html += '<div class="session-field"><label class="session-label">Date de la session</label><input type="date" class="session-input" id="sesDate"></div>';
+html += '<div class="session-field"><label class="session-label">Participants</label><input type="text" class="session-input" id="sesParticipants" placeholder="DG, DSI, PMO…"></div>';
+html += '<div class="session-field" style="grid-column:span 2;"><label class="session-label">Ordre du jour</label><textarea class="session-input session-textarea" id="sesAgenda" placeholder="1. Revue avancement portefeuille&#10;2. Décisions en attente&#10;3. Arbitrage budgétaire…"></textarea></div>';
+html += '</div>';
+html += '<div class="session-save"><button class="btn-comex primary" onclick="saveSessionData()">💾 Sauvegarder</button><span class="session-saved" id="sesSaved">Sauvegardé ✓</span></div>';
+html += '</div>';
+
+// IA BLOCK
+html += '<div class="ia-block">';
+html += '<div class="ia-block-left"><div class="ia-block-title">Synthèse IA</div>';
+html += '<div class="ia-block-desc">Générez un rapport COMEX complet, un briefing exécutif hebdomadaire<br>ou une note de synthèse automatique depuis le Centre IA.</div></div>';
+html += '<div class="ia-block-btns">';
+html += '<a href="pm-hub-ai-briefing.html" class="btn-comex primary">📊 Briefing COMEX</a>';
+html += '<a href="pm-hub-ai-redac.html" class="btn-comex">✍️ Rédacteur PM</a>';
+html += '<a href="pm-hub-ai.html" class="btn-comex">Centre IA →</a>';
+html += '</div></div>';
+
+document.getElementById('comexRoot').innerHTML = html;
+
+// Charger session sauvegardée
+var sess = loadSession();
+if (sess.date)         document.getElementById('sesDate').value         = sess.date;
+if (sess.participants) document.getElementById('sesParticipants').value = sess.participants;
+if (sess.agenda)       document.getElementById('sesAgenda').value       = sess.agenda;
+
+// ── ACTIONS DÉCISIONS ────────────────────────────────────────────
+// On travaille sur une copie locale pour les actions bouton
+window.approveDecision = function(idx) { updateDecision(idx, 'approuvée'); };
+window.deferDecision   = function(idx) { updateDecision(idx, 'reportée'); };
+window.closeDecision   = function(idx) { updateDecision(idx, 'closed'); };
+
+function updateDecision(idx, newStatus) {
+  var item = allDecisions[idx];
+  if (!item) return;
+  var raid = PMHUB.getRaids(item.proj.id);
+  var dec = (raid.decisions||[]).find(function(d){ return d.desc === item.d.desc && d.priority === item.d.priority; });
+  if (dec) {
+    dec.status = newStatus;
+    if (PMHUB.saveRaids) PMHUB.saveRaids(item.proj.id, raid);
+  }
+  var card = document.getElementById('dec_' + idx);
+  if (card) {
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+    var btns = card.querySelector('.decision-btns');
+    if (btns) btns.innerHTML = '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + newStatus + '</span>';
+  }
+}
+
+window.saveSessionData = function() {
+  saveSession({
+    date:         document.getElementById('sesDate').value,
+    participants: document.getElementById('sesParticipants').value,
+    agenda:       document.getElementById('sesAgenda').value
+  });
+  var el = document.getElementById('sesSaved');
+  if (el) { el.style.opacity = '1'; setTimeout(function(){ el.style.opacity = '0'; }, 2000); }
+};
+
 })();
 </script>
+<div id="ai-suggestions-bar"></div>
+<script src="pmhub-ai-suggestions.js"></script>
 </body>
 </html>
