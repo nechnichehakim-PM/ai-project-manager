@@ -16,8 +16,7 @@
       sectionLabel: 'Portefeuille',
       groups: [
         { label: 'Tableau de bord', links: [
-          { name: 'Dashboard',      href: 'pm-hub.html',        icon: '🏠' },
-          { name: 'Nouveau projet', href: 'pm-hub-wizard.html', icon: '🧭' }
+          { name: 'Dashboard', href: 'pm-hub.html', icon: '🏠' }
         ]},
         { label: 'Portefeuille', links: [
           { name: 'Vue portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' },

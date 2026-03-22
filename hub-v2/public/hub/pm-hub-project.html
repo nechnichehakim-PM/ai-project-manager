@@ -283,10 +283,23 @@ function initProjectDashboard() {
       teamIds.forEach(id => teamMembers.push({ id, name: id, role: 'Membre équipe', color: project.color || 'var(--accent)' }));
     }
 
-    const raidUrl = 'pm-hub-raid.html?project=' + projectId;
-    const ganttUrl = 'pm-hub-gantt.html?project=' + projectId;
+    const raidUrl      = 'pm-hub-raid.html?project='      + projectId;
+    const ganttUrl     = 'pm-hub-gantt.html?project='     + projectId;
+    const kanbanUrl    = 'pm-hub-kanban.html?project='    + projectId;
+    const agileUrl     = 'pm-hub-agile.html?project='     + projectId;
     const templatesUrl = 'pm-hub-templates.html?project=' + projectId;
-    const wizardUrl = 'pm-hub-wizard.html?project=' + projectId;
+    const wizardUrl    = 'pm-hub-wizard.html?project='    + projectId;
+    const meth = (project.methodology || 'waterfall').toLowerCase();
+    const showGantt    = meth === 'waterfall' || meth === 'hybride';
+    const showKanban   = meth === 'agile'     || meth === 'hybride';
+    const showSprints  = meth === 'agile'     || meth === 'hybride';
+    const actionBtns =
+      '<a class="proj-btn primary" href="' + wizardUrl    + '">🧭 Wizard</a>' +
+      (showGantt   ? '<a class="proj-btn" href="' + ganttUrl    + '">📅 Gantt</a>' : '') +
+      (showKanban  ? '<a class="proj-btn" href="' + kanbanUrl   + '">🗂 Kanban</a>' : '') +
+      (showSprints ? '<a class="proj-btn" href="' + agileUrl    + '">🔄 Sprints & Métriques</a>' : '') +
+      '<a class="proj-btn" href="' + raidUrl      + '">⚠️ RAID</a>' +
+      '<a class="proj-btn" href="' + templatesUrl + '">📋 Templates</a>';
 
     var sbProjName = document.getElementById('sbProjName');
     var sbProjNameText = document.getElementById('sbProjNameText');
@@ -592,11 +605,7 @@ function initProjectDashboard() {
       <span class="health-rag-badge rag-${health.rag}">${health.rag==='green'?'● Santé bonne':health.rag==='amber'?'● Attention':'● Critique'} · ${health.score}/100</span>
     </div>
     <div class="proj-header-actions">
-      <a class="proj-btn primary" href="${wizardUrl}">🧭 Wizard</a>
-      <a class="proj-btn" href="${ganttUrl}">📅 Gantt</a>
-      <a class="proj-btn" href="pm-hub-kanban.html?project=${projectId}">🗂 Kanban</a>
-      <a class="proj-btn" href="${raidUrl}">⚠️ RAID</a>
-      <a class="proj-btn" href="${templatesUrl}">📋 Templates</a>
+      ${actionBtns}
     </div>
   </div>
 </div>
