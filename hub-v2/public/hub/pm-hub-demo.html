@@ -313,6 +313,40 @@ DEMO_GANTT[9003] = [
   {id:17,name:'Hypercare & clôture',            type:'task',     start:'2026-05-12', end:'2026-05-31', progress:0,   color:'#63d2b4', owner:'AN', deps:[16]},
 ];
 
+// ── REGISTRE DES RISQUES (pmhub_rr_{id}) ───────────────
+// Format distinct du RAID : category, description, trigger, to, probability,
+// impact, source, responsePlan, riskOwner, status, createdAt
+var DEMO_RR = {};
+
+DEMO_RR[9001] = [
+  {id:'RR-001',category:'Fournisseur',  description:'Retard livraison équipements Nokia NSN — lead time 14 semaines', trigger:'SLA non respecté + pénurie mondiale composants télécoms', to:'threat', probability:'high',   impact:'high',   source:'Expert',      responsePlan:'Mitiger : pré-commande anticipée, clause pénale contractuelle, lot de réserve commandé',       riskOwner:'KB', status:'current',    createdAt:'2025-10-15'},
+  {id:'RR-002',category:'Réglementaire',description:'Homologation ARCEP fréquences 5G NR 3.5 GHz retardée',           trigger:'Dossier incomplet ou délai instruction > 3 mois',           to:'threat', probability:'medium', impact:'high',   source:'Expert',      responsePlan:'Mitiger : dossier déposé 6 semaines en avance, avocat télécom missionné',                      riskOwner:'AN', status:'current',    createdAt:'2025-10-20'},
+  {id:'RR-003',category:'Technique',    description:'Interférences 5G NR sur bande 3.5 GHz — zones denses Paris',    trigger:'Coexistence 5G/4G sur même bande, brouillages détectés',    to:'threat', probability:'medium', impact:'medium', source:'Mesures RF',  responsePlan:'Mitiger : campagne mesures RF pré-déploiement, optimisation paramètres antennaires',           riskOwner:'FD', status:'current',    createdAt:'2025-11-05'},
+  {id:'RR-004',category:'Sécurité',     description:'Surface d\'attaque élargie sur interfaces O&M N2/N3 exposées',  trigger:'Audit sécurité révèle 3 CVE non patchés',                   to:'threat', probability:'low',    impact:'high',   source:'Expert',      responsePlan:'Accepter post-mitigation : pentest réalisé, firewall applicatif + segmentation VRF déployés',  riskOwner:'SC', status:'mitigated',  createdAt:'2025-11-10'},
+  {id:'RR-005',category:'RH',           description:'Pénurie ingénieurs 5G SA certifiés — 2 postes non pourvus',     trigger:'Marché tendu, délai recrutement > 6 semaines',              to:'threat', probability:'high',   impact:'medium', source:'Observation', responsePlan:'Mitiger : appel à 2 freelances certifiés Nokia — contrats en cours de signature',               riskOwner:'AN', status:'current',    createdAt:'2026-01-20'},
+  {id:'RR-006',category:'Budget',       description:'Dépassement budgétaire phase déploiement national estimé +8%',  trigger:'Coûts d\'ingénierie supérieurs aux estimations initiales',  to:'threat', probability:'medium', impact:'high',   source:'Calcul',      responsePlan:'Mitiger : réserve gestion risques +50K€ soumise en COPIL avril',                              riskOwner:'AN', status:'current',    createdAt:'2026-02-15'},
+  {id:'RR-007',category:'Stratégique',  description:'Opportunité partenariat Nokia NSN pour MCO réseau 5G post-lancement', trigger:'Discussions préliminaires favorables — NOC mutualisé', to:'opportunity', probability:'medium', impact:'high', source:'Expert',   responsePlan:'Exploiter : négocier accord MCO cadre avant go-live Q3 2026',                                  riskOwner:'AN', status:'current',    createdAt:'2026-02-20'},
+];
+
+DEMO_RR[9002] = [
+  {id:'RR-001',category:'Technique',    description:'Dette technique accumulée — coverage tests unitaires à 24%',         trigger:'Sprints sous pression, refactoring différé',              to:'threat', probability:'high',   impact:'high',   source:'Analyse code', responsePlan:'Mitiger : Sprint 5 partiellement dédié au remboursement, SonarQube Quality Gate activé',    riskOwner:'ML', status:'current',  createdAt:'2025-12-15'},
+  {id:'RR-002',category:'Conformité',   description:'API Stripe non certifiée PCI-DSS Level 1 avant release v1.0',        trigger:'Audit de conformité non encore réalisé',                   to:'threat', probability:'high',   impact:'high',   source:'Expert',       responsePlan:'Mitiger : audit PCI-DSS commandé cabinet KPMG — rapport attendu 08/04',                      riskOwner:'ML', status:'current',  createdAt:'2026-01-10'},
+  {id:'RR-003',category:'Planning',     description:'Vélocité sprint en baisse -18% vs baseline — retard release MVP',    trigger:'Bug critique iOS + dette technique non anticipés',         to:'threat', probability:'medium', impact:'high',   source:'Observation',  responsePlan:'Mitiger : backlog Sprint 4 réduit de 2 stories, focus core features',                         riskOwner:'AN', status:'current',  createdAt:'2026-02-01'},
+  {id:'RR-004',category:'Externe',      description:'Soumission App Store refusée — politique Apple In-App potentiellement non conforme', trigger:'Guideline Apple 3.1.1 sur paiements tiers', to:'threat', probability:'medium', impact:'high', source:'Historique',  responsePlan:'Mitiger : pré-validation guidelines avec Apple Partner Program avant soumission',             riskOwner:'SC', status:'current',  createdAt:'2026-02-15'},
+  {id:'RR-005',category:'Conformité',   description:'Non-conformité RGPD — collecte données comportementales sans consentement explicite', trigger:'DPO identifie absence de banner consentement', to:'threat', probability:'low', impact:'high', source:'Expert',      responsePlan:'Mitiger : module consentement Didomi intégré au Sprint 6, DPO consulté',                     riskOwner:'ML', status:'current',  createdAt:'2026-03-01'},
+  {id:'RR-006',category:'Stratégique',  description:'Opportunité : adoption forte si NPS > 4.5 — viralité organique',    trigger:'Benchmark concurrent à 4.6/5 — marché porteur',            to:'opportunity', probability:'medium', impact:'high', source:'Benchmark',  responsePlan:'Exploiter : tests usabilité panel 20 utilisateurs, intégration module social Sprint 7',      riskOwner:'NB', status:'current',  createdAt:'2026-01-25'},
+];
+
+DEMO_RR[9003] = [
+  {id:'RR-001',category:'Données',      description:'Qualité données RH insuffisante — taux d\'erreur 18% sur 10 ans d\'historique', trigger:'Audit ETL révèle doublons, incohérences, champs vides', to:'threat', probability:'high', impact:'high', source:'Calcul',       responsePlan:'Mitiger : ETL Talend déployé, règles qualité définies, 60% tables traitées',               riskOwner:'ML', status:'current',    createdAt:'2025-09-01'},
+  {id:'RR-002',category:'Budget',       description:'Dépassement budget phase tests estimé à +25%',                        trigger:'Tests de non-régression modules Z sous-estimés',          to:'threat', probability:'high',   impact:'high',   source:'Calcul',       responsePlan:'Mitiger : CR-003 réserve +50K€ soumise COPIL — arbitrage attendu 01/04',                   riskOwner:'AN', status:'current',    createdAt:'2025-10-01'},
+  {id:'RR-003',category:'RH',           description:'Résistance forte managers de proximité — refus module temps réel',   trigger:'Enquête conduite changement : score adhésion 3.2/10',     to:'threat', probability:'high',   impact:'medium', source:'Observation',  responsePlan:'Mitiger : 15 champions internes formés, 3 ateliers CDC planifiés, coaching managers',       riskOwner:'DD', status:'current',    createdAt:'2025-09-15'},
+  {id:'RR-004',category:'RH',           description:'Consultants SAP clés (ML, KB) partagés avec projet concurrent DSI',  trigger:'Direction IT sollicite les mêmes experts en parallèle',   to:'threat', probability:'medium', impact:'high',   source:'Observation',  responsePlan:'Mitiger : réunion arbitrage direction IT prévue — exclusivité demandée jusqu\'au go-live',   riskOwner:'AN', status:'current',    createdAt:'2026-03-01'},
+  {id:'RR-005',category:'Technique',    description:'Incompatibilité interface SAP HCM / système paie externe Silae',     trigger:'API Silae non documentée — mapping champs incomplet',      to:'threat', probability:'medium', impact:'high',   source:'Expert',       responsePlan:'Accepter post-mitigation : connecteur IPG Solutions livré et testé sur périmètre test',      riskOwner:'CV', status:'mitigated',  createdAt:'2025-10-15'},
+  {id:'RR-006',category:'Réglementaire',description:'Retard validation partenaire social CSSCT — module gestion du temps', trigger:'Réunion CSSCT reportée — quorum non atteint',             to:'threat', probability:'medium', impact:'medium', source:'Réglementaire',responsePlan:'Mitiger : dossier déposé, présentation CSSCT réunion 08/04 — avis consultatif requis',      riskOwner:'AN', status:'current',    createdAt:'2026-02-10'},
+  {id:'RR-007',category:'Stratégique',  description:'Opportunité : ERP S/4HANA comme socle groupe — déploiement filiales', trigger:'Direction générale intéressée après démonstration Blueprint', to:'opportunity', probability:'medium', impact:'high', source:'Expert', responsePlan:'Exploiter : préparer business case déploiement groupe après go-live Vague 1',             riskOwner:'AN', status:'current',    createdAt:'2026-01-15'},
+];
+
 // ── RAID DATA ──────────────────────────────────────────
 var DEMO_RAIDS = {};
 
@@ -664,7 +698,12 @@ function loadDemoProjects() {
       localStorage.setItem('pmhub_lessons_' + id, JSON.stringify(DEMO_LESSONS[id]));
     });
 
-    // 10. Ressources — fusionner avec les ressources existantes
+    // 10. Registre des risques (pmhub_rr_{id}) — stockage distinct du RAID
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_rr_' + id, JSON.stringify(DEMO_RR[id]));
+    });
+
+    // 11. Ressources — fusionner avec les ressources existantes
     var existingRes = [];
     try { existingRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]'); } catch(e){}
     // Si vide utiliser les defaults (AN, ML, KB, SC)
@@ -710,7 +749,7 @@ function deleteDemoProjects() {
     localStorage.setItem('pmhub_budget', JSON.stringify(allBudgets));
 
     // Clés individuelles
-    var suffixes = ['pmhub_tasks_','pmhub_committees_','pmhub_raci_','pmhub_changes_','pmhub_assumptions_','pmhub_lessons_','pmhub_stakeholders_','pmhub_communication_'];
+    var suffixes = ['pmhub_tasks_','pmhub_committees_','pmhub_raci_','pmhub_changes_','pmhub_assumptions_','pmhub_lessons_','pmhub_stakeholders_','pmhub_communication_','pmhub_rr_'];
     DEMO_IDS.forEach(function(id){
       suffixes.forEach(function(s){ localStorage.removeItem(s + id); });
     });
