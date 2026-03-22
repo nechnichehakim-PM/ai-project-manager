@@ -720,9 +720,27 @@ function loadDemoProjects() {
       { id:'EB', name:'Emma Bertrand',        role:'Data Migration Analyst',   level:'Confirmé', availability:90,  skills:['ETL Talend','SQL','SAP HANA','Qualité données','Migration'],   color:'#38bdf8' },
     ];
     localStorage.setItem('pmhub_resources', JSON.stringify(ALL_RESOURCES));
-    var verifyRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]');
 
-    showStatus('✓ Chargé — ressources localStorage: ' + verifyRes.length + ' → [' + verifyRes.map(function(r){return r.id;}).join(',') + '] — redirection…', 'ok');
+    // ── ANTI-SYNC SUPABASE : stamper tous les keys démo dans pmhub_sync_ts ──
+    // Sans ce stamp, Supabase (last-write-wins) récupère les données cloud au
+    // chargement du dashboard et écrase les données démo qu'on vient d'écrire.
+    var nowIso = new Date().toISOString();
+    var syncTs = {};
+    try { syncTs = JSON.parse(localStorage.getItem('pmhub_sync_ts') || '{}'); } catch(e) {}
+    var stampKeys = ['pmhub_projects', 'pmhub_raids', 'pmhub_budget', 'pmhub_resources'];
+    DEMO_IDS.forEach(function(id) {
+      stampKeys.push('pmhub_tasks_' + id);
+      stampKeys.push('pmhub_committees_' + id);
+      stampKeys.push('pmhub_raci_' + id);
+      stampKeys.push('pmhub_changes_' + id);
+      stampKeys.push('pmhub_assumptions_' + id);
+      stampKeys.push('pmhub_lessons_' + id);
+      stampKeys.push('pmhub_rr_' + id);
+    });
+    stampKeys.forEach(function(k) { syncTs[k] = nowIso; });
+    localStorage.setItem('pmhub_sync_ts', JSON.stringify(syncTs));
+
+    showStatus('✓ 3 projets démo chargés avec succès — redirection vers le dashboard…', 'ok');
     setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1800);
 
   } catch(e) {
