@@ -719,8 +719,9 @@ function loadDemoProjects() {
     existingRes = existingRes.filter(function(r){ return DEMO_RESOURCE_IDS.indexOf(r.id) === -1; });
     var mergedRes = existingRes.concat(DEMO_RESOURCES);
     localStorage.setItem('pmhub_resources', JSON.stringify(mergedRes));
+    var savedRes = JSON.parse(localStorage.getItem('pmhub_resources') || '[]');
 
-    showStatus('✓ 3 projets démo chargés avec succès — redirection vers le dashboard…', 'ok');
+    showStatus('✓ 3 projets démo chargés — ' + savedRes.length + ' ressources enregistrées (' + savedRes.map(function(r){return r.id;}).join(', ') + ') — redirection…', 'ok');
     setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1800);
 
   } catch(e) {
