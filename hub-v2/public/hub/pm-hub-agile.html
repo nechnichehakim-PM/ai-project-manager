@@ -180,6 +180,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
     <p class="page-sub" id="pageSubtitle">Vue agile du projet — burndown, vélocité, backlog et artefacts Scrum.</p>
 
     <div class="top-bar">
+      <select class="sprint-selector" id="projectBarSelect" onchange="onProjectBarChange()" style="min-width:240px;"></select>
       <select class="sprint-selector" id="sprintSelector" onchange="onSprintChange()"></select>
       <div class="spacer"></div>
       <button class="btn-complete-sprint" id="btnComplete" onclick="completeSprint()" style="display:none;">✓ Clôturer le sprint</button>
@@ -194,31 +195,69 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 
 <script>
 // ── STATE ─────────────────────────────────────────────────────────
-var projectId   = new URLSearchParams(window.location.search).get('project');
-var sprintData  = null; // { config, sprints }
+var projectId    = null;
+var sprintData   = null;
 var activeSprint = null;
 var selectedSprintId = null;
 
 // ── STORAGE ───────────────────────────────────────────────────────
-var SPRINT_KEY = 'pmhub_sprints_' + projectId;
-
+function sprintKey() { return 'pmhub_sprints_' + projectId; }
 function loadSprintData() {
-  try { return JSON.parse(localStorage.getItem(SPRINT_KEY)) || null; } catch(e) { return null; }
+  try { return JSON.parse(localStorage.getItem(sprintKey())) || null; } catch(e) { return null; }
 }
 function saveSprintData(d) {
-  localStorage.setItem(SPRINT_KEY, JSON.stringify(d));
+  localStorage.setItem(sprintKey(), JSON.stringify(d));
+}
+
+// ── PROJECT SELECTOR ──────────────────────────────────────────────
+function buildProjectSelector() {
+  var allProjects = PMHUB.getProjects();
+  var agileProjects = allProjects.filter(function(p) {
+    return p.methodology === 'agile' || p.methodology === 'hybride';
+  });
+  var sel = document.getElementById('projectBarSelect');
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (!agileProjects.length) {
+    sel.innerHTML = '<option>Aucun projet Agile/Hybride</option>';
+    return;
+  }
+  agileProjects.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.icon||'📁') + ' ' + p.name + ' · ' + (p.methodology === 'agile' ? 'Scrum' : 'Hybride');
+    sel.appendChild(opt);
+  });
+  // Priorité au ?project= URL, sinon premier projet Agile
+  var urlId = new URLSearchParams(window.location.search).get('project');
+  var match = urlId && agileProjects.find(function(p){ return String(p.id) === String(urlId); });
+  if (match) sel.value = match.id;
+  else sel.value = agileProjects[0].id;
+  projectId = String(sel.value);
+}
+
+function onProjectBarChange() {
+  var sel = document.getElementById('projectBarSelect');
+  projectId = String(sel.value);
+  sprintData = null;
+  activeSprint = null;
+  // Update URL sans reload
+  var url = new URL(window.location.href);
+  url.searchParams.set('project', projectId);
+  history.replaceState(null, '', url);
+  loadAndRender();
 }
 
 // ── INIT ─────────────────────────────────────────────────────────
 (function init() {
-  if (!projectId) {
-    document.getElementById('agileRoot').innerHTML = '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--text-muted);padding:60px 0;text-align:center;">Aucun projet sélectionné. Accédez à cette page depuis un projet Agile.</div>';
-    return;
-  }
+  buildProjectSelector();
+  loadAndRender();
+})();
 
+function loadAndRender() {
   var project = PMHUB.getProjectById(projectId);
   if (!project) {
-    document.getElementById('agileRoot').innerHTML = '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--text-muted);padding:60px 0;text-align:center;">Projet introuvable.</div>';
+    document.getElementById('agileRoot').innerHTML = '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--text-muted);padding:60px 0;text-align:center;">Aucun projet Agile trouvé. Créez un projet avec la méthodologie Scrum ou Hybride.</div>';
     return;
   }
   document.getElementById('pageSubtitle').textContent = '📁 ' + project.name + ' · Vue Scrum/Agile — burndown, vélocité, backlog et artefacts.';
@@ -231,7 +270,7 @@ function saveSprintData(d) {
 
   populateSprintSelector();
   onSprintChange();
-})();
+}
 
 // ── BUILD DEFAULT SPRINTS FROM TASKS ─────────────────────────────
 function buildDefaultSprintData(project) {

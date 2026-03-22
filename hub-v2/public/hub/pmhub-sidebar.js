@@ -172,7 +172,13 @@
           if (link.agileOnly && !isAgileProject) return;
           var active = isActive(link.href) ? ' active' : '';
           var badge = link.href === 'pm-hub-raid.html' && raidCount > 0 ? ' <span class="sb-badge-count red" id="sbRaidCount">' + raidCount + '</span>' : '';
-          html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + (link.href || '#') + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';
+          // Pour les liens agileOnly, préserver le ?project= courant dans l'URL
+          var href = link.href || '#';
+          try {
+            var curProjectId = new URLSearchParams(window.location.search).get('project');
+            if (link.agileOnly && curProjectId) href = link.href + '?project=' + curProjectId;
+          } catch(e) {}
+          html += '<a class="sb-group' + active + '" data-group="' + (link.dataGroup || link.href) + '" href="' + href + '"><span class="sb-item-icon">' + link.icon + '</span> ' + link.name + badge + '</a>';
         });
         html += '</div></div>';
       });
