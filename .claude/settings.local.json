@@ -24,7 +24,8 @@
       "Bash(path=\"C:/Users/hakim/Downloads/PM Project/hub-v2/public/hub/$f\")",
       "Bash(sed -i 's|<aside class=\"\"sidebar\"\" id=\"\"pmhub-sidebar\"\"></aside>\\\\n  <main class=\"\"main\"\">|<aside class=\"\"sidebar\"\" id=\"\"pmhub-sidebar\"\"></aside>\\\\n  <div class=\"\"main-col\"\">\\\\n  <main class=\"\"main\"\">|' \"$path\")",
       "Bash(echo \"sed failed for $f\")",
-      "Bash(node scripts/build-hub.js)"
+      "Bash(node scripts/build-hub.js)",
+      "Bash(node:*)"
     ]
   }
 }

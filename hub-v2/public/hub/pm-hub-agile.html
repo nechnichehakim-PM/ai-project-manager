@@ -158,15 +158,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 </nav>
 <a href="pm-hub-ai.html?from=Agile" class="ai-float-btn" title="Assistant IA">🤖</a>
 
-<!-- MODAL NOUVEAU SPRINT -->
+<!-- MODAL NOUVEAU SPRINT (overlay fixe + inline backup) -->
 <div class="modal-overlay hidden" id="modalOverlay">
   <div class="modal">
     <div class="modal-title">Nouveau sprint</div>
     <div class="form-row"><div class="form-label">Nom du sprint</div><input class="form-input" id="mSprintName" placeholder="Sprint 5"></div>
     <div class="form-row"><div class="form-label">Objectif</div><input class="form-input" id="mSprintGoal" placeholder="Finaliser le module paiement…"></div>
-    <div class="form-row"><div class="form-label">Date de début</div><input class="form-input" type="date" id="mSprintStart"></div>
-    <div class="form-row"><div class="form-label">Date de fin</div><input class="form-input" type="date" id="mSprintEnd"></div>
-    <div class="form-row"><div class="form-label">Capacité (story points)</div><input class="form-input" type="number" id="mSprintCap" placeholder="20"></div>
+    <div class="form-row" style="display:flex;gap:12px;">
+      <div style="flex:1"><div class="form-label">Date de début</div><input class="form-input" type="date" id="mSprintStart"></div>
+      <div style="flex:1"><div class="form-label">Date de fin</div><input class="form-input" type="date" id="mSprintEnd"></div>
+    </div>
+    <div class="form-row"><div class="form-label">Capacité (story points)</div><input class="form-input" type="number" id="mSprintCap" placeholder="20" style="max-width:160px;"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-save" onclick="saveSprint()">Créer le sprint</button>
@@ -718,62 +720,87 @@ function renderVelocityChart() {
 
 // ── MODAL ─────────────────────────────────────────────────────────
 function openModal() {
-  var today = new Date().toISOString().slice(0,10);
-  var last = sprintData.sprints[sprintData.sprints.length-1];
-  var nextNum = sprintData.sprints.length + 1;
-  var startDate = today;
-  if (last && last.end) {
-    var d = new Date(last.end); d.setDate(d.getDate()+1);
-    startDate = d.toISOString().slice(0,10);
-  }
-  var endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + (sprintData.config.duration||14) - 1);
+  try {
+    // Sécurité : si sprintData non chargé, relancer
+    if (!sprintData || !sprintData.sprints) {
+      if (projectId) loadAndRender();
+      if (!sprintData || !sprintData.sprints) {
+        alert('Sélectionnez d\'abord un projet Agile ou Hybride.');
+        return;
+      }
+    }
+    var today = new Date().toISOString().slice(0,10);
+    var last = sprintData.sprints[sprintData.sprints.length-1];
+    var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
+    var nextNum = maxId + 1;
+    var startDate = today;
+    if (last && last.end) {
+      var d = new Date(last.end); d.setDate(d.getDate()+1);
+      startDate = d.toISOString().slice(0,10);
+    }
+    var dur = (sprintData.config && sprintData.config.duration) ? sprintData.config.duration : 14;
+    var endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + dur - 1);
 
-  document.getElementById('mSprintName').value = 'Sprint ' + nextNum;
-  document.getElementById('mSprintGoal').value = '';
-  document.getElementById('mSprintStart').value = startDate;
-  document.getElementById('mSprintEnd').value   = endDate.toISOString().slice(0,10);
-  document.getElementById('mSprintCap').value   = sprintData.config.velocity_target || 20;
-  document.getElementById('modalOverlay').classList.remove('hidden');
+    document.getElementById('mSprintName').value  = 'Sprint ' + nextNum;
+    document.getElementById('mSprintGoal').value  = '';
+    document.getElementById('mSprintStart').value = startDate;
+    document.getElementById('mSprintEnd').value   = endDate.toISOString().slice(0,10);
+    document.getElementById('mSprintCap').value   = (sprintData.config && sprintData.config.velocity_target) || 20;
+
+    var overlay = document.getElementById('modalOverlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex'; // forcer display au cas où .hidden CSS aurait un problème
+    // Focus premier champ
+    setTimeout(function(){ var el = document.getElementById('mSprintName'); if(el) el.focus(); }, 50);
+  } catch(e) {
+    alert('Erreur openModal : ' + e.message);
+  }
 }
-function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+function closeModal() {
+  var overlay = document.getElementById('modalOverlay');
+  overlay.classList.add('hidden');
+  overlay.style.display = '';
+}
 function saveSprint() {
-  var nameVal = document.getElementById('mSprintName').value.trim();
-  var startVal = document.getElementById('mSprintStart').value;
-  var endVal   = document.getElementById('mSprintEnd').value;
-  if (!startVal || !endVal) { alert('Les dates sont obligatoires.'); return; }
-  var today = new Date(); today.setHours(0,0,0,0);
-  var start = new Date(startVal); start.setHours(0,0,0,0);
-  var end   = new Date(endVal);   end.setHours(0,0,0,0);
-  var status = end < today ? 'closed' : start <= today ? 'active' : 'planned';
-  // ID = max existant + 1 (évite les doublons si des sprints ont été supprimés)
-  var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
-  var newId = maxId + 1;
-  var newSprint = {
-    id:       newId,
-    name:     nameVal || ('Sprint ' + newId),
-    goal:     document.getElementById('mSprintGoal').value,
-    start:    startVal,
-    end:      endVal,
-    capacity: parseInt(document.getElementById('mSprintCap').value) || 20,
-    completed: status === 'closed' ? 0 : null,
-    taskIds:  [],
-    status:   status
-  };
-  sprintData.sprints.push(newSprint);
-  saveSprintData(sprintData);
-  closeModal();
-  populateSprintSelector();
-  document.getElementById('sprintSelector').value = String(newId);
-  selectedSprintId = newId;
-  activeSprint = newSprint;
-  var btnComplete = document.getElementById('btnComplete');
-  var btnReopen   = document.getElementById('btnReopen');
-  var btnDelete   = document.getElementById('btnDelete');
-  btnComplete.style.display = status === 'active'  ? '' : 'none';
-  btnReopen.style.display   = status === 'closed'  ? '' : 'none';
-  btnDelete.style.display   = status !== 'active'  ? '' : 'none';
-  renderAll();
+  try {
+    var nameVal  = document.getElementById('mSprintName').value.trim();
+    var startVal = document.getElementById('mSprintStart').value;
+    var endVal   = document.getElementById('mSprintEnd').value;
+    if (!startVal || !endVal) { alert('Les dates sont obligatoires.'); return; }
+    var today = new Date(); today.setHours(0,0,0,0);
+    var start = new Date(startVal); start.setHours(0,0,0,0);
+    var end   = new Date(endVal);   end.setHours(0,0,0,0);
+    if (end < start) { alert('La date de fin doit être après la date de début.'); return; }
+    var status = end < today ? 'closed' : start <= today ? 'active' : 'planned';
+    var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
+    var newId = maxId + 1;
+    var newSprint = {
+      id:        newId,
+      name:      nameVal || ('Sprint ' + newId),
+      goal:      document.getElementById('mSprintGoal').value,
+      start:     startVal,
+      end:       endVal,
+      capacity:  parseInt(document.getElementById('mSprintCap').value) || 20,
+      completed: status === 'closed' ? 0 : null,
+      taskIds:   [],
+      status:    status
+    };
+    sprintData.sprints.push(newSprint);
+    saveSprintData(sprintData);
+    closeModal();
+    populateSprintSelector();
+    var sel = document.getElementById('sprintSelector');
+    sel.value = String(newId);
+    selectedSprintId = newId;
+    activeSprint = newSprint;
+    document.getElementById('btnComplete').style.display = status === 'active' ? '' : 'none';
+    document.getElementById('btnReopen').style.display   = status === 'closed' ? '' : 'none';
+    document.getElementById('btnDelete').style.display   = status !== 'active' ? '' : 'none';
+    renderAll();
+  } catch(e) {
+    alert('Erreur saveSprint : ' + e.message);
+  }
 }
 
 function escHtml(s) {
