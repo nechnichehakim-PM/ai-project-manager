@@ -99,6 +99,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Pages avec grid layout (sidebar + main) : verrouiller la hauteur au viewport */
+html:has(.layout),
+body:has(.layout) {
+  height: 100%;
+  overflow: hidden;
+}
+
 body::before {
   content: '';
   position: fixed;
