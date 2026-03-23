@@ -33,6 +33,7 @@
         ]},
         { label: 'Planification', links: [
           { name: 'Gantt',               href: 'pm-hub-gantt.html',  icon: '📅', methodologies: ['waterfall','hybride'] },
+          { name: 'WBS & Dépendances',   href: 'pm-hub-wbs.html',    icon: '🌳', methodologies: ['waterfall','hybride'] },
           { name: 'Kanban',              href: 'pm-hub-kanban.html', icon: '🔲', methodologies: ['agile','hybride'] },
           { name: 'Sprints & Métriques', href: 'pm-hub-agile.html',  icon: '🔄', methodologies: ['agile','hybride'] }
         ]},

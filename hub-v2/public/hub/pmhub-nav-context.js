@@ -12,6 +12,7 @@
     { id: 'dashboard',  label: 'Dashboard', first: 'pm-hub.html', pages: [{ name: 'Vue d\'ensemble', href: 'pm-hub.html', icon: '🏠' }] },
     { id: 'planning',   label: 'Planning', first: 'pm-hub-gantt.html', pages: [
       { name: 'Gantt',    href: 'pm-hub-gantt.html',  icon: '📅', methodologies: ['waterfall','hybride'] },
+      { name: 'WBS',      href: 'pm-hub-wbs.html',    icon: '🌳', methodologies: ['waterfall','hybride'] },
       { name: 'Kanban',   href: 'pm-hub-kanban.html', icon: '📋', methodologies: ['agile','hybride'] },
       { name: 'Sprints',  href: 'pm-hub-agile.html',  icon: '🔄', methodologies: ['agile','hybride'] }
     ]},
@@ -51,6 +52,7 @@
   PAGE_TO_GROUP['pm-hub-knowledge.html'] = 'knowledge';
   PAGE_TO_GROUP['pm-hub-raid.html'] = 'raid';
   PAGE_TO_GROUP['pm-hub-agile.html'] = 'planning';
+  PAGE_TO_GROUP['pm-hub-wbs.html'] = 'planning';
   PAGE_TO_GROUP['pm-hub-report.html'] = 'documents';
   PAGE_TO_GROUP['pm-hub-templates.html'] = 'documents';
   PAGE_TO_GROUP['pm-hub-transverse.html'] = 'governance';
