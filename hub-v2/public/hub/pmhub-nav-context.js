@@ -21,12 +21,12 @@
     { id: 'portfolio',  label: 'Portefeuille', first: 'pm-hub-portfolio.html', pages: [{ name: 'Dashboard portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' }] },
     { id: 'executive',  label: 'COMEX', first: 'pm-hub-executive.html', pages: [{ name: 'Vue direction', href: 'pm-hub-executive.html', icon: '🎯' }] },
     { id: 'ai',         label: 'Centre IA', first: 'pm-hub-ai.html', pages: [
-      { name: 'Accueil', panel: 'dashboard', icon: '🏠' },
-      { name: 'Assistant', panel: 'chat', icon: '💬' },
-      { name: 'Analyse RAID', panel: 'raid', icon: '⚠️' },
-      { name: 'Rédacteur PM', panel: 'redac', icon: '✍️' },
-      { name: 'Briefing', panel: 'briefing', icon: '📊' },
-      { name: 'Livrables', panel: 'livrable', icon: '⚡' }
+      { name: 'Accueil',      href: 'pm-hub-ai.html',          icon: '🏠' },
+      { name: 'Assistant',    href: 'pm-hub-ai-chat.html',     icon: '💬' },
+      { name: 'Analyse RAID', href: 'pm-hub-ai-raid.html',     icon: '⚠️' },
+      { name: 'Rédacteur PM', href: 'pm-hub-ai-redac.html',    icon: '✍️' },
+      { name: 'Briefing',     href: 'pm-hub-ai-briefing.html', icon: '📊' },
+      { name: 'Livrables',    href: 'pm-hub-ai-livrable.html', icon: '⚡' }
     ]},
     { id: 'documents',  label: 'Documents', first: 'pm-hub-report.html', pages: [{ name: 'Rapport de statut', href: 'pm-hub-report.html', icon: '📄' }] },
     { id: 'governance', label: 'Gouvernance', first: 'pm-hub-governance.html', pages: [{ name: 'Gouvernance', href: 'pm-hub-governance.html', icon: '🏛️' }, { name: 'Pilotage', href: 'pm-hub-transverse.html', icon: '🎯' }] },

@@ -933,20 +933,32 @@ function formatDate(d) {
 // CRITICAL PATH
 // ══════════════════════════════════════════════════════
 function computeCriticalPath() {
-  tasks.forEach(t => t.isCritical = false);
-  const tMap = {}; tasks.forEach(t => tMap[t.id] = t);
-  const succ = {}; tasks.forEach(t => (t.deps||[]).forEach(d => { if (!succ[d]) succ[d]=[]; succ[d].push(t.id); }));
-  const ends = tasks.filter(t => !succ[t.id] && t.type !== 'group');
+  const real = tasks.filter(t => t.type !== 'group');
+  real.forEach(t => t.isCritical = false);
+  if (!real.length) return;
+  const tMap = {}; real.forEach(t => tMap[t.id] = t);
+  const succ = {}; real.forEach(t => (t.deps||[]).forEach(d => { if (!succ[d]) succ[d]=[]; succ[d].push(t.id); }));
+  const ends = real.filter(t => !succ[t.id]);
   if (!ends.length) return;
-  const latest = new Date(Math.max(...ends.map(t => new Date(t.end))));
+  const DAY = 86400000;
+  const latestTime = Math.max(...ends.map(t => new Date(t.end).getTime()));
   function mark(id) {
-    const t = tMap[id]; if (!t) return; t.isCritical = true;
+    const t = tMap[id]; if (!t || t.isCritical) return;
+    t.isCritical = true;
     (t.deps||[]).forEach(di => {
       const dep = tMap[di]; if (!dep) return;
-      if (new Date(dep.end) >= new Date(t.start) || Math.abs(new Date(dep.end)-new Date(t.start)) <= 2*86400000) mark(di);
+      if (new Date(dep.end).getTime() >= new Date(t.start).getTime() - DAY) mark(di);
     });
   }
-  ends.filter(t => new Date(t.end).getTime() === latest.getTime()).forEach(t => mark(t.id));
+  ends.filter(t => latestTime - new Date(t.end).getTime() <= DAY).forEach(t => mark(t.id));
+  // Fallback: if no deps defined, mark last 20% of project duration as critical
+  const hasDeps = real.some(t => (t.deps||[]).length > 0);
+  if (!hasDeps) {
+    real.forEach(t => t.isCritical = false);
+    const projStart = Math.min(...real.map(t => new Date(t.start).getTime()));
+    const span = latestTime - projStart || DAY;
+    real.forEach(t => { t.isCritical = (latestTime - new Date(t.end).getTime()) / span <= 0.2; });
+  }
 }
 
 // ══════════════════════════════════════════════════════
