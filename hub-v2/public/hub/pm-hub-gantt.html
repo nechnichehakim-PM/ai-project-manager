@@ -207,7 +207,7 @@ html[data-theme="light"] .meth-guard-btn.secondary{color:var(--text-muted);}
 </nav>
 <a href="pm-hub-ai.html?from=Gantt" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
 
-<div class="layout" style="display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;">
+<div class="layout" style="display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;margin-top:0;">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
   <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
 
@@ -945,10 +945,7 @@ function computeCriticalPath() {
   function mark(id) {
     const t = tMap[id]; if (!t || t.isCritical) return;
     t.isCritical = true;
-    (t.deps||[]).forEach(di => {
-      const dep = tMap[di]; if (!dep) return;
-      if (new Date(dep.end).getTime() >= new Date(t.start).getTime() - DAY) mark(di);
-    });
+    (t.deps||[]).forEach(di => mark(di));
   }
   ends.filter(t => latestTime - new Date(t.end).getTime() <= DAY).forEach(t => mark(t.id));
   // Fallback: if no deps defined, mark last 20% of project duration as critical

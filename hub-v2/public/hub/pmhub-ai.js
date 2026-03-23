@@ -471,14 +471,19 @@
 
   // —— LIVRABLES ——
   var LIV_P = {
-    charte: function(ctx) { return 'Genere une Charte de Projet (Project Charter) complete et professionnelle. Inclure: titre, objectifs SMART, perimetre IN/OUT, parties prenantes, sponsor, budget, delais, criteres succes, contraintes, hypotheses, gouvernance. Format structure par sections.\n\n' + ctx; },
-    wbs: function(ctx) { return 'Genere un Work Breakdown Structure (WBS) complet. Structure 5 phases (Init/Plan/Exec/Controle/Cloture) avec livrables et taches principales. Format hierarchique numerote.\n\n' + ctx; },
+    charte:   function(ctx) { return 'Genere une Charte de Projet (Project Charter) complete et professionnelle. Inclure: titre, objectifs SMART, perimetre IN/OUT, parties prenantes, sponsor, budget, delais, criteres succes, contraintes, hypotheses, gouvernance. Format structure par sections.\n\n' + ctx; },
+    wbs:      function(ctx) { return 'Genere un Work Breakdown Structure (WBS) complet. Structure 5 phases (Init/Plan/Exec/Controle/Cloture) avec livrables et taches principales. Format hierarchique numerote.\n\n' + ctx; },
     'raid-init': function(ctx) { return 'Genere un RAID Log initial: 5 risques (proba/impact/severite/mitigation/owner), 5 actions cles demarrage, 2-3 decisions a prendre. Format tableau structure.\n\n' + ctx; },
-    raci: function(ctx) { return 'Genere une matrice RACI pour ce projet en te basant sur l equipe fournie. 8-10 livrables/activites principaux avec roles R/A/C/I. Format matrice claire.\n\n' + ctx; },
-    jalons: function(ctx) { return 'Genere un planning de jalons critiques: 8-10 jalons, description, dates estimees, criteres validation. Tenir compte budget et duree fournis. Format chronologique.\n\n' + ctx; },
-    complet: function(ctx) { return 'Genere un pack complet de demarrage: (1) Resume charte, (2) WBS simplifie 3 niveaux, (3) Top 5 risques, (4) RACI synthetique, (5) 6 jalons cles. Format structure professionnel.\n\n' + ctx; }
+    raci:     function(ctx) { return 'Genere une matrice RACI pour ce projet en te basant sur l equipe fournie. 8-10 livrables/activites principaux avec roles R/A/C/I. Format matrice claire.\n\n' + ctx; },
+    jalons:   function(ctx) { return 'Genere un planning de jalons critiques: 8-10 jalons, description, dates estimees, criteres validation. Tenir compte budget et duree fournis. Format chronologique.\n\n' + ctx; },
+    complet:  function(ctx) { return 'Genere un pack complet de demarrage: (1) Resume charte, (2) WBS simplifie 3 niveaux, (3) Top 5 risques, (4) RACI synthetique, (5) 6 jalons cles. Format structure professionnel.\n\n' + ctx; },
+    backlog:  function(ctx) { return 'Genere un Product Backlog Agile complet. Inclure: 12-15 user stories priorisees (format "En tant que... je veux... afin de..."), criteres d\'acceptation, estimation story points (Fibonacci), epic de rattachement, MoSCoW priority. Format tableau structure.\n\n' + ctx; },
+    sprint:   function(ctx) { return 'Genere un Sprint Planning complet. Inclure: objectif du sprint, capacite equipe, user stories selectionnees du backlog avec story points, taches techniques associees, definition du "Done". Format pret a utiliser.\n\n' + ctx; },
+    dod:      function(ctx) { return 'Genere une Definition of Done (DoD) et Definition of Ready (DoR) adaptees a ce projet Agile. Inclure: criteres de completude par niveau (story/sprint/release), criteres qualite, checklist revue de code, tests requis. Format checklist actionnable.\n\n' + ctx; },
+    velocity: function(ctx) { return 'Genere un rapport de metriques Agile: template burndown chart (donnees exemple), calcul de velocite, taux de completion, dette technique estimee, indicateurs sante equipe. Format avec tableaux et interpretation.\n\n' + ctx; },
+    retro:    function(ctx) { return 'Genere un template de retrospective sprint selon la methode Start/Stop/Continue et 4Ls (Liked/Learned/Lacked/Longed-for). Inclure: 5 points d\'amelioration actionables avec owner et deadline, KPIs a suivre. Format facilitation.\n\n' + ctx; }
   };
-  var LIV_LBL = { charte: 'Charte Projet', wbs: 'WBS', raci: 'Matrice RACI', 'raid-init': 'RAID Initial', jalons: 'Jalons', complet: 'Pack Complet' };
+  var LIV_LBL = { charte: 'Charte Projet', wbs: 'WBS', raci: 'Matrice RACI', 'raid-init': 'RAID Initial', jalons: 'Jalons', complet: 'Pack Complet', backlog: 'Product Backlog', sprint: 'Sprint Planning', dod: 'Definition of Done', velocity: 'Vélocité & Burndown', retro: 'Rétrospective' };
   async function genLivrable() {
     if (typeof PMHUB === 'undefined') return;
     if (!PMHUB.isAIEnabled()) {
@@ -508,10 +513,13 @@
     if (res) res.classList.add('show');
     if (body) { body.className = 'rcard-body loading'; body.textContent = 'Generation en cours…'; }
     if (btn) btn.disabled = true;
+    var methBtn = document.querySelector('.meth-btn.active');
+    var methName = methBtn ? (methBtn.querySelector('.meth-name') || {}).textContent || '' : 'Waterfall';
     var r2 = PMHUB.getResources ? PMHUB.getResources() : [];
-    var ctx = 'Projet: ' + (proj ? proj.name : '?') + ' | Ref: ' + (proj ? proj.ref : '?') + ' | Type: ' + type + '\nDescription: ' + (desc || (proj && proj.desc) || '?') + '\nBudget: ' + (budget || (proj && proj.budget) || '?') + ' | Duree: ' + (duree || '?') + '\nDebut: ' + ((proj && proj.start) || '?') + ' | Fin prevue: ' + ((proj && proj.end) || '?') + '\nPM: ' + profile.name + ' (' + (profile.title || '') + ')\nEquipe: ' + r2.map(function(r) { return r.id + ' ' + r.name + ' (' + r.role + ')'; }).join(', ') + '\nSponsor: ' + ((proj && proj.sponsor) || '?') + ' | Client: ' + ((proj && proj.client) || '?');
+    var ctx = 'Methodologie: ' + methName + '\nProjet: ' + (proj ? proj.name : '?') + ' | Ref: ' + (proj ? proj.ref : '?') + ' | Type: ' + type + '\nDescription: ' + (desc || (proj && proj.desc) || '?') + '\nBudget: ' + (budget || (proj && proj.budget) || '?') + ' | Duree: ' + (duree || '?') + '\nDebut: ' + ((proj && proj.start) || '?') + ' | Fin prevue: ' + ((proj && proj.end) || '?') + '\nPM: ' + profile.name + ' (' + (profile.title || '') + ')\nEquipe: ' + r2.map(function(r) { return r.id + ' ' + r.name + ' (' + r.role + ')'; }).join(', ') + '\nSponsor: ' + ((proj && proj.sponsor) || '?') + ' | Client: ' + ((proj && proj.client) || '?');
+    var livPromptFn = LIV_P[selType] || LIV_P.charte;
     try {
-      var r = await PMHUB.callAI('Tu es PM senior certifie PMP et PRINCE2. Tu generes des livrables projet professionnels, detailles et directement utilisables. Reponds en francais.', LIV_P[selType](ctx));
+      var r = await PMHUB.callAI('Tu es PM senior certifie PMP et PRINCE2, expert ' + methName + '. Tu generes des livrables projet professionnels, detailles et directement utilisables. Reponds en francais.', livPromptFn(ctx));
       if (body) { body.className = 'rcard-body'; body.textContent = r; }
       toast('Livrable genere !');
     } catch (err) {

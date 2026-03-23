@@ -103,19 +103,58 @@
 <script src="pmhub-ai.js"></script>
 <script>
 (function() {
+  var LIV_OPTS = {
+    waterfall: [
+      { t:'charte',    icon:'📋', name:'Charte Projet',    desc:'Project Charter complet, objectifs SMART, gouvernance' },
+      { t:'wbs',       icon:'🌳', name:'WBS',               desc:'Work Breakdown Structure avec phases et livrables' },
+      { t:'raid-init', icon:'⚠️', name:'RAID Initial',      desc:'Risques, actions, décisions pré-identifiés' },
+      { t:'raci',      icon:'👥', name:'Matrice RACI',      desc:'Responsabilités selon votre équipe réelle' },
+      { t:'jalons',    icon:'📅', name:'Jalons & Planning', desc:'Jalons critiques avec estimations' },
+      { t:'complet',   icon:'⚡', name:'Pack complet',      desc:'Tout en une génération (Charte+WBS+RAID+RACI)' }
+    ],
+    agile: [
+      { t:'backlog',   icon:'📋', name:'Product Backlog',    desc:'User stories priorisées, critères d\'acceptation' },
+      { t:'sprint',    icon:'🔄', name:'Sprint Planning',    desc:'Sprint 0, objectifs, capacité équipe, story points' },
+      { t:'dod',       icon:'✅', name:'Definition of Done', desc:'Critères de complétion et qualité par sprint' },
+      { t:'velocity',  icon:'📈', name:'Vélocité & Burndown',desc:'Métriques Agile, graphiques de progression' },
+      { t:'retro',     icon:'💬', name:'Rétrospective',      desc:'Template retro, points d\'amélioration, actions' },
+      { t:'complet',   icon:'⚡', name:'Pack Agile complet', desc:'Backlog + Sprint Plan + DoD + Métriques' }
+    ],
+    hybride: [
+      { t:'charte',    icon:'📋', name:'Charte Projet',      desc:'Charte adaptée approche hybride, jalons macro' },
+      { t:'wbs',       icon:'🌳', name:'WBS Hybride',        desc:'WBS phases Waterfall + sprints Agile imbriqués' },
+      { t:'backlog',   icon:'📋', name:'Backlog + WBS',      desc:'User stories + livrables séquentiels combinés' },
+      { t:'raci',      icon:'👥', name:'Matrice RACI',       desc:'Responsabilités adaptées aux deux approches' },
+      { t:'jalons',    icon:'📅', name:'Jalons & Sprints',   desc:'Jalons macro + cadence sprints intégrés' },
+      { t:'complet',   icon:'⚡', name:'Pack Hybride',       desc:'Charte + WBS hybride + Backlog + Planning' }
+    ]
+  };
+
   window.setMeth = function(el) {
     document.querySelectorAll('.meth-btn').forEach(function(b) { b.classList.remove('active'); });
     el.classList.add('active');
-    // Adjust placeholder hint based on methodology
-    var desc = document.getElementById('lDesc');
-    if (!desc) return;
     var m = el.dataset.m;
-    var hints = {
-      waterfall: 'Ex: Déploiement d'un Data Center intelligent, 10 mois, livrables séquentiels…',
-      agile: 'Ex: Développement application mobile, sprints 2 semaines, backlog produit…',
-      hybride: 'Ex: Transformation digitale, phases macro Waterfall, exécution Agile…'
-    };
-    desc.placeholder = hints[m] || desc.placeholder;
+    // Update placeholder
+    var desc = document.getElementById('lDesc');
+    if (desc) {
+      var hints = {
+        waterfall: 'Ex: Déploiement d\'un Data Center intelligent, 10 mois, livrables séquentiels…',
+        agile: 'Ex: Développement application mobile, sprints 2 semaines, backlog produit…',
+        hybride: 'Ex: Transformation digitale, phases macro Waterfall, exécution Agile…'
+      };
+      desc.placeholder = hints[m] || desc.placeholder;
+    }
+    // Update livrable options
+    var opts = document.getElementById('livOpts');
+    if (!opts) return;
+    var items = LIV_OPTS[m] || LIV_OPTS.waterfall;
+    opts.innerHTML = items.map(function(o, i) {
+      return '<div class="opt' + (i === 0 ? ' selected' : '') + '" data-t="' + o.t + '" onclick="selOpt(this,\'livOpts\')">' +
+        '<div class="opt-icon">' + o.icon + '</div>' +
+        '<div class="opt-name">' + o.name + '</div>' +
+        '<div class="opt-desc">' + o.desc + '</div>' +
+        '</div>';
+    }).join('');
   };
 
   function loadTeamChips() {
