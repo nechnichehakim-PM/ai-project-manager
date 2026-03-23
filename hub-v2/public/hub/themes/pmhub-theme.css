@@ -228,7 +228,7 @@ nav {
 .nav-icon:hover { color: var(--primary); background: rgba(99, 102, 241, 0.12); }
 
 /* ── LAYOUT ── */
-.layout { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 1fr; height: calc(100vh - 56px); margin-top: 56px; overflow: hidden; }
+.layout { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 1fr; height: calc(100vh - 65px); margin-top: 65px; overflow: hidden; }
 .main-col { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
 
 /* ── SIDEBAR (SaaS nav) ── */
@@ -1115,6 +1115,32 @@ nav {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── SPA-like View Transitions (Chrome 111+) ── */
+@view-transition {
+  navigation: auto;
+}
+/* Seul le contenu principal anime — sidebar et nav restent fixes */
+::view-transition-old(root) {
+  animation: 200ms ease both vt-out;
+}
+::view-transition-new(root) {
+  animation: 200ms ease both vt-in;
+}
+@keyframes vt-out {
+  to { opacity: 0; transform: translateY(-10px) scale(0.99); }
+}
+@keyframes vt-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+}
+/* Sidebar et nav ne bougent pas */
+::view-transition-old(pmhub-sidebar),
+::view-transition-new(pmhub-sidebar),
+::view-transition-old(pmhub-nav),
+::view-transition-new(pmhub-nav) {
+  animation: none !important;
+  mix-blend-mode: normal;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
@@ -1122,8 +1148,8 @@ nav {
 
 /* Force base design on all pages (overrides inline styles) */
 body { font-family: var(--font-body) !important; background: var(--bg) !important; color: var(--text) !important; }
-nav { background: var(--glass-bg) !important; border-bottom-color: var(--glass-border) !important; }
-.sidebar { background: var(--surface) !important; border-right-color: var(--border) !important; }
+nav { background: var(--glass-bg) !important; border-bottom-color: var(--glass-border) !important; view-transition-name: pmhub-nav; }
+.sidebar { background: var(--surface) !important; border-right-color: var(--border) !important; view-transition-name: pmhub-sidebar; }
 .nav-logo { color: var(--primary) !important; font-family: var(--font-mono) !important; }
 .nav-links a.active { color: var(--primary) !important; background: rgba(99, 102, 241, 0.12) !important; }
 .nav-cta { background: var(--primary) !important; color: #fff !important; }
@@ -1244,9 +1270,6 @@ a.disabled {
 }
 
 /* ── C: AI float button — pulse ring + active ── */
-.ai-float-btn {
-  position: relative;
-}
 .ai-float-btn::before {
   content: '';
   position: absolute;

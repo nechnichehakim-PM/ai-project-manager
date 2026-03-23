@@ -203,8 +203,10 @@
 
     if (typeof PMHUB !== 'undefined' && PMHUB.getProjects && document.getElementById('sbProjects')) {
       var projs = PMHUB.getProjects().filter(function(p) { return p.status === 'active'; });
-      var projHtml = projs.length ? projs.map(function(p, i) {
-        return '<a class="proj-chip' + (i === 0 ? ' active' : '') + '" href="pm-hub.html?project=' + p.id + '"><div class="proj-dot" style="background:' + (p.color || 'var(--primary)') + '"></div><div class="proj-name">' + (p.name || p.ref) + '</div></a>';
+      var currentProjId = (new URLSearchParams(window.location.search).get('project')) || localStorage.getItem('pmhub_current_project') || '';
+      var projHtml = projs.length ? projs.map(function(p) {
+        var isActive = String(p.id) === String(currentProjId);
+        return '<a class="proj-chip' + (isActive ? ' active' : '') + '" href="pm-hub-project.html?project=' + p.id + '"><div class="proj-dot" style="background:' + (p.color || 'var(--primary)') + '"></div><div class="proj-name">' + (p.name || p.ref) + '</div></a>';
       }).join('') : '<div class="sb-no-projects" style="font-size:10px;color:var(--text-muted);padding:8px;">Aucun projet actif</div>';
       document.getElementById('sbProjects').innerHTML = projHtml;
     }

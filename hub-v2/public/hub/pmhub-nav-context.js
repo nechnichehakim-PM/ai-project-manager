@@ -15,8 +15,8 @@
       { name: 'Kanban',   href: 'pm-hub-kanban.html', icon: '📋', methodologies: ['agile','hybride'] },
       { name: 'Sprints',  href: 'pm-hub-agile.html',  icon: '🔄', methodologies: ['agile','hybride'] }
     ]},
-    { id: 'raid',       label: 'RAID', first: 'pm-hub-raid.html', pages: [{ name: 'RAID Log', href: 'pm-hub-raid.html', icon: '⚠️' }, { name: 'Dashboard RAID', href: 'pm-hub-raid.html', icon: '📊' }] },
-    { id: 'resources',  label: 'Ressources', first: 'pm-hub-resources.html', pages: [{ name: 'Ressources', href: 'pm-hub-resources.html', icon: '👥' }, { name: 'Capacité', href: 'pm-hub-resources.html', icon: '📈' }] },
+    { id: 'raid',       label: 'RAID', first: 'pm-hub-raid.html', pages: [{ name: 'RAID & Risques', href: 'pm-hub-raid.html', icon: '⚠️' }] },
+    { id: 'resources',  label: 'Ressources', first: 'pm-hub-resources.html', pages: [{ name: 'Équipe & Charge', href: 'pm-hub-resources.html', icon: '👥' }] },
     { id: 'budget',     label: 'Budget', first: 'pm-hub-budget.html', pages: [{ name: 'Budget / EVM', href: 'pm-hub-budget.html', icon: '💰' }] },
     { id: 'portfolio',  label: 'Portefeuille', first: 'pm-hub-portfolio.html', pages: [{ name: 'Dashboard portefeuille', href: 'pm-hub-portfolio.html', icon: '📊' }] },
     { id: 'executive',  label: 'COMEX', first: 'pm-hub-executive.html', pages: [{ name: 'Vue direction', href: 'pm-hub-executive.html', icon: '🎯' }] },
