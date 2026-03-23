@@ -38,11 +38,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .period-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:7px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
 .period-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,0.06);}
 .spacer{flex:1;}
-.btn-ai-gen{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(99,210,180,0.12),rgba(99,210,180,0.06));border:1px solid rgba(99,210,180,0.3);color:var(--accent);padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;cursor:pointer;transition:all .2s;}
-.btn-ai-gen:hover{background:rgba(99,210,180,0.15);border-color:var(--accent);}
-.btn-ai-gen:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-ai-gen{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(90deg,rgba(99,210,180,0.18) 0%,rgba(99,210,180,0.06) 25%,rgba(99,210,180,0.22) 50%,rgba(99,210,180,0.06) 75%,rgba(99,210,180,0.18) 100%);
+  background-size:300% auto;
+  animation:ai-shimmer-rep 4s linear infinite;
+  border:1px solid rgba(99,210,180,0.3);color:var(--accent);
+  padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;
+  cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;
+  box-shadow:0 2px 12px rgba(99,210,180,0.12);
+}
+@keyframes ai-shimmer-rep{
+  0%{background-position:200% center;}
+  100%{background-position:-200% center;}
+}
+.btn-ai-gen:hover{animation-duration:2s;border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,210,180,0.25);}
+.btn-ai-gen:active{transform:translateY(1px)!important;box-shadow:0 1px 6px rgba(99,210,180,0.12)!important;transition:transform .07s ease!important;}
+.btn-ai-gen:disabled{opacity:0.4;cursor:not-allowed;animation:none;transform:none;box-shadow:none;}
 .btn-export{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text-soft);padding:9px 16px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
-.btn-export:hover{border-color:var(--accent);color:var(--accent);}
+.btn-export:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+.btn-export:active{transform:translateY(1px)!important;opacity:0.7;transition:transform .07s ease!important;}
 
 /* EMPTY STATE */
 .empty-state{text-align:center;padding:80px 40px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);}
@@ -671,6 +686,7 @@ async function generateAI() {
   const btn = document.getElementById('btnAiGen');
   const loadingEl = document.getElementById('aiLoadingIndicator');
   btn.disabled = true;
+  btn.classList.add('btn-loading');
   if (loadingEl) loadingEl.style.display = 'flex';
 
   const systemPrompt = `Tu es un assistant PM expert (PMP®, PRINCE2). Tu rédiges des rapports de statut projet professionnels, concis et orientés décision. Réponds toujours en français.`;
@@ -713,6 +729,7 @@ Réponds en JSON strict :
     alert('Erreur IA : ' + e.message);
   } finally {
     btn.disabled = false;
+    btn.classList.remove('btn-loading');
     if (loadingEl) loadingEl.style.display = 'none';
   }
 }

@@ -1146,6 +1146,170 @@ nav { background: var(--glass-bg) !important; border-bottom-color: var(--glass-b
 .task-progress-pill { background: rgba(99, 102, 241, 0.15) !important; color: var(--primary) !important; }
 .gantt-day.today { background: rgba(99, 102, 241, 0.1) !important; color: var(--primary) !important; }
 
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTON DYNAMICS v2 — Lift+Press · IA Identity · Focus+Disabled
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes ai-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+@keyframes ai-pulse-ring {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  70%  { transform: scale(1.22); opacity: 0.1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes btn-spinner {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ── A: Press-down (active) on primary ── */
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98) !important;
+  box-shadow: 0 1px 8px var(--primary-glow) !important;
+  transition: transform 0.07s ease, box-shadow 0.07s ease !important;
+}
+.wiz-cta:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 1px 8px var(--primary-glow) !important;
+  transition: transform 0.07s ease !important;
+}
+
+/* ── A: Press-down on secondary / ghost buttons ── */
+.btn-secondary:active,
+.btn-dashboard-prefs:active,
+.filter-btn:active,
+.card-sec-btn:active,
+.modal-close:active,
+.card-cta-primary:active {
+  transform: translateY(1px) scale(0.97) !important;
+  opacity: 0.72;
+  transition: transform 0.07s ease, opacity 0.07s ease !important;
+}
+.btn-danger:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: none;
+  transition: transform 0.07s ease;
+}
+
+/* ── A: Hover lift for secondary / ghost ── */
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.14);
+}
+.btn-dashboard-prefs:hover {
+  transform: translateY(-1px);
+}
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.28);
+}
+
+/* ── A: Icon buttons spring-bounce (🗑 ✏️ …) ── */
+.rr-btn, .icon-btn {
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.rr-btn:active, .icon-btn:active {
+  transform: scale(0.82) !important;
+}
+
+/* ── A: Filter-btn active state inset glow ── */
+.filter-btn.active {
+  box-shadow: inset 0 0 0 1px var(--primary) !important;
+}
+
+/* ── E: Focus-visible ring ── */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.btn-danger:focus-visible {
+  outline-color: var(--danger);
+}
+.btn-primary:focus-visible {
+  outline-color: #818cf8;
+}
+
+/* ── E: Disabled state ── */
+button:disabled,
+button.disabled,
+a.disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* ── C: AI float button — pulse ring + active ── */
+.ai-float-btn {
+  position: relative;
+}
+.ai-float-btn::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid rgba(124, 58, 237, 0.55);
+  animation: ai-pulse-ring 2.6s ease-out infinite;
+  pointer-events: none;
+}
+.ai-float-btn:active {
+  transform: scale(0.94) !important;
+  box-shadow: 0 4px 16px var(--ai-glow) !important;
+  transition: transform 0.07s ease !important;
+}
+
+/* ── C: Loading state (add .btn-loading via JS) ── */
+.btn-loading {
+  position: relative !important;
+  color: transparent !important;
+  pointer-events: none;
+  opacity: 0.75 !important;
+}
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spinner 0.65s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── C: AI shimmer — add class .btn-ai-shimmer to AI buttons ── */
+.btn-ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--ai) 0%,
+    #8b5cf6 22%,
+    var(--primary) 50%,
+    #8b5cf6 78%,
+    var(--ai) 100%
+  ) !important;
+  background-size: 300% auto !important;
+  animation: ai-shimmer 4s linear infinite;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 24px var(--ai-glow) !important;
+}
+.btn-ai-shimmer:hover {
+  animation-duration: 2s !important;
+  box-shadow: 0 8px 32px var(--ai-glow) !important;
+  transform: translateY(-2px) !important;
+}
+.btn-ai-shimmer:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 2px 12px var(--ai-glow) !important;
+  transition: transform 0.07s ease, box-shadow 0.07s ease !important;
+}
+
 /* Responsive */
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
