@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — WBS & Dépendances</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;opacity:.35;}
+nav{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
+.layout{display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;margin-top:0;}
+.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;min-height:0;}
+
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;z-index:10;}
+.top-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;cursor:pointer;min-width:200px;}
+.top-bar select:focus{border-color:var(--accent);}
+.tb-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .18s;letter-spacing:.05em;}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tb-btn.primary{background:rgba(99,210,180,.1);border-color:rgba(99,210,180,.3);color:var(--accent);}
+.tb-btn.primary:hover{background:rgba(99,210,180,.18);}
+.tb-sep{width:1px;height:20px;background:var(--border);}
+.tb-spacer{flex:1;}
+.save-indicator{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);opacity:0;transition:opacity .4s;}
+.save-indicator.show{opacity:1;}
+
+/* WBS TABLE */
+.wbs-scroll{flex:1;overflow-y:auto;overflow-x:auto;padding:16px 20px;}
+.wbs-table{width:100%;border-collapse:collapse;min-width:900px;}
+.wbs-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:5;}
+.wbs-table td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;}
+.wbs-table tr:hover td{background:rgba(255,255,255,.02);}
+
+/* ROW TYPES */
+.wbs-row-group td{background:rgba(99,102,241,.04);}
+.wbs-row-group .cell-name{font-weight:700;color:var(--text);font-size:13px;}
+.wbs-row-milestone td{background:rgba(232,201,122,.03);}
+.wbs-row-milestone .cell-name{color:#e8c97a;}
+
+/* CELLS */
+.cell-wbs{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;width:52px;}
+.cell-type{width:90px;}
+.cell-name{font-size:12px;font-weight:500;}
+.cell-name-inner{display:flex;align-items:center;gap:8px;}
+.indent{display:inline-block;width:16px;flex-shrink:0;}
+.type-badge{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.type-badge.group{background:rgba(99,102,241,.12);color:var(--primary);}
+.type-badge.task{background:rgba(99,210,180,.1);color:var(--accent);}
+.type-badge.milestone{background:rgba(232,201,122,.12);color:#e8c97a;}
+.cell-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;width:90px;}
+.cell-prog{width:80px;}
+.prog-bar-wrap{width:60px;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
+.prog-bar{height:100%;border-radius:3px;background:var(--accent);}
+.prog-pct{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);vertical-align:middle;}
+.cell-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;width:60px;}
+.cell-color{width:30px;}
+.color-dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+.cell-deps{min-width:140px;}
+.dep-chips{display:flex;flex-wrap:wrap;gap:3px;align-items:center;}
+.dep-chip{display:inline-flex;align-items:center;gap:3px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:3px;padding:1px 6px;font-family:'DM Mono',monospace;font-size:9px;color:var(--primary);}
+.dep-chip .dep-rm{cursor:pointer;opacity:.6;font-size:10px;line-height:1;}
+.dep-chip .dep-rm:hover{opacity:1;color:var(--danger);}
+.dep-add{background:transparent;border:1px dashed var(--border);border-radius:3px;padding:1px 6px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.dep-add:hover{border-color:var(--accent);color:var(--accent);}
+.cell-actions{width:70px;white-space:nowrap;}
+.act-btn{background:transparent;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:12px;transition:background .15s;color:var(--text-muted);}
+.act-btn:hover{background:rgba(255,255,255,.07);}
+.act-btn.danger:hover{background:rgba(239,68,68,.12);color:var(--danger);}
+
+/* EMPTY STATE */
+.wbs-empty{text-align:center;padding:60px 20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);}
+
+/* DEP SELECT DROPDOWN */
+.dep-select-wrap{position:relative;display:inline-block;}
+.dep-select{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;padding:2px 6px;max-width:140px;outline:none;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(3,6,9,.93);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;padding:20px;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:560px;max-width:100%;max-height:92vh;overflow-y:auto;position:relative;}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-close{background:transparent;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:4px;border-radius:6px;transition:background .15s;}
+.modal-close:hover{background:rgba(255,255,255,.08);}
+.modal-body{padding:20px 24px;}
+.mfield{margin-bottom:14px;}
+.mfield label{display:block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.mfield input,.mfield select,.mfield textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .2s;}
+.mfield input:focus,.mfield select:focus,.mfield textarea:focus{border-color:var(--accent);}
+.mfield-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.mfield-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.modal-deps-list{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:24px;}
+.modal-dep-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);border-radius:4px;padding:3px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--primary);}
+.modal-dep-chip button{background:transparent;border:none;cursor:pointer;font-size:11px;color:var(--text-muted);padding:0 2px;transition:color .15s;}
+.modal-dep-chip button:hover{color:var(--danger);}
+.dep-add-row{display:flex;gap:6px;}
+.dep-add-row select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:7px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;}
+.dep-add-row select:focus{border-color:var(--accent);}
+.dep-add-row button{background:rgba(99,210,180,.1);border:1px solid rgba(99,210,180,.25);border-radius:5px;padding:7px 12px;color:var(--accent);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .15s;}
+.dep-add-row button:hover{background:rgba(99,210,180,.18);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;padding:0 24px 20px;}
+.btn-save{background:var(--accent);color:#060a0d;border:none;border-radius:6px;padding:9px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-save:hover{background:#7fe0c8;}
+.btn-cancel{background:transparent;border:1px solid var(--border);border-radius:6px;padding:9px 16px;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s;}
+.btn-cancel:hover{border-color:var(--text-muted);}
+
+/* COLOR PICKER */
+.color-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s;}
+.swatch:hover,.swatch.sel{transform:scale(1.2);border-color:rgba(255,255,255,.5);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--surface2);border:1px solid rgba(99,210,180,.3);border-radius:9px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;transform:translateY(65px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div id="nav-context" class="nav-context"></div>
+  <div class="nav-links" style="display:flex;gap:8px;align-items:center;">
+    <a href="pm-hub-gantt.html" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;padding:5px 10px;border:1px solid var(--border);border-radius:5px;transition:all .18s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">Voir Gantt →</a>
+    <a href="pm-hub-settings.html" style="font-size:13px;color:var(--text-muted);text-decoration:none;">⚙</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;flex-shrink:0;">Projet :</span>
+      <select id="projectSelector" onchange="switchProject(this.value)"></select>
+      <div class="tb-sep"></div>
+      <button class="tb-btn primary" onclick="openModal('group')">+ Phase</button>
+      <button class="tb-btn primary" onclick="openModal('task')">+ Tâche</button>
+      <button class="tb-btn primary" onclick="openModal('milestone')">◆ Jalon</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" onclick="expandAll()">Tout déplier</button>
+      <button class="tb-btn" onclick="collapseGroups()">Tout replier</button>
+      <div class="tb-spacer"></div>
+      <span class="save-indicator" id="saveIndicator">✓ Sauvegardé</span>
+    </div>
+
+    <!-- WBS TABLE -->
+    <div class="wbs-scroll">
+      <table class="wbs-table" id="wbsTable">
+        <thead>
+          <tr>
+            <th>N° WBS</th>
+            <th>Type</th>
+            <th>Nom / Livrable</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>%</th>
+            <th>Resp.</th>
+            <th style="color:var(--text-muted);">Coul.</th>
+            <th>Dépendances</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="wbsBody"></tbody>
+      </table>
+      <div class="wbs-empty" id="wbsEmpty" style="display:none;">
+        Aucune tâche — cliquez <strong>+ Phase</strong> ou <strong>+ Tâche</strong> pour commencer.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modalTitle">Nouvelle tâche</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="mfield-row">
+        <div class="mfield">
+          <label>Type</label>
+          <select id="editType" onchange="onTypeChange()">
+            <option value="group">Phase / Groupe</option>
+            <option value="task" selected>Tâche</option>
+            <option value="milestone">Jalon</option>
+          </select>
+        </div>
+        <div class="mfield">
+          <label>Responsable</label>
+          <input id="editOwner" placeholder="Ex: CdP, DEV, MOA…">
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Nom / Livrable</label>
+        <input id="editName" placeholder="Ex: Analyse des besoins">
+      </div>
+      <div class="mfield-row" id="datesRow">
+        <div class="mfield">
+          <label>Date début</label>
+          <input id="editStart" type="date">
+        </div>
+        <div class="mfield">
+          <label>Date fin</label>
+          <input id="editEnd" type="date">
+        </div>
+      </div>
+      <div class="mfield" id="progressRow">
+        <label>Avancement (%)</label>
+        <input id="editProgress" type="number" min="0" max="100" placeholder="0">
+      </div>
+      <div class="mfield">
+        <label>Couleur</label>
+        <div class="color-swatches" id="colorSwatches"></div>
+      </div>
+      <div class="mfield" id="depsField">
+        <label>Dépendances (cette tâche commence après…)</label>
+        <div class="modal-deps-list" id="modalDepsList"></div>
+        <div class="dep-add-row">
+          <select id="depSelectAdd">
+            <option value="">-- Choisir une tâche --</option>
+          </select>
+          <button onclick="addDepFromModal()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveTask()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="hub-data.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  const COLORS = ['#63d2b4','#7ab8e8','#b07ae8','#e07070','#e8c97a','#e89a7a','#7ae8b4','#a8e87a','#6366F1','#F59E0B'];
+  let tasks = [];
+  let activeProjectId = null;
+  let editingTaskId = null;
+  let editModalDeps = [];
+  let collapsedGroups = new Set();
+
+  // ── INIT ──────────────────────────────────────────────────────────
+  function init() {
+    if (typeof PMHUB === 'undefined') return;
+    const projs = PMHUB.getProjects();
+    const sel = document.getElementById('projectSelector');
+    if (!projs.length) { sel.innerHTML = '<option>Aucun projet</option>'; renderTable(); return; }
+    const paramId = PMHUB.getParam ? PMHUB.getParam('project') : new URLSearchParams(location.search).get('project');
+    projs.filter(p => p.status === 'active').forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
+      if (String(p.id) === String(paramId)) o.selected = true;
+      sel.appendChild(o);
+    });
+    if (!sel.options.length) projs.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); });
+    activeProjectId = parseInt(sel.value);
+    loadTasks(activeProjectId);
+    renderTable();
+    buildColorSwatches();
+  }
+
+  function switchProject(id) {
+    activeProjectId = parseInt(id);
+    try { localStorage.setItem('pmhub_current_project', id); } catch(e) {}
+    loadTasks(activeProjectId);
+    renderTable();
+  }
+
+  function loadTasks(pid) {
+    const loaded = PMHUB.getGanttTasks && PMHUB.getGanttTasks(pid);
+    tasks = (loaded && Array.isArray(loaded) && loaded.length) ? loaded : getDefaultTasks();
+  }
+
+  function saveTasks() {
+    if (PMHUB.saveGanttTasks && activeProjectId) {
+      PMHUB.saveGanttTasks(activeProjectId, tasks);
+      const ind = document.getElementById('saveIndicator');
+      ind.classList.add('show');
+      setTimeout(() => ind.classList.remove('show'), 1800);
+    }
+  }
+
+  function getDefaultTasks() {
+    const d = off => { const dt = new Date(); dt.setDate(dt.getDate()+off); return dt.toISOString().split('T')[0]; };
+    return [
+      {id:1,name:'INITIALISATION',type:'group',start:d(-30),end:d(-15),progress:100,color:'#63d2b4',owner:'CdP',deps:[]},
+      {id:2,name:'Project Charter',type:'task',start:d(-30),end:d(-24),progress:100,color:'#63d2b4',owner:'CdP',deps:[]},
+      {id:3,name:'Kick-off Meeting',type:'milestone',start:d(-23),end:d(-23),progress:100,color:'#e8c97a',owner:'CdP',deps:[2]},
+      {id:4,name:'PLANIFICATION',type:'group',start:d(-22),end:d(-8),progress:80,color:'#7ab8e8',owner:'CdP',deps:[]},
+      {id:5,name:'WBS & Planning détaillé',type:'task',start:d(-22),end:d(-16),progress:100,color:'#7ab8e8',owner:'CdP',deps:[3]},
+      {id:6,name:'RACI & Plan de comm.',type:'task',start:d(-18),end:d(-12),progress:90,color:'#7ab8e8',owner:'CdP',deps:[5]},
+      {id:7,name:'Analyse des risques',type:'task',start:d(-14),end:d(-8),progress:75,color:'#e07070',owner:'CdP',deps:[5]},
+      {id:8,name:'RÉALISATION',type:'group',start:d(-7),end:d(21),progress:40,color:'#b07ae8',owner:'Équipe',deps:[]},
+      {id:9,name:'Développement module A',type:'task',start:d(-7),end:d(7),progress:60,color:'#b07ae8',owner:'DEV',deps:[6]},
+      {id:10,name:'Développement module B',type:'task',start:d(0),end:d(14),progress:20,color:'#b07ae8',owner:'DEV',deps:[9]},
+      {id:11,name:'Recette utilisateurs',type:'task',start:d(15),end:d(21),progress:0,color:'#e8c97a',owner:'MOA',deps:[10]},
+      {id:12,name:'Go-Live 🚀',type:'milestone',start:d(22),end:d(22),progress:0,color:'#e8c97a',owner:'CdP',deps:[11]},
+      {id:13,name:'CLÔTURE',type:'group',start:d(23),end:d(30),progress:0,color:'#63d2b4',owner:'CdP',deps:[]},
+      {id:14,name:'Rapport de clôture',type:'task',start:d(23),end:d(28),progress:0,color:'#63d2b4',owner:'CdP',deps:[12]},
+      {id:15,name:'REX & Lessons Learned',type:'task',start:d(26),end:d(30),progress:0,color:'#63d2b4',owner:'Équipe',deps:[14]},
+    ];
+  }
+
+  // ── WBS NUMBERING ─────────────────────────────────────────────────
+  function computeWBS() {
+    let g = 0, t = 0;
+    tasks.forEach(task => {
+      if (task.type === 'group') { g++; t = 0; task._wbs = String(g); }
+      else if (task.type === 'milestone') { task._wbs = '◆'; }
+      else { t++; task._wbs = g > 0 ? g + '.' + t : String(t); }
+    });
+  }
+
+  // ── TABLE RENDER ─────────────────────────────────────────────────
+  function renderTable() {
+    computeWBS();
+    const tbody = document.getElementById('wbsBody');
+    const empty = document.getElementById('wbsEmpty');
+    const real = tasks.filter(t => t.type !== 'group');
+    if (!tasks.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    let currentGroupId = null;
+    tbody.innerHTML = tasks.map(task => {
+      const isGroup = task.type === 'group';
+      const isMilestone = task.type === 'milestone';
+      const isHidden = !isGroup && currentGroupId !== null && collapsedGroups.has(currentGroupId);
+      if (isGroup) currentGroupId = task.id;
+      if (isHidden) return '';
+      const rowClass = isGroup ? 'wbs-row-group' : isMilestone ? 'wbs-row-milestone' : '';
+      const indent = isGroup ? '' : '<span class="indent"></span>';
+      const typeLabel = isGroup ? 'phase' : isMilestone ? 'jalon' : 'tâche';
+      const prog = task.progress || 0;
+      const depNames = (task.deps || []).map(did => {
+        const dep = tasks.find(t => t.id === did);
+        return dep ? `<span class="dep-chip" title="${dep.name}">#${dep._wbs || did}<span class="dep-rm" onclick="removeDep(${task.id},${did})">×</span></span>` : '';
+      }).join('');
+      const depAddBtn = !isGroup ? `<button class="dep-add" onclick="showDepAdd(${task.id},this)">+ dép.</button>` : '';
+      const collapseBtn = isGroup ? `<button class="act-btn" title="${collapsedGroups.has(task.id) ? 'Déplier' : 'Replier'}" onclick="toggleGroup(${task.id})">${collapsedGroups.has(task.id) ? '▸' : '▾'}</button>` : '';
+      return `<tr class="${rowClass}" data-id="${task.id}">
+        <td class="cell-wbs">${task._wbs || ''}</td>
+        <td><span class="type-badge ${task.type}">${typeLabel}</span></td>
+        <td class="cell-name"><div class="cell-name-inner">${indent}<span class="color-dot" style="background:${task.color||'#63d2b4'}"></span> ${escHtml(task.name)}</div></td>
+        <td class="cell-date">${task.start || '—'}</td>
+        <td class="cell-date">${isMilestone ? '—' : (task.end || '—')}</td>
+        <td class="cell-prog">${isGroup ? '' : `<span class="prog-bar-wrap"><span class="prog-bar" style="width:${prog}%;background:${task.color||'var(--accent)'}"></span></span><span class="prog-pct">${prog}%</span>`}</td>
+        <td class="cell-owner">${escHtml(task.owner||'')}</td>
+        <td class="cell-color"><span class="color-dot" style="background:${task.color||'#63d2b4'}"></span></td>
+        <td class="cell-deps"><div class="dep-chips">${depNames}${depAddBtn}</div></td>
+        <td class="cell-actions">${collapseBtn}<button class="act-btn" title="Modifier" onclick="openModal(null,${task.id})">✏️</button><button class="act-btn danger" title="Supprimer" onclick="deleteTask(${task.id})">🗑️</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ── COLLAPSE / EXPAND ─────────────────────────────────────────────
+  function toggleGroup(gid) {
+    if (collapsedGroups.has(gid)) collapsedGroups.delete(gid); else collapsedGroups.add(gid);
+    renderTable();
+  }
+  window.expandAll = () => { collapsedGroups.clear(); renderTable(); };
+  window.collapseGroups = () => { tasks.filter(t => t.type==='group').forEach(t => collapsedGroups.add(t.id)); renderTable(); };
+  window.toggleGroup = toggleGroup;
+
+  // ── DEPS INLINE ────────────────────────────────────────────────────
+  window.removeDep = function(taskId, depId) {
+    const t = tasks.find(t => t.id === taskId);
+    if (!t) return;
+    t.deps = (t.deps||[]).filter(d => d !== depId);
+    saveTasks(); renderTable();
+  };
+
+  window.showDepAdd = function(taskId, btn) {
+    // Replace the + button with an inline select
+    const t = tasks.find(t => t.id === taskId);
+    if (!t) return;
+    const existing = new Set(t.deps || []);
+    const opts = tasks
+      .filter(x => x.id !== taskId && !existing.has(x.id))
+      .map(x => `<option value="${x.id}">${x._wbs||x.id} — ${escHtml(x.name.slice(0,30))}</option>`)
+      .join('');
+    if (!opts) { showToast('Aucune autre tâche disponible'); return; }
+    const wrap = document.createElement('span');
+    wrap.className = 'dep-select-wrap';
+    wrap.innerHTML = `<select class="dep-select" onchange="addDepInline(${taskId},this)" onblur="renderTable()"><option value="">-- choisir --</option>${opts}</select>`;
+    btn.parentNode.replaceChild(wrap, btn);
+    wrap.querySelector('select').focus();
+  };
+
+  window.addDepInline = function(taskId, sel) {
+    const depId = parseInt(sel.value);
+    if (!depId) return;
+    const t = tasks.find(t => t.id === taskId);
+    if (!t) return;
+    if (!t.deps) t.deps = [];
+    if (!t.deps.includes(depId)) t.deps.push(depId);
+    saveTasks(); renderTable();
+  };
+
+  // ── MODAL ──────────────────────────────────────────────────────────
+  function buildColorSwatches() {
+    document.getElementById('colorSwatches').innerHTML = COLORS.map(c =>
+      `<span class="swatch" style="background:${c}" data-color="${c}" onclick="selectColor('${c}')"></span>`
+    ).join('');
+  }
+
+  function selectColor(c) {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('sel', s.dataset.color === c));
+  }
+
+  window.onTypeChange = function() {
+    const t = document.getElementById('editType').value;
+    document.getElementById('datesRow').style.display = t === 'milestone' ? 'none' : '';
+    document.getElementById('progressRow').style.display = t === 'group' ? 'none' : '';
+    document.getElementById('depsField').style.display = t === 'group' ? 'none' : '';
+  };
+
+  window.openModal = function(type, taskId) {
+    editingTaskId = taskId || null;
+    editModalDeps = [];
+    const modal = document.getElementById('modalOverlay');
+    const title = document.getElementById('modalTitle');
+
+    if (taskId) {
+      const t = tasks.find(t => t.id === taskId);
+      if (!t) return;
+      title.textContent = 'Modifier — ' + t.name.slice(0, 40);
+      document.getElementById('editId').value = t.id;
+      document.getElementById('editType').value = t.type;
+      document.getElementById('editName').value = t.name;
+      document.getElementById('editStart').value = t.start || '';
+      document.getElementById('editEnd').value = t.end || '';
+      document.getElementById('editProgress').value = t.progress || 0;
+      document.getElementById('editOwner').value = t.owner || '';
+      editModalDeps = [...(t.deps || [])];
+      selectColor(t.color || COLORS[0]);
+    } else {
+      title.textContent = type === 'group' ? 'Nouvelle phase' : type === 'milestone' ? 'Nouveau jalon' : 'Nouvelle tâche';
+      document.getElementById('editId').value = '';
+      document.getElementById('editType').value = type || 'task';
+      document.getElementById('editName').value = '';
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('editStart').value = today;
+      document.getElementById('editEnd').value = today;
+      document.getElementById('editProgress').value = 0;
+      document.getElementById('editOwner').value = '';
+      editModalDeps = [];
+      selectColor(COLORS[0]);
+    }
+    window.onTypeChange();
+    renderModalDeps();
+    buildDepSelectAdd();
+    modal.classList.add('open');
+    setTimeout(() => document.getElementById('editName').focus(), 80);
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingTaskId = null;
+    editModalDeps = [];
+  };
+
+  function renderModalDeps() {
+    const list = document.getElementById('modalDepsList');
+    list.innerHTML = editModalDeps.map(did => {
+      const dep = tasks.find(t => t.id === did);
+      const lbl = dep ? `#${dep._wbs||did} ${dep.name.slice(0,30)}` : `#${did}`;
+      return `<span class="modal-dep-chip">${escHtml(lbl)}<button onclick="removeModalDep(${did})" title="Retirer">×</button></span>`;
+    }).join('') || '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">Aucune dépendance</span>';
+  }
+
+  window.removeModalDep = function(did) {
+    editModalDeps = editModalDeps.filter(d => d !== did);
+    renderModalDeps();
+    buildDepSelectAdd();
+  };
+
+  function buildDepSelectAdd() {
+    const eId = parseInt(document.getElementById('editId').value) || 0;
+    const sel = document.getElementById('depSelectAdd');
+    const existing = new Set(editModalDeps);
+    const opts = tasks
+      .filter(t => t.id !== eId && !existing.has(t.id))
+      .map(t => `<option value="${t.id}">${t._wbs||t.id} — ${escHtml(t.name.slice(0,40))}</option>`)
+      .join('');
+    sel.innerHTML = '<option value="">-- Choisir une tâche prédécesseur --</option>' + opts;
+  }
+
+  window.addDepFromModal = function() {
+    const sel = document.getElementById('depSelectAdd');
+    const val = parseInt(sel.value);
+    if (!val) return;
+    if (!editModalDeps.includes(val)) editModalDeps.push(val);
+    sel.value = '';
+    renderModalDeps();
+    buildDepSelectAdd();
+  };
+
+  window.saveTask = function() {
+    const name = document.getElementById('editName').value.trim();
+    if (!name) { showToast('Le nom est obligatoire'); return; }
+    const type = document.getElementById('editType').value;
+    const start = document.getElementById('editStart').value;
+    const end = type === 'milestone' ? start : (document.getElementById('editEnd').value || start);
+    const progress = parseInt(document.getElementById('editProgress').value) || 0;
+    const owner = document.getElementById('editOwner').value.trim();
+    const selSwatch = document.querySelector('.swatch.sel');
+    const color = selSwatch ? selSwatch.dataset.color : COLORS[0];
+    const deps = type === 'group' ? [] : [...editModalDeps];
+
+    if (editingTaskId) {
+      const t = tasks.find(t => t.id === editingTaskId);
+      if (t) Object.assign(t, { name, type, start, end, progress, owner, color, deps });
+    } else {
+      const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
+      tasks.push({ id: maxId + 1, name, type, start, end, progress, owner, color, deps });
+    }
+    saveTasks(); renderTable(); closeModal();
+    showToast(editingTaskId ? 'Tâche modifiée' : 'Tâche ajoutée');
+  };
+
+  // ── DELETE ─────────────────────────────────────────────────────────
+  window.deleteTask = function(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    if (!confirm('Supprimer "' + t.name + '" ?')) return;
+    tasks = tasks.filter(t => t.id !== id);
+    // Remove from deps of other tasks
+    tasks.forEach(t => { t.deps = (t.deps||[]).filter(d => d !== id); });
+    saveTasks(); renderTable();
+    showToast('Supprimé');
+  };
+
+  // ── TOAST ──────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  // ── ESCAPE ─────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // ── START ──────────────────────────────────────────────────────────
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else { init(); }
+
+})();
+</script>
+</body>
+</html>

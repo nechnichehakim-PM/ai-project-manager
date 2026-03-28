@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Rédacteur PM</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.word-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); padding:2px 8px; background:var(--glass); border:1px solid var(--border); border-radius:4px; }
+.recent-docs { margin-top:16px; }
+.recent-docs-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+.rdoc-list { display:flex; flex-direction:column; gap:4px; }
+.rdoc-item { display:flex; align-items:center; gap:10px; background:var(--glass); border:1px solid var(--border); border-radius:6px; padding:8px 12px; cursor:pointer; transition:border-color .2s; }
+.rdoc-item:hover { border-color:var(--accent); }
+.rdoc-icon { font-size:14px; flex-shrink:0; }
+.rdoc-info { flex:1; min-width:0; }
+.rdoc-name { font-family:'DM Mono',monospace; font-size:10px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rdoc-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); margin-top:1px; }
+.rdoc-preview { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+</style>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="ph">
+      <div class="ph-tag">Rédaction automatique</div>
+      <div class="ph-h1"><em>Rédacteur</em> PM</div>
+      <div class="ph-sub">Emails, comptes-rendus, notes d'escalade, rapports — générés en quelques secondes.</div>
+    </div>
+    <div class="tool-body">
+      <div class="opts" id="redacOpts">
+        <div class="opt selected" data-t="email-copil" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📧</div><div class="opt-name">Email COPIL</div><div class="opt-desc">CR comité de pilotage, points clés et décisions</div></div>
+        <div class="opt" data-t="statut" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📊</div><div class="opt-name">Rapport de statut</div><div class="opt-desc">Avancement, indicateurs RAG, risques, prochaines étapes</div></div>
+        <div class="opt" data-t="escalade" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚨</div><div class="opt-name">Note d'escalade</div><div class="opt-desc">Alerte direction, problème critique, demande de décision</div></div>
+        <div class="opt" data-t="cr-reunion" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">📝</div><div class="opt-name">Compte-rendu réunion</div><div class="opt-desc">CR structuré, participants, décisions, actions</div></div>
+        <div class="opt" data-t="kick-off" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🚀</div><div class="opt-name">Email de kick-off</div><div class="opt-desc">Lancement officiel, objectifs, équipe, planning</div></div>
+        <div class="opt" data-t="cloture" onclick="selOpt(this,'redacOpts')"><div class="opt-icon">🏁</div><div class="opt-name">Note de clôture</div><div class="opt-desc">Bilan final, REX, leçons apprises</div></div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">⚙️ Paramètres</div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Projet</label><select class="fsel" id="rProj"></select></div>
+          <div class="fg"><label class="flabel">Destinataire</label><input class="finput" id="rDest" placeholder="Direction, Sponsor, Équipe…"/></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px;"><label class="flabel">Points clés à inclure (optionnel)</label><textarea class="fta" id="rPts" placeholder="Ex: retard 2 semaines, budget à 40%, risque critique…"></textarea></div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Ton</label><select class="fsel" id="rTon"><option>professionnel</option><option>formel</option><option>synthétique</option><option>positif</option></select></div>
+          <div class="fg"><label class="flabel">Langue</label><select class="fsel" id="rLang"><option>français</option><option>anglais</option></select></div>
+        </div>
+        <button class="btn-p" id="btnRedac" onclick="genRedac()" style="margin-top:8px;">✍️ Générer →</button>
+      </div>
+      <div class="rcard" id="redacRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="redacLbl">Document généré</div>
+          <div class="rcard-acts">
+            <span class="word-count" id="wordCount"></span>
+            <button class="btn-s" onclick="copyEl('redacBody')">📋 Copier</button>
+            <button class="btn-s" onclick="exportRedacPDF()">⬇ Télécharger PDF</button>
+            <button class="btn-s" onclick="genRedac()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="redacBody"></div>
+      </div>
+      <div class="recent-docs" id="recentDocs" style="display:none;">
+        <div class="recent-docs-title">Documents récents</div>
+        <div class="rdoc-list" id="rdocList"></div>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  var RDOC_KEY = 'pmhub_redac_history';
+  var DOC_ICONS = { 'email-copil':'📧', statut:'📊', escalade:'🚨', 'cr-reunion':'📝', 'kick-off':'🚀', cloture:'🏁' };
+
+  function loadHistory() {
+    try { return JSON.parse(sessionStorage.getItem(RDOC_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveToHistory(type, label, text) {
+    var h = loadHistory();
+    h.unshift({ type: type, label: label, preview: text.slice(0, 80), ts: Date.now() });
+    if (h.length > 5) h = h.slice(0, 5);
+    try { sessionStorage.setItem(RDOC_KEY, JSON.stringify(h)); } catch(e) {}
+    renderHistory();
+  }
+  function renderHistory() {
+    var h = loadHistory();
+    var wrap = document.getElementById('recentDocs');
+    var list = document.getElementById('rdocList');
+    if (!wrap || !list) return;
+    if (!h.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = h.map(function(d, i) {
+      var ago = Math.round((Date.now() - d.ts) / 60000);
+      var agoStr = ago < 1 ? 'à l\'instant' : ago + ' min';
+      return '<div class="rdoc-item" onclick="restoreDoc(' + i + ')"><div class="rdoc-icon">' + (DOC_ICONS[d.type] || '📄') + '</div><div class="rdoc-info"><div class="rdoc-name">' + d.label + '</div><div class="rdoc-meta">' + agoStr + '</div></div><div class="rdoc-preview">' + d.preview.replace(/</g,'&lt;') + '…</div></div>';
+    }).join('');
+  }
+  window.restoreDoc = function(i) {
+    var h = loadHistory();
+    if (!h[i]) return;
+    var body = document.getElementById('redacBody');
+    var lbl = document.getElementById('redacLbl');
+    var res = document.getElementById('redacRes');
+    if (body) { body.className = 'rcard-body'; body.textContent = '(Document précédent — aperçu non disponible, régénérez pour le texte complet)'; }
+    if (lbl) lbl.textContent = h[i].label;
+    if (res) res.classList.add('show');
+  };
+
+  function updateWordCount() {
+    var body = document.getElementById('redacBody');
+    var wc = document.getElementById('wordCount');
+    if (!body || !wc) return;
+    var text = body.textContent.trim();
+    if (!text || body.classList.contains('loading')) { wc.textContent = ''; return; }
+    var words = text.split(/\s+/).filter(Boolean).length;
+    var chars = text.length;
+    wc.textContent = words + ' mots · ' + chars + ' car.';
+  }
+
+  // Intercept genRedac to save history and update word count
+  var _orig = window.genRedac;
+  if (_orig) {
+    window.genRedac = async function() {
+      await _orig();
+      updateWordCount();
+      var lbl = document.getElementById('redacLbl');
+      var body = document.getElementById('redacBody');
+      var sel = document.querySelector('#redacOpts .selected');
+      var type = sel && sel.dataset ? sel.dataset.t : 'email-copil';
+      var label = lbl ? lbl.textContent : 'Document';
+      var text = body ? body.textContent : '';
+      if (text && !body.classList.contains('loading') && text.indexOf('Erreur:') !== 0) {
+        saveToHistory(type, label, text);
+      }
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderHistory);
+  } else { renderHistory(); }
+})();
+</script>
+</body>
+</html>

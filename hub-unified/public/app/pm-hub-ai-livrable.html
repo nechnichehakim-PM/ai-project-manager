@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Génération livrables</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.meth-bar { display:flex; gap:6px; margin-bottom:16px; }
+.meth-btn { flex:1; background:var(--glass); border:1px solid var(--border); color:var(--text-muted); font-family:'DM Mono',monospace; font-size:10px; padding:8px 6px; border-radius:8px; cursor:pointer; text-align:center; transition:all .2s; }
+.meth-btn:hover { border-color:var(--accent); color:var(--text); }
+.meth-btn.active { background:rgba(99,210,180,.12); border-color:var(--accent); color:var(--accent); }
+.meth-btn .meth-icon { font-size:16px; display:block; margin-bottom:4px; }
+.meth-btn .meth-name { font-weight:500; }
+.meth-btn .meth-desc { font-size:8px; color:var(--text-muted); margin-top:2px; display:block; }
+.team-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.team-chip { background:var(--glass); border:1px solid var(--border); border-radius:4px; padding:3px 8px; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); }
+</style>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="ph">
+      <div class="ph-tag">Génération IA</div>
+      <div class="ph-h1">Génération de <em>livrables</em></div>
+      <div class="ph-sub">Décrivez votre projet — l'IA génère charte, WBS, RAID, RACI et jalons.</div>
+    </div>
+    <div class="tool-body">
+      <div class="meth-bar">
+        <button class="meth-btn active" data-m="waterfall" onclick="setMeth(this)">
+          <span class="meth-icon">🏗</span>
+          <span class="meth-name">Waterfall</span>
+          <span class="meth-desc">PMP · PRINCE2 · PMBoK</span>
+        </button>
+        <button class="meth-btn" data-m="agile" onclick="setMeth(this)">
+          <span class="meth-icon">🔄</span>
+          <span class="meth-name">Agile / Scrum</span>
+          <span class="meth-desc">Sprints · Stories · Backlog</span>
+        </button>
+        <button class="meth-btn" data-m="hybride" onclick="setMeth(this)">
+          <span class="meth-icon">⚡</span>
+          <span class="meth-name">Hybride</span>
+          <span class="meth-desc">Mix Waterfall + Agile</span>
+        </button>
+      </div>
+      <div class="opts three" id="livOpts">
+        <div class="opt selected" data-t="charte" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📋</div><div class="opt-name">Charte Projet</div><div class="opt-desc">Project Charter complet, objectifs SMART, gouvernance</div></div>
+        <div class="opt" data-t="wbs" onclick="selOpt(this,'livOpts')"><div class="opt-icon">🌳</div><div class="opt-name">WBS</div><div class="opt-desc">Work Breakdown Structure avec phases et livrables</div></div>
+        <div class="opt" data-t="raid-init" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚠️</div><div class="opt-name">RAID Initial</div><div class="opt-desc">Risques, actions, décisions pré-identifiés</div></div>
+        <div class="opt" data-t="raci" onclick="selOpt(this,'livOpts')"><div class="opt-icon">👥</div><div class="opt-name">Matrice RACI</div><div class="opt-desc">Responsabilités selon votre équipe réelle</div></div>
+        <div class="opt" data-t="jalons" onclick="selOpt(this,'livOpts')"><div class="opt-icon">📅</div><div class="opt-name">Jalons & Planning</div><div class="opt-desc">Jalons critiques avec estimations</div></div>
+        <div class="opt" data-t="complet" onclick="selOpt(this,'livOpts')"><div class="opt-icon">⚡</div><div class="opt-name">Pack complet</div><div class="opt-desc">Tout en une génération (Charte+WBS+RAID+RACI)</div></div>
+      </div>
+      <div class="fcard">
+        <div class="fcard-title">📝 Contexte du projet</div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Projet</label><select class="fsel" id="lProj"></select></div>
+          <div class="fg"><label class="flabel">Type de projet</label><select class="fsel" id="lType"><option>R&D / Innovation</option><option>Télécoms / Infrastructure</option><option>Data / Analytics</option><option>Transformation digitale</option><option>Déploiement réseau</option></select></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px;"><label class="flabel">Description (plus c'est précis, meilleur c'est)</label><textarea class="fta" id="lDesc" rows="3" placeholder="Ex: Déploiement d'un Data Center intelligent piloté par IA…"></textarea></div>
+        <div class="frow two">
+          <div class="fg"><label class="flabel">Budget estimé</label><input class="finput" id="lBudget" placeholder="Ex: 450 000 €"/></div>
+          <div class="fg"><label class="flabel">Durée estimée</label><input class="finput" id="lDuree" placeholder="Ex: 10 mois"/></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px;"><label class="flabel">Équipe projet</label><div class="team-chips" id="teamChips"></div></div>
+        <button class="btn-p" id="btnLiv" onclick="genLivrable()" style="margin-top:8px;">⚡ Générer →</button>
+      </div>
+      <div class="rcard" id="livRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="livLbl">Livrable généré</div>
+          <div class="rcard-acts">
+            <button class="btn-s" onclick="copyEl('livBody')">📋 Copier</button>
+            <button class="btn-s" onclick="exportLivPDF()">⬇ PDF</button>
+            <button class="btn-s" onclick="genLivrable()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="livBody"></div>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  var LIV_OPTS = {
+    waterfall: [
+      { t:'charte',    icon:'📋', name:'Charte Projet',    desc:'Project Charter complet, objectifs SMART, gouvernance' },
+      { t:'wbs',       icon:'🌳', name:'WBS',               desc:'Work Breakdown Structure avec phases et livrables' },
+      { t:'raid-init', icon:'⚠️', name:'RAID Initial',      desc:'Risques, actions, décisions pré-identifiés' },
+      { t:'raci',      icon:'👥', name:'Matrice RACI',      desc:'Responsabilités selon votre équipe réelle' },
+      { t:'jalons',    icon:'📅', name:'Jalons & Planning', desc:'Jalons critiques avec estimations' },
+      { t:'complet',   icon:'⚡', name:'Pack complet',      desc:'Tout en une génération (Charte+WBS+RAID+RACI)' }
+    ],
+    agile: [
+      { t:'backlog',   icon:'📋', name:'Product Backlog',    desc:'User stories priorisées, critères d\'acceptation' },
+      { t:'sprint',    icon:'🔄', name:'Sprint Planning',    desc:'Sprint 0, objectifs, capacité équipe, story points' },
+      { t:'dod',       icon:'✅', name:'Definition of Done', desc:'Critères de complétion et qualité par sprint' },
+      { t:'velocity',  icon:'📈', name:'Vélocité & Burndown',desc:'Métriques Agile, graphiques de progression' },
+      { t:'retro',     icon:'💬', name:'Rétrospective',      desc:'Template retro, points d\'amélioration, actions' },
+      { t:'complet',   icon:'⚡', name:'Pack Agile complet', desc:'Backlog + Sprint Plan + DoD + Métriques' }
+    ],
+    hybride: [
+      { t:'charte',    icon:'📋', name:'Charte Projet',      desc:'Charte adaptée approche hybride, jalons macro' },
+      { t:'wbs',       icon:'🌳', name:'WBS Hybride',        desc:'WBS phases Waterfall + sprints Agile imbriqués' },
+      { t:'backlog',   icon:'📋', name:'Backlog + WBS',      desc:'User stories + livrables séquentiels combinés' },
+      { t:'raci',      icon:'👥', name:'Matrice RACI',       desc:'Responsabilités adaptées aux deux approches' },
+      { t:'jalons',    icon:'📅', name:'Jalons & Sprints',   desc:'Jalons macro + cadence sprints intégrés' },
+      { t:'complet',   icon:'⚡', name:'Pack Hybride',       desc:'Charte + WBS hybride + Backlog + Planning' }
+    ]
+  };
+
+  window.setMeth = function(el) {
+    document.querySelectorAll('.meth-btn').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+    var m = el.dataset.m;
+    // Update placeholder
+    var desc = document.getElementById('lDesc');
+    if (desc) {
+      var hints = {
+        waterfall: 'Ex: Déploiement d\'un Data Center intelligent, 10 mois, livrables séquentiels…',
+        agile: 'Ex: Développement application mobile, sprints 2 semaines, backlog produit…',
+        hybride: 'Ex: Transformation digitale, phases macro Waterfall, exécution Agile…'
+      };
+      desc.placeholder = hints[m] || desc.placeholder;
+    }
+    // Update livrable options
+    var opts = document.getElementById('livOpts');
+    if (!opts) return;
+    var items = LIV_OPTS[m] || LIV_OPTS.waterfall;
+    opts.innerHTML = items.map(function(o, i) {
+      return '<div class="opt' + (i === 0 ? ' selected' : '') + '" data-t="' + o.t + '" onclick="selOpt(this,\'livOpts\')">' +
+        '<div class="opt-icon">' + o.icon + '</div>' +
+        '<div class="opt-name">' + o.name + '</div>' +
+        '<div class="opt-desc">' + o.desc + '</div>' +
+        '</div>';
+    }).join('');
+  };
+
+  function loadTeamChips() {
+    if (typeof PMHUB === 'undefined') return;
+    var res = PMHUB.getResources ? PMHUB.getResources() : [];
+    var c = document.getElementById('teamChips');
+    if (!c) return;
+    c.innerHTML = res.length
+      ? res.map(function(r) { return '<span class="team-chip">' + r.id + ' ' + r.name + ' · ' + r.role + '</span>'; }).join('')
+      : '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">Aucune ressource — ajoutez-en dans Ressources</span>';
+  }
+
+  window.exportLivPDF = function() {
+    var bodyEl = document.getElementById('livBody');
+    var lblEl = document.getElementById('livLbl');
+    if (!bodyEl || !bodyEl.textContent || bodyEl.classList.contains('loading')) {
+      var t = document.getElementById('toast');
+      if (t) { t.textContent = 'Aucun contenu à exporter.'; t.style.transform = 'translateY(0)'; t.style.opacity = '1'; setTimeout(function() { t.style.transform = 'translateY(65px)'; t.style.opacity = '0'; }, 3000); }
+      return;
+    }
+    var title = (lblEl && lblEl.textContent) ? lblEl.textContent.trim() : 'Livrable';
+    var meth = document.querySelector('.meth-btn.active');
+    var methName = meth ? meth.querySelector('.meth-name').textContent : '';
+    var content = bodyEl.textContent;
+    var styles = '*{margin:0;padding:0;box-sizing:border-box;}body{font-family:"Segoe UI",system-ui,sans-serif;background:#fff;color:#111;padding:32px;line-height:1.6;}.hdr{margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #eee;}.hdr-title{font-size:22px;font-weight:600;}.hdr-meta{font-size:11px;color:#666;margin-top:6px;}.body{white-space:pre-wrap;font-size:13px;}';
+    var doc = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>' + title + '</title><style>' + styles + '</style></head><body><div class="hdr"><h1 class="hdr-title">' + title + '</h1><div class="hdr-meta">PM Hub · Méthodologie: ' + methName + ' · ' + new Date().toLocaleDateString('fr-FR', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) + '</div></div><div class="body">' + content.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script></body></html>';
+    var win = window.open('', '_blank', 'width=900,height=700');
+    if (win) { win.document.write(doc); win.document.close(); }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadTeamChips);
+  } else { loadTeamChips(); }
+})();
+</script>
+</body>
+</html>

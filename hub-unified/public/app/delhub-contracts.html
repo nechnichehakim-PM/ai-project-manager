@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Contrats & Scope</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+/* ── KPI STRIP ── */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin:24px 0; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:var(--shadow-card-hover); }
+.kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+/* ── HERO ── */
+.hero-bar { margin-bottom:4px; }
+.hero-badge { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--primary); background:rgba(45,212,191,.1); border:1px solid rgba(45,212,191,.2); border-radius:20px; padding:3px 10px; margin-bottom:10px; }
+.hero-title { font-family:var(--font-heading); font-size:26px; font-weight:800; color:var(--text); }
+.hero-sub { color:var(--text-muted); font-size:13px; margin-top:6px; }
+
+/* ── TABLE ── */
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-top:24px; }
+.table-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); }
+.table-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--text); }
+table { width:100%; border-collapse:collapse; }
+thead th { padding:11px 14px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; color:var(--text-muted); border-bottom:1px solid var(--border); font-family:var(--font-mono); white-space:nowrap; }
+tbody tr { border-bottom:1px solid var(--border); transition:var(--transition); }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--surface2); }
+tbody td { padding:11px 14px; font-size:13px; color:var(--text); vertical-align:middle; }
+.td-truncate { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── STATUS BADGES ── */
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+.badge-draft     { background:rgba(156,163,175,.15); color:#9CA3AF; border:1px solid rgba(156,163,175,.2); }
+.badge-active    { background:rgba(34,197,94,.15); color:#22C55E; border:1px solid rgba(34,197,94,.2); }
+.badge-completed { background:rgba(59,130,246,.15); color:#60A5FA; border:1px solid rgba(59,130,246,.2); }
+.badge-terminated{ background:rgba(239,68,68,.15); color:#EF4444; border:1px solid rgba(239,68,68,.2); }
+.badge-warning   { background:rgba(245,158,11,.15); color:#F59E0B; border:1px solid rgba(245,158,11,.2); }
+
+/* ── ACTIONS ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--radius-sm); font-size:12px; font-weight:600; cursor:pointer; border:none; transition:var(--transition); text-decoration:none; }
+.btn-primary { background:var(--primary); color:#0B0F19; }
+.btn-primary:hover { filter:brightness(1.1); }
+.btn-ghost { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--surface2); color:var(--text); border-color:var(--border-active); }
+.btn-danger { background:rgba(239,68,68,.1); color:#EF4444; border:1px solid rgba(239,68,68,.2); }
+.btn-danger:hover { background:rgba(239,68,68,.2); }
+.action-btns { display:flex; gap:6px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  width:min(620px,95vw); max-height:85vh; overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+  animation:modalIn .2s var(--ease-out);
+}
+@keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
+.modal-head { padding:24px 28px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-head h2 { font-family:var(--font-heading); font-size:16px; font-weight:700; }
+.modal-close { background:transparent; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px; }
+.modal-close:hover { color:var(--text); }
+.modal-body { padding:24px 28px; }
+.modal-foot { padding:16px 28px 24px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--border); }
+.form-row { margin-bottom:16px; }
+.form-row label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:6px; font-family:var(--font-mono); }
+.form-row input, .form-row select, .form-row textarea {
+  width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:var(--font-body); font-size:13px; padding:9px 12px;
+  transition:var(--transition); outline:none;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  border-color:var(--primary); box-shadow:0 0 0 2px rgba(45,212,191,.1);
+}
+.form-row textarea { resize:vertical; min-height:80px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* ── TIMELINE ── */
+.timeline-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-top:24px; }
+.timeline-title { font-family:var(--font-heading); font-size:14px; font-weight:700; margin-bottom:16px; color:var(--text); }
+.timeline-row { margin-bottom:12px; }
+.timeline-label { font-size:11px; color:var(--text-muted); margin-bottom:4px; display:flex; justify-content:space-between; }
+.timeline-bar-bg { background:var(--surface3); border-radius:4px; height:20px; position:relative; overflow:hidden; }
+.timeline-bar-fill { position:absolute; top:0; bottom:0; border-radius:4px; display:flex; align-items:center; padding:0 8px; }
+.timeline-bar-text { font-size:10px; font-weight:600; color:#0B0F19; white-space:nowrap; overflow:hidden; }
+
+/* ── ALERT ── */
+.alert-banner { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25); border-radius:var(--radius-sm); padding:12px 16px; margin-top:20px; display:flex; align-items:center; gap:10px; font-size:13px; color:var(--warning); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:.5; }
+.empty-state p { font-size:14px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <!-- HERO -->
+    <div class="hero-bar">
+      <span class="hero-badge">Business</span>
+      <h1 class="hero-title">Contrats &amp; Scope</h1>
+      <p class="hero-sub">Gestion des contrats clients, périmètres et renouvellements.</p>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- ALERT EXPIRATION -->
+    <div id="alertZone"></div>
+
+    <!-- TABLE CONTRATS -->
+    <div class="table-wrap" id="tableWrap">
+      <div class="table-header">
+        <span class="table-title">Liste des contrats</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="text" id="searchInput" placeholder="Rechercher..." style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:7px 12px;outline:none;width:200px">
+          <button class="btn btn-primary" id="btnAdd" style="display:none" onclick="openModal()">+ Nouveau contrat</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Scope</th>
+              <th>Début</th>
+              <th>Fin</th>
+              <th>Valeur</th>
+              <th>Statut</th>
+              <th>Contact</th>
+              <th>Renouvellement</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="contractsTableBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">📋</div>
+          <p>Aucun contrat. Créez votre premier contrat.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="timeline-wrap" id="timelineWrap">
+      <div class="timeline-title">Timeline des contrats</div>
+      <div id="timelineContent"></div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL CRUD -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Nouveau contrat</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+      <div class="form-row">
+        <label>Client *</label>
+        <input type="text" id="fClient" placeholder="Nom du client" required>
+      </div>
+      <div class="form-row">
+        <label>Scope / Description *</label>
+        <textarea id="fScope" placeholder="Description du périmètre..."></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Date de début *</label>
+          <input type="date" id="fStart">
+        </div>
+        <div class="form-row">
+          <label>Date de fin *</label>
+          <input type="date" id="fEnd">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Valeur (€)</label>
+          <input type="number" id="fValue" placeholder="0" min="0" step="100">
+        </div>
+        <div class="form-row">
+          <label>Statut</label>
+          <select id="fStatus">
+            <option value="draft">Brouillon</option>
+            <option value="active">Actif</option>
+            <option value="completed">Terminé</option>
+            <option value="terminated">Résilié</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Livrables (un par ligne)</label>
+        <textarea id="fDeliverables" placeholder="Livrable 1&#10;Livrable 2&#10;..."></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Date de renouvellement</label>
+          <input type="date" id="fRenewal">
+        </div>
+        <div class="form-row">
+          <label>Contact client</label>
+          <input type="text" id="fContact" placeholder="Nom du contact">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveContract()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('contracts');
+
+  if (canWrite) {
+    document.getElementById('btnAdd').style.display = 'inline-flex';
+  }
+
+  // ── FORMAT ───────────────────────────────────────────────────────
+  function fmtMoney(v) {
+    return Number(v || 0).toLocaleString('fr-FR') + ' €';
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    var dt = new Date(d);
+    return isNaN(dt) ? d : dt.toLocaleDateString('fr-FR');
+  }
+  function isExpiringSoon(endDate) {
+    if (!endDate) return false;
+    var diff = new Date(endDate) - new Date();
+    return diff > 0 && diff <= 30 * 24 * 3600 * 1000;
+  }
+
+  function statusBadge(s) {
+    var map = { draft:'Brouillon', active:'Actif', completed:'Terminé', terminated:'Résilié' };
+    var cls = { draft:'badge-draft', active:'badge-active', completed:'badge-completed', terminated:'badge-terminated' };
+    return '<span class="badge ' + (cls[s] || 'badge-draft') + '">' + (map[s] || s) + '</span>';
+  }
+
+  // ── RENDER KPIs ───────────────────────────────────────────────────
+  function renderKPIs() {
+    var contracts = DELHUB.getContracts();
+    var active = contracts.filter(function(c) { return c.status === 'active'; });
+    var totalValue = active.reduce(function(s,c) { return s + (Number(c.value)||0); }, 0);
+    var now = new Date();
+    var in30 = contracts.filter(function(c) {
+      if (!c.endDate) return false;
+      var diff = new Date(c.endDate) - now;
+      return diff > 0 && diff <= 30*24*3600*1000;
+    });
+
+    var html = [
+      kpiCard('Total contrats', contracts.length, 'tous statuts', 'var(--text)'),
+      kpiCard('Contrats actifs', active.length, 'en cours', 'var(--primary)'),
+      kpiCard('Valeur active', fmtMoney(totalValue), 'contrats actifs', totalValue > 0 ? 'var(--success)' : 'var(--text)'),
+      kpiCard('Expirations (30j)', in30.length, 'renouvellements proches', in30.length > 0 ? 'var(--warning)' : 'var(--text)'),
+    ];
+    document.getElementById('kpiStrip').innerHTML = html.join('');
+  }
+
+  function kpiCard(label, value, sub, color) {
+    return '<div class="kpi-card">' +
+      '<div class="kpi-label">' + label + '</div>' +
+      '<div class="kpi-value" style="color:' + color + '">' + value + '</div>' +
+      '<div class="kpi-sub">' + sub + '</div>' +
+    '</div>';
+  }
+
+  // ── RENDER ALERT ──────────────────────────────────────────────────
+  function renderAlert() {
+    var contracts = DELHUB.getContracts();
+    var expiring = contracts.filter(function(c) { return isExpiringSoon(c.endDate); });
+    if (expiring.length === 0) {
+      document.getElementById('alertZone').innerHTML = '';
+      return;
+    }
+    var names = expiring.map(function(c) { return c.client; }).join(', ');
+    document.getElementById('alertZone').innerHTML =
+      '<div class="alert-banner">⚠ ' + expiring.length + ' contrat(s) expirent dans les 30 prochains jours : <strong>' + names + '</strong></div>';
+  }
+
+  // ── RENDER TABLE ──────────────────────────────────────────────────
+  var searchVal = '';
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    searchVal = e.target.value.toLowerCase();
+    renderTable();
+  });
+
+  function renderTable() {
+    var contracts = DELHUB.getContracts();
+    if (searchVal) {
+      contracts = contracts.filter(function(c) {
+        return (c.client||'').toLowerCase().includes(searchVal) ||
+               (c.scope||'').toLowerCase().includes(searchVal) ||
+               (c.contactName||'').toLowerCase().includes(searchVal);
+      });
+    }
+
+    var tbody = document.getElementById('contractsTableBody');
+    var empty = document.getElementById('emptyState');
+
+    if (contracts.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = contracts.map(function(c) {
+      var expiring = isExpiringSoon(c.endDate);
+      return '<tr>' +
+        '<td><strong>' + (c.client || '—') + '</strong></td>' +
+        '<td class="td-truncate" title="' + (c.scope||'').replace(/"/g,'&quot;') + '">' + (c.scope || '—') + '</td>' +
+        '<td>' + fmtDate(c.startDate) + '</td>' +
+        '<td>' + fmtDate(c.endDate) +
+          (expiring ? ' <span class="badge badge-warning" style="font-size:9px">Expiration proche</span>' : '') +
+        '</td>' +
+        '<td style="font-family:var(--font-mono);font-weight:600">' + fmtMoney(c.value) + '</td>' +
+        '<td>' + statusBadge(c.status) + '</td>' +
+        '<td>' + (c.contactName || '—') + '</td>' +
+        '<td>' + fmtDate(c.renewalDate) + '</td>' +
+        '<td>' + (canWrite ?
+          '<div class="action-btns">' +
+          '<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="openModal(' + c.id + ')">✏</button>' +
+          '<button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteContract(' + c.id + ')">✕</button>' +
+          '</div>' : '') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ── TIMELINE ──────────────────────────────────────────────────────
+  function renderTimeline() {
+    var contracts = DELHUB.getContracts();
+    var wrap = document.getElementById('timelineContent');
+    if (contracts.length === 0) {
+      wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Aucun contrat à afficher.</p>';
+      return;
+    }
+
+    // Find global range
+    var starts = contracts.filter(function(c) { return c.startDate; }).map(function(c) { return new Date(c.startDate).getTime(); });
+    var ends = contracts.filter(function(c) { return c.endDate; }).map(function(c) { return new Date(c.endDate).getTime(); });
+    if (starts.length === 0 || ends.length === 0) { wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Dates manquantes pour afficher la timeline.</p>'; return; }
+
+    var minTs = Math.min.apply(null, starts);
+    var maxTs = Math.max.apply(null, ends);
+    var range = maxTs - minTs || 1;
+
+    var statusColors = { draft:'#9CA3AF', active:'#22C55E', completed:'#60A5FA', terminated:'#EF4444' };
+
+    wrap.innerHTML = contracts.map(function(c) {
+      if (!c.startDate || !c.endDate) return '';
+      var s = new Date(c.startDate).getTime();
+      var e = new Date(c.endDate).getTime();
+      var left = Math.max(0, Math.round((s - minTs) / range * 100));
+      var width = Math.max(2, Math.round((e - s) / range * 100));
+      var color = statusColors[c.status] || '#9CA3AF';
+      return '<div class="timeline-row">' +
+        '<div class="timeline-label"><span>' + (c.client||'—') + '</span><span style="font-family:var(--font-mono);font-size:10px">' + fmtMoney(c.value) + '</span></div>' +
+        '<div class="timeline-bar-bg">' +
+          '<div class="timeline-bar-fill" style="left:' + left + '%;width:' + width + '%;background:' + color + '">' +
+            '<span class="timeline-bar-text">' + (c.scope||'').substring(0,30) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── MODAL ─────────────────────────────────────────────────────────
+  window.openModal = function(id) {
+    document.getElementById('modalTitle').textContent = id ? 'Modifier le contrat' : 'Nouveau contrat';
+    document.getElementById('fId').value = id || '';
+    if (id) {
+      var c = DELHUB.getContracts().find(function(x) { return x.id === id; });
+      if (!c) return;
+      document.getElementById('fClient').value = c.client || '';
+      document.getElementById('fScope').value = c.scope || '';
+      document.getElementById('fStart').value = c.startDate || '';
+      document.getElementById('fEnd').value = c.endDate || '';
+      document.getElementById('fValue').value = c.value || '';
+      document.getElementById('fStatus').value = c.status || 'draft';
+      document.getElementById('fDeliverables').value = (c.deliverables||[]).join('\n');
+      document.getElementById('fRenewal').value = c.renewalDate || '';
+      document.getElementById('fContact').value = c.contactName || '';
+    } else {
+      ['fClient','fScope','fStart','fEnd','fValue','fDeliverables','fRenewal','fContact'].forEach(function(id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('fStatus').value = 'draft';
+    }
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  };
+
+  window.saveContract = function() {
+    var id = document.getElementById('fId').value;
+    var client = document.getElementById('fClient').value.trim();
+    if (!client) { alert('Le nom du client est requis.'); return; }
+
+    var delivsRaw = document.getElementById('fDeliverables').value;
+    var deliverables = delivsRaw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+
+    var data = {
+      client: client,
+      scope: document.getElementById('fScope').value.trim(),
+      startDate: document.getElementById('fStart').value,
+      endDate: document.getElementById('fEnd').value,
+      value: Number(document.getElementById('fValue').value) || 0,
+      status: document.getElementById('fStatus').value,
+      deliverables: deliverables,
+      renewalDate: document.getElementById('fRenewal').value,
+      contactName: document.getElementById('fContact').value.trim(),
+    };
+
+    if (id) {
+      DELHUB.updateContract(Number(id), data);
+    } else {
+      DELHUB.addContract(data);
+    }
+
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteContract = function(id) {
+    if (!confirm('Supprimer ce contrat ?')) return;
+    DELHUB.deleteContract(id);
+    renderAll();
+  };
+
+  // ── RENDER ALL ────────────────────────────────────────────────────
+  function renderAll() {
+    renderKPIs();
+    renderAlert();
+    renderTable();
+    renderTimeline();
+  }
+
+  renderAll();
+
+  // Live update
+  DELHUB.onChange(function() { renderAll(); });
+
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-contracts',
+  title: 'IA Contrats',
+  icon: '\u{1F4CB}',
+  suggestions: [
+    'Analyse de risque de mon portefeuille contrats',
+    'Contrats arrivant a echeance bientot',
+    'Repartition par type et valeur',
+    'Recommandations de renouvellement'
+  ],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var c = DELHUB.getContracts();
+    var lines = ['=== CONTRATS (' + c.length + ') ==='];
+    c.forEach(function(ct) {
+      lines.push('- ' + (ct.name||ct.client||'?') + ': statut=' + (ct.status||'?') + ', valeur=' + (ct.value||0) + 'EUR, type=' + (ct.type||'?') + ', debut=' + (ct.startDate||ct.start||'?') + ', fin=' + (ct.endDate||ct.end||'?'));
+    });
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse mon portefeuille contrats et donne: 1) Contrats a risque de non-renouvellement 2) Valeur totale a risque 3) Contrats arrivant a echeance dans les 90 jours 4) Recommandations de negociation 5) Score de sante contractuelle global /10';
+  },
+  importPrompt: 'Analyse ce contrat et extrais: parties, objet, duree, montant, devise, clauses de penalites, SLA associes, conditions de resiliation, obligations de chaque partie. Genere un JSON avec les champs: name, client, value, currency, type, startDate, endDate, status, clauses (array), penalties (array), obligations (array).',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined') return;
+    var contracts = DELHUB.getContracts();
+    if (Array.isArray(data)) {
+      data.forEach(function(d) { d.id = 'ct-' + Date.now() + '-' + Math.random().toString(36).substr(2,4); d.status = d.status || 'active'; contracts.push(d); });
+    } else if (data && data.name) {
+      data.id = 'ct-' + Date.now(); data.status = data.status || 'active'; contracts.push(data);
+    }
+    DELHUB.saveContracts(contracts);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

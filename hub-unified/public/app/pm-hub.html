@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — AI Project Management Platform</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAV : logo | rubrique du groupe en haut | actions -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub / v2.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="#" class="nav-cta" onclick="openModal(); return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon nav-link-with-label" title="Paramètres"><span class="nav-icon-symbol">⚙</span><span class="nav-icon-label">Paramètres</span></a>
+  </div>
+</nav>
+
+<a href="pm-hub-ai.html?from=Dashboard" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR : rendu dynamique par pmhub-sidebar.js -->
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+
+  <!-- MAIN -->
+  <div class="main-col">
+  <main class="main">
+
+    <!-- HERO BAR (masqué si au moins 1 projet) -->
+    <div class="hero-bar" id="heroBar">
+      <div class="hero-left">
+        <span class="hero-badge">AI Assisted Project Governance</span>
+        <h1 class="hero-title" id="heroTitle">Tableau de bord</h1>
+        <p class="hero-sub">Pilotez vos projets, anticipez les risques et optimisez vos décisions grâce à l'intelligence artificielle.</p>
+        <ul class="hero-benefits">
+          <li>Pilotage centralisé</li>
+          <li>Gouvernance renforcée</li>
+          <li>Assistance IA à la décision</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- WIZARD PROMPT (masqué si au moins 1 projet) -->
+    <div class="wizard-prompt" id="wizardPrompt">
+      <div class="wiz-left">
+        <div class="wiz-tag">Lancement assisté par l'IA</div>
+        <div class="wiz-title">Démarrez un nouveau projet en mode guidé</div>
+        <div class="wiz-desc">Cadrage intelligent, Charte projet, WBS, RACI, RAID, Planning et Gouvernance — structuré étape par étape comme un Senior PM.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex-shrink:0;">
+        <div class="wiz-steps" id="wizSteps"></div>
+        <button class="btn-primary wiz-cta" onclick="launchWizard()">Démarrer le wizard →</button>
+      </div>
+    </div>
+
+    <!-- KPIs (ordre et visibilité personnalisables) -->
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="kpi-card green" data-kpi="active" id="kpiCardActive">
+        <div class="kpi-label">Projets actifs</div>
+        <div class="kpi-value green" id="kpiActive">—</div>
+        <div class="kpi-sub" id="kpiActiveSub">En cours</div>
+      </div>
+      <div class="kpi-card yellow" data-kpi="progress" id="kpiCardProgress">
+        <div class="kpi-label">Avancement moyen</div>
+        <div class="kpi-value yellow" id="kpiProgress">—</div>
+        <div class="kpi-sub">Progression globale</div>
+      </div>
+      <div class="kpi-card red" data-kpi="raid" id="kpiCardRaid">
+        <div class="kpi-label">Risques critiques</div>
+        <div class="kpi-value red" id="kpiRaid">—</div>
+        <div class="kpi-sub">Risques & actions</div>
+      </div>
+      <div class="kpi-card blue" data-kpi="total" id="kpiCardTotal">
+        <div class="kpi-label">Portefeuille total</div>
+        <div class="kpi-value blue" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiTotalSub">projets</div>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE (aucun projet) -->
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-state-icon" aria-hidden="true">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </div>
+      <h2 class="empty-state-title">Aucun projet actif</h2>
+      <p class="empty-state-desc">Créez votre premier projet pour commencer à piloter.</p>
+      <button type="button" class="btn-primary empty-state-cta" onclick="openModal()">+ Nouveau projet</button>
+    </div>
+
+    <!-- PROJETS -->
+    <div class="section-title-row" id="sectionTitleRow">
+      <div class="section-title">Vos projets</div>
+      <div class="section-meta" id="totalLabel">— projets</div>
+      <button type="button" class="btn-dashboard-prefs" onclick="openDashboardPrefs()" title="Personnaliser le dashboard">Personnaliser</button>
+    </div>
+
+    <div class="toolbar" id="toolbar">
+      <div class="search-box">
+        <span style="color:var(--text-muted);font-size:13px;">🔍</span>
+        <input type="text" placeholder="Rechercher..." oninput="filterProjects(this.value)"/>
+      </div>
+      <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+      <button class="filter-btn" onclick="setFilter('active',this)">En cours</button>
+      <button class="filter-btn" onclick="setFilter('hold',this)">En attente</button>
+      <button class="filter-btn" onclick="setFilter('risk',this)">À risque</button>
+      <button class="filter-btn" onclick="setFilter('closed',this)">Clôturés</button>
+      <button class="filter-btn" onclick="setFilter('archived',this)">Archivés</button>
+    </div>
+
+    <!-- Statut RAG par projet + Santé portefeuille -->
+    <section class="portfolio-health-section" id="healthDashboard">
+      <div class="portfolio-projects-panel">
+        <h2 class="portfolio-panel-title">Statut par projet</h2>
+        <div class="portfolio-projects-list" id="portfolioProjectsList"></div>
+      </div>
+      <div class="portfolio-health-panel">
+        <h2 class="portfolio-panel-title">Santé portefeuille</h2>
+        <div class="health-score-block">
+          <div class="portfolio-health-score-val" id="portfolioHealthScore">—</div>
+          <div class="portfolio-health-score-label">Score / 100</div>
+          <div class="health-score-grade" id="healthGrade">—</div>
+        </div>
+        <div class="rag-breakdown" id="ragBreakdown"></div>
+        <div class="portfolio-health-metrics">
+          <div class="portfolio-metric"><span class="portfolio-metric-label">Risques critiques ouverts</span><span class="portfolio-metric-val" id="healthM1">—</span></div>
+          <div class="portfolio-metric"><span class="portfolio-metric-label">Actions en retard</span><span class="portfolio-metric-val" id="healthM2">—</span></div>
+          <div class="portfolio-metric"><span class="portfolio-metric-label">Issues actives</span><span class="portfolio-metric-val" id="healthM3">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Widgets : Prochaines échéances + Actions en retard -->
+    <div class="widgets-row" id="widgetsRow" style="display:none;">
+      <div class="widget-panel">
+        <div class="widget-title">📅 Prochaines échéances</div>
+        <div id="upcomingList"></div>
+      </div>
+      <div class="widget-panel">
+        <div class="widget-title">🚨 Actions en retard</div>
+        <div id="overdueList"></div>
+      </div>
+    </div>
+
+    <div class="projects-grid" id="projectsGrid"></div>
+
+  </main>
+  </div>
+</div>
+
+<style>
+.empty-state { text-align: center; padding: 64px 24px; max-width: 420px; margin: 32px auto 48px; }
+.empty-state-icon { color: var(--text-muted); opacity: 0.6; margin-bottom: 20px; }
+.empty-state-icon svg { display: block; margin: 0 auto; }
+.empty-state-title { font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+.empty-state-desc { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+.empty-state-cta { padding: 12px 24px; font-size: 0.95rem; }
+nav { overflow: visible; }
+.nav-context { min-width: 0; }
+.nav-links { flex-shrink: 0; gap: 12px; }
+.nav-links .nav-cta { flex-shrink: 0; white-space: nowrap; }
+.nav-link-with-label { display: inline-flex !important; align-items: center; gap: 6px; padding: 8px 14px !important; width: auto !important; min-width: auto !important; height: auto !important; white-space: nowrap; flex-shrink: 0; }
+.nav-icon-symbol { font-size: 1rem; flex-shrink: 0; }
+.nav-icon-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: inherit; }
+.ai-float-btn { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; padding: 0; }
+.kpi-prefs-list { display: flex; flex-direction: column; gap: 8px; }
+.kpi-pref-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.kpi-pref-drag { display: flex; gap: 4px; }
+.kpi-pref-btn { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); border-radius: 6px; cursor: pointer; font-size: 12px; }
+.kpi-pref-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.kpi-pref-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+.kpi-pref-toggle { display: flex; align-items: center; cursor: pointer; }
+.kpi-pref-toggle input { margin-right: 8px; }
+.portfolio-health-section { display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 48px; }
+.portfolio-projects-panel, .portfolio-health-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+.portfolio-panel-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent2); margin-bottom: 20px; font-weight: 600; }
+.portfolio-projects-list { display: flex; flex-direction: column; gap: 12px; }
+.portfolio-project-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit; }
+.portfolio-project-row:hover { border-color: rgba(245, 158, 11, 0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.portfolio-project-info { min-width: 0; }
+.portfolio-project-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.portfolio-project-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.portfolio-project-status { display: inline-block; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.portfolio-project-status.active { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+.portfolio-project-status.risk { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.portfolio-project-status.hold { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.portfolio-project-status.closed { background: rgba(107, 118, 133, 0.2); color: var(--text-muted); }
+.portfolio-project-progress { grid-column: 1 / -1; }
+.portfolio-project-progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.portfolio-project-progress-fill { height: 100%; border-radius: 3px; transition: width 0.25s ease; }
+.portfolio-project-progress-fill.green { background: var(--success); }
+.portfolio-project-progress-fill.yellow { background: var(--warning); }
+.portfolio-project-progress-fill.red { background: var(--danger); }
+.portfolio-project-progress-fill.muted { background: var(--text-muted); }
+.portfolio-project-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.portfolio-health-score-wrap { text-align: center; margin-bottom: 16px; }
+.portfolio-health-score-val { font-family: var(--font-heading); font-size: 48px; font-weight: 800; color: var(--accent2); line-height: 1; }
+.portfolio-health-score-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-top: 8px; }
+.portfolio-rag-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.portfolio-rag-dots .rag-dot { width: 10px; height: 10px; border-radius: 50%; }
+.portfolio-rag-dots .rag-green { background: var(--success); }
+.portfolio-rag-dots .rag-amber { background: var(--warning); }
+.portfolio-rag-dots .rag-red { background: var(--danger); }
+.portfolio-health-metrics { display: flex; flex-direction: column; gap: 12px; }
+.portfolio-metric { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface2); border-radius: var(--radius-sm); }
+.portfolio-metric-label { font-size: 12px; color: var(--text-muted); }
+.portfolio-metric-val { font-weight: 700; font-size: 14px; color: var(--text); }
+.portfolio-rag-global { color: var(--accent2); }
+@media (max-width: 900px) { .portfolio-health-section { grid-template-columns: 1fr; } }
+
+/* ── RAG par projet ── */
+.rag-proj-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; text-decoration:none; color:inherit; transition:var(--transition); margin-bottom:8px; }
+.rag-proj-row:last-child { margin-bottom:0; }
+.rag-proj-row:hover { border-color:rgba(245,158,11,.4); transform:translateX(2px); }
+.rag-proj-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.rag-proj-name { flex:1; font-size:13px; font-weight:600; color:var(--text); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rag-proj-badge { font-size:9px; font-weight:700; padding:3px 9px; border-radius:20px; flex-shrink:0; letter-spacing:.04em; }
+.rag-proj-badge.green { background:rgba(34,197,94,.15); color:var(--success); }
+.rag-proj-badge.amber { background:rgba(245,158,11,.15); color:var(--warning); }
+.rag-proj-badge.red   { background:rgba(239,68,68,.15);  color:var(--danger); }
+.rag-proj-meta { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); flex-shrink:0; }
+
+/* ── Santé portefeuille améliorée ── */
+.health-score-block { text-align:center; padding:12px 0 16px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.health-score-grade { font-family:var(--font-mono); font-size:11px; font-weight:700; margin-top:6px; letter-spacing:.06em; text-transform:uppercase; }
+.rag-breakdown { display:flex; justify-content:center; gap:20px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.rag-bk-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.rag-bk-count { font-family:var(--font-heading); font-size:22px; font-weight:800; line-height:1; }
+.rag-bk-label { font-family:var(--font-mono); font-size:8px; text-transform:uppercase; letter-spacing:.1em; }
+
+/* ── Widgets row ── */
+.widgets-row { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px; }
+.widget-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px 24px; }
+.widget-title { font-family:var(--font-mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent2); margin-bottom:14px; font-weight:600; }
+.widget-empty { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); text-align:center; padding:20px 0; }
+
+/* ── Prochaines échéances ── */
+.deadline-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:8px; text-decoration:none; color:inherit; transition:var(--transition); }
+.deadline-row:last-child { margin-bottom:0; }
+.deadline-row:hover { border-color:rgba(99,210,180,.35); }
+.deadline-days { font-family:var(--font-mono); font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; flex-shrink:0; min-width:54px; text-align:center; }
+.deadline-days.urgent { background:rgba(239,68,68,.15); color:var(--danger); }
+.deadline-days.soon   { background:rgba(245,158,11,.15); color:var(--warning); }
+.deadline-days.ok     { background:rgba(34,197,94,.15);  color:var(--success); }
+.deadline-info { flex:1; min-width:0; }
+.deadline-name { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.deadline-date { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-top:2px; }
+
+/* ── Actions en retard ── */
+.overdue-row { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:8px; text-decoration:none; color:inherit; transition:var(--transition); }
+.overdue-row:last-child { margin-bottom:0; }
+.overdue-row:hover { border-color:rgba(239,68,68,.35); }
+.overdue-dot { width:6px; height:6px; border-radius:50%; background:var(--danger); flex-shrink:0; margin-top:5px; }
+.overdue-info { flex:1; min-width:0; }
+.overdue-desc { font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.overdue-meta { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-top:2px; }
+.overdue-late { font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--danger); flex-shrink:0; }
+@media (max-width:900px) { .widgets-row { grid-template-columns:1fr; } }
+</style>
+
+<!-- MODAL NOUVEAU PROJET -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-tag">Initialisation</div>
+    <h2 class="modal-title">Nouveau Projet</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Nom du projet *</label>
+        <input type="text" class="form-input" id="newName" placeholder="Ex: Déploiement 5G Private Network"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Référence</label>
+        <input type="text" class="form-input" id="newRef" placeholder="PRJ-2026-XXX"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="newType">
+          <option value="">Sélectionner...</option>
+          <option>Télécoms / Réseau</option>
+          <option>IT / Digital</option>
+          <option>Infrastructure</option>
+          <option>R&D / Innovation</option>
+          <option>Data / Analytics</option>
+          <option>Transformation</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de début</label>
+        <input type="date" class="form-input" id="newStart"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date de fin prévue</label>
+        <input type="date" class="form-input" id="newEnd"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget (€)</label>
+        <input type="text" class="form-input" id="newBudget" placeholder="Ex: 250 000"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <select class="form-select" id="newPriority">
+          <option>Critique</option>
+          <option>Haute</option>
+          <option selected>Normale</option>
+          <option>Basse</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client / Commanditaire</label>
+        <input type="text" class="form-input" id="newClient" placeholder="Ex: Orange France"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description / Objectifs</label>
+        <textarea class="form-textarea" id="newDesc" placeholder="Décrivez les objectifs principaux du projet..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="createAndWizard()">Créer + lancer le wizard →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#63d2b4','#e8c97a','#7ab8e8','#e07070','#b07ae8'];
+const ICONS  = ['🚀','💡','🏗️','🔧','📊','🌐','⚙️','📱','🧠','📡'];
+let currentFilter = 'all';
+let searchQuery = '';
+
+function statusLabel(s) {
+  return { active:'En cours', hold:'En attente', closed:'Clôturé', risk:'À risque', archived:'Archivé' }[s] || s;
+}
+function formatDate(d) {
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  const M = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  return `${day} ${M[parseInt(m)-1]} ${y}`;
+}
+function progressClass(p, status) {
+  if(status==='risk') return 'danger';
+  if(status==='closed' || status==='archived') return 'muted';
+  if(p<40) return 'warn';
+  return '';
+}
+
+function renderProjects(list) {
+  const grid = document.getElementById('projectsGrid');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const tplCount = PMHUB.countSavedTemplates(p.id);
+    const url = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+    const meth = p.methodology ? (PMHUB.getMethodology(p.methodology).shortLabel || p.methodology) : '';
+    const pctColor = p.status==='risk' ? 'var(--danger)' : p.status==='closed' ? 'var(--text-muted)' : p.status==='hold' ? 'var(--warning)' : 'var(--accent)';
+    const h = PMHUB.getProjectHealth(p.id);
+    const ragColors = { green:'var(--success)', amber:'var(--warning)', red:'var(--danger)' };
+
+    const chips = [
+      p.budget  ? `<div class="card-chip">💰 ${p.budget}</div>` : '',
+      p.end     ? `<div class="card-chip">📅 ${formatDate(p.end)}</div>` : '',
+      (p.team||[]).length ? `<div class="card-chip">👥 ${p.team.length} membre${p.team.length>1?'s':''}</div>` : '',
+      h.openRisks ? `<div class="card-chip chip-risk">⚠ ${h.openRisks} risque${h.openRisks>1?'s':''}</div>` : '',
+    ].filter(Boolean).join('');
+
+    const card = document.createElement('div');
+    card.className = `project-card status-${p.status}`;
+    card.onclick = ev => { if (!ev.target.closest('.card-sec-actions')) window.location.href = url; };
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon" style="background:${p.color||'var(--accent)'}18;border-color:${p.color||'var(--accent)'}33;">${p.icon||'📁'}</div>
+        <div class="card-header-right">
+          <div class="card-status status-${p.status}">${statusLabel(p.status)}</div>
+          ${p.priority==='Critique'||p.priority==='Haute' ? `<div class="card-priority-badge">⚡ ${p.priority}</div>` : ''}
+        </div>
+      </div>
+      <div class="card-ref">${p.ref}${p.type?' · '+p.type:''}${meth?' · '+meth:''}</div>
+      <div class="card-title">${p.name}</div>
+      <div class="card-desc">${p.desc||'Aucune description.'}</div>
+      ${chips ? `<div class="card-chips">${chips}</div>` : ''}
+      <div class="card-progress">
+        <div class="progress-header">
+          <span>Avancement</span>
+          <span style="color:${pctColor};font-weight:700;">${p.progress||0}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${progressClass(p.progress,p.status)}" style="width:${p.progress||0}%"></div>
+        </div>
+        <div class="card-rag-line">
+          <span class="card-rag-dot" style="background:${ragColors[h.rag]||'var(--text-muted)'}"></span>
+          <span class="card-rag-label" style="color:${ragColors[h.rag]||'var(--text-muted)'}">Santé ${h.rag==='green'?'Bonne':h.rag==='amber'?'Moyenne':'Critique'} · Score ${h.score}/100</span>
+        </div>
+      </div>
+      <div class="card-cta-wrap" onclick="event.stopPropagation();">
+        ${p.status==='archived'
+          ? `<button class="card-cta-primary" onclick="restoreProject(${p.id},event)">↩ Restaurer le projet</button>`
+          : `<a href="${url}" class="card-cta-primary">Ouvrir le projet →</a>`}
+      </div>
+      <div class="card-sec-actions" onclick="event.stopPropagation();">
+        ${p.status==='active' ? `<button class="card-sec-btn" onclick="goWizard(${p.id},event)">🧭 Wizard</button>` : ''}
+        ${p.status!=='archived' ? `<button class="card-sec-btn" onclick="goTemplates(${p.id},event)">📋 Templates</button>` : ''}
+        ${tplCount ? `<span class="card-sec-tpl">${tplCount} tpl</span>` : ''}
+        <button class="card-sec-btn card-sec-del" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g,"\\'")}',event)" title="Supprimer">🗑</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function goTemplates(id, e) { e.stopPropagation(); PMHUB.goTo('pm-hub-templates.html',{project:id}); }
+function goWizard(id, e)    { e.stopPropagation(); PMHUB.goTo('pm-hub-wizard.html',{project:id}); }
+function launchWizard()     { PMHUB.goTo('pm-hub-wizard.html'); }
+function restoreProject(id, e) { e.stopPropagation(); PMHUB.restoreProject(id); applyFilters(); showToast('Projet restauré.'); }
+
+// ── DELETE PROJECT ──
+let _deleteId = null;
+function confirmDelete(id, name, e) {
+  e.stopPropagation();
+  _deleteId = id;
+  document.getElementById('confirmName').textContent = name;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  _deleteId = null;
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+function executeArchive() {
+  if(_deleteId === null) return;
+  PMHUB.archiveProject(_deleteId);
+  closeConfirm();
+  applyFilters();
+  showToast('Projet archivé.');
+}
+function executeDelete() {
+  if(_deleteId === null) return;
+  PMHUB.deleteProject(_deleteId);
+  closeConfirm();
+  applyFilters();
+  showToast('Projet supprimé.');
+}
+
+function showToast(msg) {
+  let el = document.getElementById('toastEl');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toastEl';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._toastT);
+  el._toastT = setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+function applyFilters() {
+  let list = PMHUB.getProjects();
+  if (currentFilter === 'archived') list = list.filter(p=>p.status==='archived');
+  else if (currentFilter !== 'all') list = list.filter(p=>p.status===currentFilter);
+  else list = list.filter(p=>p.status!=='archived');
+  if(searchQuery) list = list.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  renderProjects(list);
+
+  const activeList = PMHUB.getProjects().filter(p=>p.status!=='archived');
+  const stats = PMHUB.getStats();
+  var raidCount = 0;
+  try { activeList.forEach(function(p) { var r = PMHUB.getRaids(p.id); raidCount += (r.risks||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.actions||[]).filter(function(x){ return x.status !== 'closed'; }).length + (r.issues||[]).length; }); } catch(e) {}
+  var noProjects = activeList.length === 0;
+  document.getElementById('kpiActive').textContent   = noProjects ? '0' : stats.active;
+  document.getElementById('kpiProgress').textContent  = noProjects ? '0%' : (stats.avgProgress + '%');
+  document.getElementById('kpiRaid').textContent     = noProjects ? '0' : (raidCount || '0');
+  document.getElementById('kpiTotal').textContent    = noProjects ? '0' : stats.total;
+  document.getElementById('totalLabel').textContent  = noProjects ? '0 projet' : (list.length + ' projet' + (list.length > 1 ? 's' : ''));
+  var sbRaid = document.getElementById('sbRaidCount');
+  if (sbRaid) sbRaid.textContent = noProjects ? '0' : (raidCount || '0');
+
+  var emptyEl = document.getElementById('emptyState');
+  var sectionRow = document.getElementById('sectionTitleRow');
+  var toolbarEl = document.getElementById('toolbar');
+  var gridEl = document.getElementById('projectsGrid');
+  if (emptyEl && sectionRow && toolbarEl && gridEl) {
+    if (noProjects && currentFilter !== 'archived') {
+      emptyEl.style.display = 'block';
+      sectionRow.style.display = 'none';
+      toolbarEl.style.display = 'none';
+      gridEl.style.display = 'none';
+    } else {
+      emptyEl.style.display = 'none';
+      sectionRow.style.display = 'flex';
+      toolbarEl.style.display = 'flex';
+      gridEl.style.display = 'grid';
+    }
+  }
+
+  const ws = document.getElementById('wizSteps');
+  if(ws) {
+    ws.innerHTML = PMHUB.WIZARD_STEPS.map((_,i)=>`<div class="wiz-step-dot${i<2?' done':''}"></div>`).join('');
+  }
+
+  var heroBar = document.getElementById('heroBar');
+  var wizardPrompt = document.getElementById('wizardPrompt');
+  var prefs = getDashboardPrefs();
+  if (heroBar) heroBar.style.display = activeList.length >= 1 ? 'none' : '';
+  if (wizardPrompt) wizardPrompt.style.display = (activeList.length >= 1 && !prefs.showWizard) ? 'none' : (activeList.length === 0 ? '' : (prefs.showWizard ? '' : 'none'));
+
+  renderHealthDashboard();
+}
+
+function renderHealthDashboard() {
+  var el = document.getElementById('healthDashboard');
+  var widgetsRow = document.getElementById('widgetsRow');
+  if (!el) return;
+  var list = PMHUB.getProjects().filter(function(p){ return p.status !== 'archived'; });
+  if (list.length === 0) {
+    el.style.display = 'none';
+    if (widgetsRow) widgetsRow.style.display = 'none';
+    return;
+  }
+  el.style.display = 'grid';
+  if (widgetsRow) widgetsRow.style.display = 'grid';
+
+  // ── Statut RAG par projet (panneau gauche) ──
+  var projListEl = document.getElementById('portfolioProjectsList');
+  if (projListEl) {
+    projListEl.innerHTML = list.map(function(p) {
+      var h = PMHUB.getProjectHealth(p.id);
+      var ragLabel = h.rag === 'green' ? 'Vert' : h.rag === 'amber' ? 'Ambre' : 'Rouge';
+      var url = 'pm-hub-project.html?project=' + encodeURIComponent(p.id);
+      return '<a href="' + url + '" class="rag-proj-row">' +
+        '<div class="rag-proj-dot" style="background:' + (p.color || 'var(--accent)') + '"></div>' +
+        '<div class="rag-proj-name">' + (p.name || 'Sans nom') + '</div>' +
+        '<span class="rag-proj-badge ' + h.rag + '">' + ragLabel + '</span>' +
+        '<div class="rag-proj-meta">' + (p.progress || 0) + '% · ' + (h.openRisks || 0) + ' risques</div>' +
+      '</a>';
+    }).join('');
+  }
+
+  // ── Score santé (panneau droit) ──
+  var today = new Date(); today.setHours(0,0,0,0);
+  var totalScore = 0, greenCount = 0, amberCount = 0, redCount = 0;
+  var totalCritical = 0, totalOverdue = 0, totalIssues = 0;
+  list.forEach(function(p) {
+    var h = PMHUB.getProjectHealth(p.id);
+    totalScore += h.score;
+    if (h.rag === 'green') greenCount++;
+    else if (h.rag === 'amber') amberCount++;
+    else redCount++;
+    var raid = PMHUB.getRaids(p.id);
+    totalCritical += (raid.risks || []).filter(function(r) { return r.severity === 'critical' && r.status !== 'closed'; }).length;
+    totalIssues += (raid.issues || []).filter(function(i) { return i.status !== 'closed'; }).length;
+    totalOverdue += (raid.actions || []).filter(function(a) { return a.status !== 'closed' && a.due && new Date(a.due) < today; }).length;
+  });
+  var avgScore = list.length ? Math.round(totalScore / list.length) : 0;
+  var grade, scoreColor;
+  if (avgScore >= 80) { grade = 'Excellent'; scoreColor = 'var(--success)'; }
+  else if (avgScore >= 60) { grade = 'Bon'; scoreColor = 'var(--accent2)'; }
+  else if (avgScore >= 40) { grade = 'Attention'; scoreColor = 'var(--warning)'; }
+  else { grade = 'Critique'; scoreColor = 'var(--danger)'; }
+
+  var scoreEl = document.getElementById('portfolioHealthScore');
+  var gradeEl = document.getElementById('healthGrade');
+  var ragBreakEl = document.getElementById('ragBreakdown');
+  if (scoreEl) { scoreEl.textContent = avgScore; scoreEl.style.color = scoreColor; }
+  if (gradeEl) { gradeEl.textContent = grade; gradeEl.style.color = scoreColor; }
+  if (ragBreakEl) {
+    ragBreakEl.innerHTML = [
+      [greenCount, 'Vert',  'var(--success)'],
+      [amberCount, 'Ambre', 'var(--warning)'],
+      [redCount,   'Rouge', 'var(--danger)']
+    ].map(function(x) {
+      return '<div class="rag-bk-item">' +
+        '<div class="rag-bk-count" style="color:' + x[2] + '">' + x[0] + '</div>' +
+        '<div class="rag-bk-label" style="color:' + x[2] + '">' + x[1] + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  var m1 = document.getElementById('healthM1');
+  var m2 = document.getElementById('healthM2');
+  var m3 = document.getElementById('healthM3');
+  if (m1) { m1.textContent = totalCritical; m1.style.color = totalCritical > 0 ? 'var(--danger)' : 'var(--success)'; }
+  if (m2) { m2.textContent = totalOverdue;  m2.style.color = totalOverdue > 0  ? 'var(--warning)' : 'var(--success)'; }
+  if (m3) { m3.textContent = totalIssues;   m3.style.color = totalIssues > 0   ? 'var(--warning)' : 'var(--success)'; }
+
+  // ── Widgets ──
+  renderUpcomingDeadlines(list);
+  renderOverdueActions(list);
+}
+
+function renderUpcomingDeadlines(list) {
+  var el = document.getElementById('upcomingList');
+  if (!el) return;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var items = [];
+  list.filter(function(p) { return p.status === 'active' || p.status === 'risk' || p.status === 'hold'; })
+    .forEach(function(p) {
+      if (!p.end) return;
+      var days = Math.round((new Date(p.end) - today) / 86400000);
+      items.push({ name: p.name, date: p.end, days: days, url: 'pm-hub-project.html?project=' + p.id });
+    });
+  items.sort(function(a, b) { return a.days - b.days; });
+  items = items.slice(0, 5);
+  if (!items.length) { el.innerHTML = '<div class="widget-empty">Aucune échéance à venir</div>'; return; }
+  var fmt = function(d) { return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }); };
+  el.innerHTML = items.map(function(item) {
+    var cls = item.days < 0 ? 'urgent' : item.days <= 14 ? 'soon' : 'ok';
+    var txt = item.days < 0 ? Math.abs(item.days) + 'j dépassé' : item.days === 0 ? "Auj." : item.days + 'j';
+    return '<a href="' + item.url + '" class="deadline-row">' +
+      '<div class="deadline-days ' + cls + '">' + txt + '</div>' +
+      '<div class="deadline-info">' +
+        '<div class="deadline-name">' + item.name + '</div>' +
+        '<div class="deadline-date">Fin prévue · ' + fmt(item.date) + '</div>' +
+      '</div></a>';
+  }).join('');
+}
+
+function renderOverdueActions(list) {
+  var el = document.getElementById('overdueList');
+  if (!el) return;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var items = [];
+  list.forEach(function(p) {
+    var raid = PMHUB.getRaids(p.id);
+    (raid.actions || []).forEach(function(a) {
+      if (a.status === 'closed' || !a.due) return;
+      var d = new Date(a.due);
+      if (d >= today) return;
+      items.push({ desc: a.desc, owner: a.owner || '—', daysLate: Math.round((today - d) / 86400000), project: p.name, url: 'pm-hub-raid.html?project=' + p.id });
+    });
+  });
+  items.sort(function(a, b) { return b.daysLate - a.daysLate; });
+  items = items.slice(0, 5);
+  if (!items.length) { el.innerHTML = '<div class="widget-empty">✅ Aucune action en retard</div>'; return; }
+  el.innerHTML = items.map(function(item) {
+    return '<a href="' + item.url + '" class="overdue-row">' +
+      '<div class="overdue-dot"></div>' +
+      '<div class="overdue-info">' +
+        '<div class="overdue-desc">' + item.desc + '</div>' +
+        '<div class="overdue-meta">' + item.project + ' · ' + item.owner + '</div>' +
+      '</div>' +
+      '<div class="overdue-late">+' + item.daysLate + 'j</div>' +
+    '</a>';
+  }).join('');
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function filterProjects(q) { searchQuery = q; applyFilters(); }
+
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function createAndWizard() {
+  const name = document.getElementById('newName').value.trim();
+  if(!name) { document.getElementById('newName').style.borderColor='var(--danger)'; return; }
+  const all = PMHUB.getProjects();
+  const year = new Date().getFullYear();
+  const project = {
+    id: Date.now(),
+    ref:    document.getElementById('newRef').value || `PRJ-${year}-${String(all.length+1).padStart(3,'0')}`,
+    name,
+    desc:   document.getElementById('newDesc').value || 'Description à compléter.',
+    status: 'active', progress: 0,
+    type:   document.getElementById('newType').value || 'Autre',
+    start:  document.getElementById('newStart').value || new Date().toISOString().split('T')[0],
+    end:    document.getElementById('newEnd').value || '',
+    budget: document.getElementById('newBudget').value || '—',
+    client: document.getElementById('newClient').value || '',
+    priority: document.getElementById('newPriority').value,
+    team: ['AN'], icon: ICONS[Math.floor(Math.random()*ICONS.length)],
+    color: COLORS[Math.floor(Math.random()*COLORS.length)],
+    createdAt: new Date().toISOString()
+  };
+  PMHUB.addProject(project);
+  closeModal();
+  // Redirige vers le wizard
+  PMHUB.goTo('pm-hub-wizard.html', { project: project.id });
+}
+
+// ── DASHBOARD PERSONNALISABLE ──
+const DASHBOARD_PREFS_KEY = 'pmhub_dashboard_prefs';
+const KPI_IDS = ['active','progress','raid','total'];
+const KPI_LABELS = { active:'Projets actifs', progress:'Avancement moyen', raid:'Risques critiques', total:'Portefeuille total' };
+const DEFAULT_DASHBOARD_PREFS = { kpiOrder: KPI_IDS.slice(), kpiVisible: { active:true, progress:true, raid:true, total:true }, showWizard: true };
+
+function getDashboardPrefs() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_PREFS_KEY);
+    if (!raw) return DEFAULT_DASHBOARD_PREFS;
+    const p = JSON.parse(raw);
+    const kpiOrder = p.kpiOrder && p.kpiOrder.length ? p.kpiOrder : DEFAULT_DASHBOARD_PREFS.kpiOrder;
+    const kpiVisible = { ...DEFAULT_DASHBOARD_PREFS.kpiVisible, ...(p.kpiVisible || {}) };
+    KPI_IDS.forEach(function(k) { if (kpiVisible[k] === undefined) kpiVisible[k] = true; });
+    return { ...DEFAULT_DASHBOARD_PREFS, ...p, kpiOrder, kpiVisible, showWizard: p.showWizard !== false };
+  } catch (e) { return DEFAULT_DASHBOARD_PREFS; }
+}
+function saveDashboardPrefs(prefs) {
+  try { localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+}
+
+function applyDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const strip = document.getElementById('kpiStrip');
+  const wizardEl = document.getElementById('wizardPrompt');
+  if (wizardEl) wizardEl.style.display = prefs.showWizard !== false ? '' : 'none';
+
+  if (!strip) return;
+  const cards = {};
+  strip.querySelectorAll('[data-kpi]').forEach(function(el) { cards[el.getAttribute('data-kpi')] = el; });
+  strip.innerHTML = '';
+  prefs.kpiOrder.forEach(function(k) {
+    if (prefs.kpiVisible[k] !== false && cards[k]) strip.appendChild(cards[k]);
+  });
+}
+
+function moveKpiPref(k, delta) {
+  var list = document.getElementById('kpiPrefsList');
+  if (!list) return;
+  var rows = Array.from(list.querySelectorAll('.kpi-pref-row'));
+  var idx = rows.findIndex(function(r) { return r.getAttribute('data-kpi') === k; });
+  if (idx < 0) return;
+  var next = idx + delta;
+  if (next < 0 || next >= rows.length) return;
+  var row = rows[idx];
+  if (delta > 0) list.insertBefore(row, rows[next].nextSibling);
+  else list.insertBefore(row, rows[next]);
+}
+
+function openDashboardPrefs() {
+  const prefs = getDashboardPrefs();
+  const modal = document.getElementById('dashboardPrefsOverlay');
+  const listEl = document.getElementById('kpiPrefsList');
+  if (!modal || !listEl) return;
+  listEl.innerHTML = prefs.kpiOrder.map(function(k) {
+    var label = KPI_LABELS[k] || k;
+    var checked = prefs.kpiVisible[k] !== false ? ' checked' : '';
+    return '<div class="kpi-pref-row" data-kpi="' + k + '">' +
+      '<span class="kpi-pref-drag">' +
+      '<button type="button" class="kpi-pref-btn" onclick="moveKpiPref(\'' + k + '\',-1)" title="Monter">↑</button>' +
+      '<button type="button" class="kpi-pref-btn" onclick="moveKpiPref(\'' + k + '\',1)" title="Descendre">↓</button>' +
+      '</span>' +
+      '<span class="kpi-pref-label">' + label + '</span>' +
+      '<label class="kpi-pref-toggle"><input type="checkbox" class="prefKpiCheck" data-kpi="' + k + '"' + checked + '><span class="toggle-track"><span class="toggle-thumb"></span></span></label>' +
+      '</div>';
+  }).join('');
+  var cbWiz = document.getElementById('prefShowWizard');
+  if (cbWiz) cbWiz.checked = prefs.showWizard !== false;
+  modal.classList.add('open');
+}
+function closeDashboardPrefs() {
+  document.getElementById('dashboardPrefsOverlay').classList.remove('open');
+}
+function saveDashboardPrefsAndClose() {
+  var listEl = document.getElementById('kpiPrefsList');
+  var kpiOrder = [];
+  var kpiVisible = {};
+  if (listEl) {
+    listEl.querySelectorAll('.kpi-pref-row').forEach(function(row) {
+      var k = row.getAttribute('data-kpi');
+      if (k) {
+        kpiOrder.push(k);
+        var cb = row.querySelector('.prefKpiCheck');
+        kpiVisible[k] = cb ? cb.checked : true;
+      }
+    });
+  }
+  if (kpiOrder.length === 0) kpiOrder = KPI_IDS.slice();
+  var showWizard = (document.getElementById('prefShowWizard') || {}).checked !== false;
+  saveDashboardPrefs({ kpiOrder: kpiOrder, kpiVisible: kpiVisible, showWizard: showWizard });
+  applyDashboardPrefs();
+  closeDashboardPrefs();
+  showToast('Préférences enregistrées.');
+}
+
+PMHUB.onChange(applyFilters);
+applyFilters();
+applyDashboardPrefs();
+</script>
+
+<!-- CONFIRM DELETE / ARCHIVE -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Supprimer ou archiver ce projet ?</div>
+    <div class="confirm-desc">
+      <span class="confirm-name" id="confirmName"></span><br><br>
+      <strong>Archiver</strong> : le projet est masqué du tableau de bord mais conservé (consultable dans « Archivés »).<br><br>
+      <strong>Supprimer définitivement</strong> : action irréversible. Tous les templates liés seront supprimés.
+    </div>
+    <div class="confirm-actions" style="flex-wrap:wrap;gap:10px;">
+      <button class="btn-secondary" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-primary" onclick="executeArchive()">Archiver le projet</button>
+      <button class="btn-danger" onclick="executeDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PERSONNALISATION DASHBOARD -->
+<div class="modal-overlay" id="dashboardPrefsOverlay" onclick="if(event.target===this)closeDashboardPrefs()">
+  <div class="modal modal-dashboard-prefs">
+    <button class="modal-close" onclick="closeDashboardPrefs()">✕</button>
+    <div class="modal-tag">Préférences</div>
+    <h2 class="modal-title">Personnaliser le dashboard</h2>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">KPIs — afficher et ordre</label>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Choisissez les indicateurs à afficher et réordonnez-les avec les flèches.</p>
+      <div class="kpi-prefs-list" id="kpiPrefsList"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="prefShowWizard" checked/>
+        <span>Afficher le bloc « Nouveau projet — Lancez le wizard »</span>
+      </label>
+    </div>
+    <div class="confirm-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="closeDashboardPrefs()">Annuler</button>
+      <button class="btn-primary" onclick="saveDashboardPrefsAndClose()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="ai-suggestions-bar"></div>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Dashboard PMO',
+  cacheKey: 'dashboard_pmo',
+  buildPrompt: function() {
+    var projs = PMHUB.getProjects();
+    var actifs = projs.filter(function(p){return p.status==='active';});
+    var aRisque = projs.filter(function(p){return p.status==='risk';});
+    var totalCritRisks = 0;
+    actifs.forEach(function(p){var r=PMHUB.getRaids(p.id);totalCritRisks+=(r.risks||[]).filter(function(x){return x.status!=='closed'&&(x.severity==='critical'||x.severity==='haute');}).length;});
+    var lines = actifs.concat(aRisque).map(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return p.name+' | '+p.progress+'% | '+h.rag+' | '+p.methodology;}).join('\n');
+    return 'TABLEAU DE BORD PMO — '+new Date().toLocaleDateString('fr-FR')+'\nProjets actifs: '+actifs.length+' | À risque: '+aRisque.length+'\nRisques critiques (portefeuille): '+totalCritRisks+'\n\nÉTAT:\n'+lines+'\n\nDonne une synthèse PMO du jour: 1) Situation globale 2) Alertes prioritaires 3) Focus de la semaine recommandé';
+  }
+};
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'pm-hub-dashboard',
+  title: 'IA Dashboard PMO',
+  icon: '\uD83C\uDFAF',
+  suggestions: [
+    'Synthese PMO du jour',
+    'Alertes prioritaires',
+    'Focus de la semaine recommande',
+    'Prevision portefeuille a 1 mois'
+  ],
+  buildContext: function() {
+    if (typeof PMHUB === 'undefined') return '';
+    var projs = PMHUB.getProjects();
+    var actifs = projs.filter(function(p){return p.status==='active';});
+    var aRisque = projs.filter(function(p){return p.status==='risk';});
+    var totalCritRisks = 0;
+    actifs.forEach(function(p){var r=PMHUB.getRaids(p.id);totalCritRisks+=(r.risks||[]).filter(function(x){return x.status!=='closed'&&(x.severity==='critical'||x.severity==='haute');}).length;});
+    var lines = ['=== TABLEAU DE BORD PMO ==='];
+    lines.push('Date: '+new Date().toLocaleDateString('fr-FR'));
+    lines.push('Projets actifs: '+actifs.length+', A risque: '+aRisque.length+', Risques critiques: '+totalCritRisks);
+    actifs.concat(aRisque).forEach(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};lines.push('- '+p.name+' | '+p.progress+'% | '+h.rag+' | '+p.methodology);});
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Synthese PMO du jour: 1) Situation globale du portefeuille avec score de confiance 2) Alertes prioritaires a traiter aujourd\'hui 3) Projets a risque de derapage avec probabilite (%) 4) Focus recommande pour la semaine 5) Prevision de livraison a 1 mois 6) KPIs cles a surveiller';
+  },
+  importPrompt: 'Analyse ce document de reporting PMO et extrais: projets, avancements, alertes, KPIs. Genere un JSON avec: projects (array of {name, progress, status, rag}), alerts (array of {title, severity, project}).',
+  importHandler: function(data) {
+    if (typeof PMHUB === 'undefined') return;
+    if (data.projects) {
+      data.projects.forEach(function(imp) {
+        var existing = PMHUB.getProjects().find(function(p){return p.name===imp.name;});
+        if (existing) {
+          if (imp.progress !== undefined) existing.progress = imp.progress;
+          if (imp.status) existing.status = imp.status;
+          PMHUB.saveProject(existing);
+        }
+      });
+    }
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+<script src="pmhub-notifications.js"></script>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Paramètres</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+.settings-grid { display:flex; flex-direction:column; gap:24px; max-width:700px; }
+.settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px; }
+.settings-card-title {
+  font-family:var(--font-heading); font-size:15px; font-weight:700; margin-bottom:4px;
+  display:flex; align-items:center; gap:10px;
+}
+.settings-card-sub { font-size:12px; color:var(--text-muted); margin-bottom:22px; }
+.form-group { margin-bottom:18px; }
+.form-label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:6px; }
+.form-input, .form-select, .form-textarea {
+  width:100%; box-sizing:border-box; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:10px 12px; color:var(--text); font-family:var(--font-body);
+  font-size:14px; transition:var(--transition);
+}
+.form-input:focus, .form-select:focus { outline:none; border-color:var(--primary); }
+.form-select option { background:var(--surface2); }
+.form-input[readonly] { opacity:0.6; cursor:default; }
+
+.password-wrapper { position:relative; }
+.password-wrapper .form-input { padding-right:44px; }
+.btn-toggle-pw {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:16px;
+  transition:var(--transition);
+}
+.btn-toggle-pw:hover { color:var(--text); }
+
+.btn-primary {
+  display:inline-flex; align-items:center; gap:6px; padding:10px 22px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:13px; cursor:pointer; transition:var(--transition); font-family:var(--font-heading);
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-ghost {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:var(--radius-sm);
+  font-size:13px; cursor:pointer; transition:var(--transition);
+}
+.btn-ghost:hover { color:var(--text); border-color:var(--primary); }
+.btn-danger {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:var(--radius-sm);
+  font-size:13px; cursor:pointer; transition:var(--transition);
+}
+.btn-danger:hover { background:rgba(239,68,68,0.1); }
+
+.actions-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:4px; }
+
+/* Toggle switch */
+.toggle-row { display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+.toggle-label { font-size:14px; color:var(--text); }
+.toggle-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; border-radius:24px; background:var(--surface3);
+  cursor:pointer; transition:0.3s; border:1px solid var(--border);
+}
+.toggle-slider:before {
+  content:''; position:absolute; left:3px; top:3px; width:16px; height:16px;
+  border-radius:50%; background:var(--text-muted); transition:0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background:var(--primary); border-color:var(--primary); }
+.toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); background:#0B0F19; }
+
+/* Test result */
+.test-result {
+  margin-top:12px; padding:12px 16px; border-radius:var(--radius-sm); font-size:13px;
+  display:none; white-space:pre-wrap;
+}
+.test-result.success { background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:var(--success); }
+.test-result.error   { background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:var(--danger); }
+
+/* Confirm modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+  opacity:0; pointer-events:none; transition:opacity 0.2s;
+}
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:32px; width:min(440px,95vw); transform:translateY(12px); transition:transform 0.2s;
+}
+.modal-overlay.active .modal { transform:translateY(0); }
+.modal-title { font-family:var(--font-heading); font-size:16px; font-weight:700; margin-bottom:12px; }
+.modal-text { font-size:14px; color:var(--text-muted); margin-bottom:24px; line-height:1.6; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 20px; font-size:14px; color:var(--text); box-shadow:var(--shadow);
+  transform:translateY(20px); opacity:0; transition:all 0.3s; pointer-events:none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:rgba(34,197,94,0.4); }
+.toast.error   { border-color:rgba(239,68,68,0.4); }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <!-- HERO -->
+    <div class="hero-bar" style="margin-bottom:28px">
+      <div class="hero-left">
+        <span class="hero-badge">Configuration</span>
+        <h1 class="hero-title">Paramètres</h1>
+        <p class="hero-sub">Profil, IA, thème et gestion des données.</p>
+      </div>
+    </div>
+
+    <div class="settings-grid">
+
+      <!-- PROFIL -->
+      <div class="settings-card">
+        <div class="settings-card-title">👤 Profil</div>
+        <div class="settings-card-sub">Vos informations personnelles.</div>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input type="text" class="form-input" id="profileName" placeholder="Votre nom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="profileEmail" placeholder="votre@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Organisation</label>
+          <input type="text" class="form-input" id="profileOrg" placeholder="Nom de votre organisation">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rôle</label>
+          <input type="text" class="form-input" id="profileRoleDisplay" readonly>
+          <select class="form-select" id="profileRoleSelect" style="display:none;margin-top:6px">
+            <option value="god">GOD / Admin</option>
+            <option value="head">Head / C-Level</option>
+            <option value="business">Business Manager</option>
+            <option value="delivery">Delivery Manager</option>
+            <option value="sales">Sales / Commercial</option>
+            <option value="pm">Chef de Projet</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="saveProfile()">Sauvegarder le profil</button>
+      </div>
+
+      <!-- IA -->
+      <div class="settings-card">
+        <div class="settings-card-title">🤖 Intelligence Artificielle</div>
+        <div class="settings-card-sub">Configurez votre fournisseur IA pour les rapports et le chat.</div>
+        <div class="form-group">
+          <label class="form-label">Fournisseur</label>
+          <select class="form-select" id="aiProvider" onchange="onProviderChange()">
+            <option value="">-- Choisir un fournisseur --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modèle</label>
+          <select class="form-select" id="aiModel"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Clé API</label>
+          <div class="password-wrapper">
+            <input type="password" class="form-input" id="aiApiKey" placeholder="sk-...">
+            <button class="btn-toggle-pw" onclick="toggleApiKey()" type="button" id="btnTogglePw">👁</button>
+          </div>
+        </div>
+        <div class="form-group" id="endpointGroup" style="display:none">
+          <label class="form-label">Endpoint personnalisé</label>
+          <input type="url" class="form-input" id="aiEndpoint" placeholder="https://...">
+        </div>
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="aiEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">IA activée</span>
+        </div>
+        <div class="actions-row">
+          <button class="btn-primary" onclick="saveAI()">Sauvegarder</button>
+          <button class="btn-ghost" onclick="testAI()" id="btnTestAI">Tester la connexion</button>
+        </div>
+        <div class="test-result" id="testResult"></div>
+      </div>
+
+      <!-- THEME -->
+      <div class="settings-card">
+        <div class="settings-card-title">🎨 Thème</div>
+        <div class="settings-card-sub">Basculez entre le mode sombre et clair.</div>
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="themeToggle" onchange="onThemeToggle()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label" id="themeLabel">Mode sombre</span>
+        </div>
+      </div>
+
+      <!-- DONNEES -->
+      <div class="settings-card">
+        <div class="settings-card-title">💾 Données</div>
+        <div class="settings-card-sub">Exportez, importez ou réinitialisez vos données locales.</div>
+        <div class="actions-row">
+          <button class="btn-ghost" onclick="exportData()">⬇ Exporter toutes les données</button>
+          <button class="btn-ghost" onclick="document.getElementById('importFile').click()">⬆ Importer des données</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+          <button class="btn-danger" onclick="openResetModal()">🗑 Réinitialiser mes données</button>
+        </div>
+      </div>
+
+      <!-- SIMULATION ROLE (GOD only) -->
+      <div class="settings-card" id="simulationCard" style="display:none">
+        <div class="settings-card-title">🎭 Simuler un rôle</div>
+        <div class="settings-card-sub">Visualisez le hub depuis la perspective d'un autre rôle (GOD only).</div>
+        <div class="form-group">
+          <label class="form-label">Rôle à simuler</label>
+          <select class="form-select" id="simulateRole">
+            <option value="head">Head / C-Level</option>
+            <option value="business">Business Manager</option>
+            <option value="delivery">Delivery Manager</option>
+            <option value="sales">Sales / Commercial</option>
+          </select>
+        </div>
+        <div class="actions-row">
+          <button class="btn-primary" onclick="startSimulation()">▶ Simuler</button>
+          <button class="btn-ghost" id="btnStopSimulation" onclick="stopSimulation()" style="display:none">⏹ Arrêter la simulation</button>
+        </div>
+        <div id="simulationStatus" style="margin-top:12px;font-size:12px;color:var(--warning);display:none"></div>
+      </div>
+
+      <!-- A PROPOS -->
+      <div class="settings-card">
+        <div class="settings-card-title">ℹ À propos</div>
+        <div style="font-size:14px;color:var(--text-soft);line-height:1.8">
+          <div><strong style="color:var(--text)">DelHub</strong> — Delivery &amp; Business Hub</div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">v1.0</div>
+          <div style="margin-top:12px;color:var(--text)">Abdelhakim Nechniche</div>
+          <div style="font-size:12px;color:var(--text-muted)">PMP® · PRINCE2 7<sup>th</sup> · Agile Master</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- Modal confirmation reset -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <div class="modal-title">⚠ Réinitialiser les données</div>
+    <div class="modal-text">Cette action va supprimer <strong>toutes vos données locales</strong> DelHub (CRM, contrats, incidents, etc.). Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeResetModal()">Annuler</button>
+      <button class="btn-danger" onclick="confirmReset()">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var isGod = DELHUB.isGod();
+  var profile = DELHUB.getProfile();
+  var aiSettings = DELHUB.getAISettings();
+  var providers = DELHUB.AI_PROVIDERS;
+
+  // ── PROFIL ──
+  document.getElementById('profileName').value  = profile.name  || '';
+  document.getElementById('profileEmail').value = profile.email || '';
+  document.getElementById('profileOrg').value   = profile.org   || '';
+  var roleNames = { god:'GOD / Admin', head:'Head / C-Level', business:'Business Manager', delivery:'Delivery Manager', sales:'Sales / Commercial', pm:'Chef de Projet' };
+  document.getElementById('profileRoleDisplay').value = roleNames[profile.role] || profile.role || 'delivery';
+  if (isGod) {
+    document.getElementById('profileRoleSelect').style.display = 'block';
+    document.getElementById('profileRoleSelect').value = profile.role || 'delivery';
+    document.getElementById('profileRoleDisplay').style.display = 'none';
+  }
+
+  window.saveProfile = function() {
+    var updated = {
+      name:  document.getElementById('profileName').value.trim(),
+      email: document.getElementById('profileEmail').value.trim(),
+      org:   document.getElementById('profileOrg').value.trim(),
+      role:  isGod ? document.getElementById('profileRoleSelect').value : (profile.role || 'delivery')
+    };
+    DELHUB.saveProfile(updated);
+    showToast('Profil sauvegardé.', 'success');
+  };
+
+  // ── AI PROVIDERS ──
+  var providerSelect = document.getElementById('aiProvider');
+  Object.keys(providers).forEach(function(k) {
+    var opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = providers[k].label;
+    providerSelect.appendChild(opt);
+  });
+  providerSelect.value = aiSettings.provider || '';
+  document.getElementById('aiApiKey').value    = aiSettings.apiKey   || '';
+  document.getElementById('aiEndpoint').value  = aiSettings.endpoint || '';
+  document.getElementById('aiEnabled').checked = !!aiSettings.enabled;
+
+  window.onProviderChange = function() {
+    var pKey = document.getElementById('aiProvider').value;
+    var modelSel = document.getElementById('aiModel');
+    var endGrp = document.getElementById('endpointGroup');
+    modelSel.innerHTML = '';
+    if (pKey && providers[pKey]) {
+      providers[pKey].models.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        modelSel.appendChild(opt);
+      });
+      modelSel.value = aiSettings.model || providers[pKey].models[0] || '';
+    }
+    endGrp.style.display = pKey === 'custom' ? 'block' : 'none';
+  };
+
+  onProviderChange();
+  if (aiSettings.model) document.getElementById('aiModel').value = aiSettings.model;
+
+  window.toggleApiKey = function() {
+    var inp = document.getElementById('aiApiKey');
+    var btn = document.getElementById('btnTogglePw');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+  };
+
+  window.saveAI = function() {
+    var data = {
+      provider: document.getElementById('aiProvider').value,
+      apiKey:   document.getElementById('aiApiKey').value.trim(),
+      model:    document.getElementById('aiModel').value,
+      endpoint: document.getElementById('aiEndpoint').value.trim(),
+      enabled:  document.getElementById('aiEnabled').checked
+    };
+    DELHUB.saveAISettings(data);
+    showToast('Paramètres IA sauvegardés.', 'success');
+  };
+
+  window.testAI = async function() {
+    var btn = document.getElementById('btnTestAI');
+    var result = document.getElementById('testResult');
+    btn.disabled = true;
+    btn.textContent = 'Test en cours...';
+    result.style.display = 'none';
+    // Save first
+    window.saveAI();
+    try {
+      var res = await DELHUB.callAI('Tu es un assistant de test.', 'Dis bonjour en une phrase.');
+      result.className = 'test-result success';
+      result.textContent = '✓ Connexion réussie !\n' + res;
+    } catch(err) {
+      result.className = 'test-result error';
+      result.textContent = '✗ Erreur : ' + err.message;
+    }
+    result.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Tester la connexion';
+  };
+
+  // ── THEME ──
+  var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  var themeToggle = document.getElementById('themeToggle');
+  var themeLabel  = document.getElementById('themeLabel');
+  themeToggle.checked = !isDark;
+  themeLabel.textContent = isDark ? 'Mode sombre' : 'Mode clair';
+
+  window.onThemeToggle = function() {
+    var isLight = themeToggle.checked;
+    document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+    localStorage.setItem('delhub_theme', isLight ? 'light' : 'dark');
+    themeLabel.textContent = isLight ? 'Mode clair' : 'Mode sombre';
+    if (window.DELHUB_THEME) window.DELHUB_THEME.apply();
+  };
+
+  // ── DONNEES ──
+  window.exportData = function() {
+    var allData = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('delhub_')) {
+        try { allData[k] = JSON.parse(localStorage.getItem(k)); } catch(e) { allData[k] = localStorage.getItem(k); }
+      }
+    }
+    var blob = new Blob([JSON.stringify(allData, null, 2)], { type:'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'delhub-export-' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Données exportées.', 'success');
+  };
+
+  window.importData = function(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = JSON.parse(e.target.result);
+        var count = 0;
+        Object.keys(data).forEach(function(k) {
+          if (k.startsWith('delhub_')) {
+            localStorage.setItem(k, JSON.stringify(data[k]));
+            count++;
+          }
+        });
+        showToast(count + ' entrées importées. Rechargement...', 'success');
+        setTimeout(function(){ location.reload(); }, 1500);
+      } catch(err) {
+        showToast('Fichier JSON invalide.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  };
+
+  window.openResetModal  = function() { document.getElementById('resetModal').classList.add('active'); };
+  window.closeResetModal = function() { document.getElementById('resetModal').classList.remove('active'); };
+  window.confirmReset    = function() {
+    var keys = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('delhub_')) keys.push(k);
+    }
+    keys.forEach(function(k){ localStorage.removeItem(k); });
+    sessionStorage.clear();
+    closeResetModal();
+    showToast('Données réinitialisées. Redirection...', 'success');
+    setTimeout(function(){ window.location.href = 'delhub-login.html'; }, 1500);
+  };
+
+  document.getElementById('resetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+  });
+
+  // ── SIMULATION (GOD ONLY) ──
+  if (isGod) {
+    document.getElementById('simulationCard').style.display = 'block';
+    var simulated = sessionStorage.getItem('delhub_simulated_role');
+    if (simulated) {
+      document.getElementById('simulateRole').value = simulated;
+      document.getElementById('btnStopSimulation').style.display = 'inline-flex';
+      document.getElementById('simulationStatus').style.display = 'block';
+      document.getElementById('simulationStatus').textContent = 'Simulation active : ' + simulated;
+    }
+  }
+
+  window.startSimulation = function() {
+    var r = document.getElementById('simulateRole').value;
+    sessionStorage.setItem('delhub_simulated_role', r);
+    location.reload();
+  };
+
+  window.stopSimulation = function() {
+    sessionStorage.removeItem('delhub_simulated_role');
+    location.reload();
+  };
+
+  // ── TOAST ──
+  function showToast(msg, type) {
+    var toast = document.getElementById('toast');
+    toast.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+    toast.className = 'toast show ' + (type || '');
+    setTimeout(function() { toast.className = 'toast'; }, 3000);
+  }
+  window.showToast = showToast;
+})();
+</script>
+</body>
+</html>

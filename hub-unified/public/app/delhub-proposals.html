@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Propositions & Devis</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+/* ── KPI Strip ── */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:var(--shadow-card-hover); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+/* ── Hero ── */
+.hero-bar { margin-bottom:24px; }
+.hero-badge {
+  display:inline-block; background:rgba(45,212,191,0.1); color:var(--primary);
+  border:1px solid rgba(45,212,191,0.2); border-radius:20px;
+  padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; font-family:var(--font-mono); margin-bottom:10px;
+}
+.hero-title { font-family:var(--font-heading); font-size:26px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.hero-sub { font-size:13px; color:var(--text-muted); }
+
+/* ── Toolbar ── */
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.toolbar-title { font-family:var(--font-heading); font-size:18px; font-weight:700; color:var(--text); }
+.btn-primary {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:13px; cursor:pointer; transition:var(--transition);
+  font-family:var(--font-heading);
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+
+/* ── Table ── */
+.table-wrapper {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  overflow:hidden;
+}
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:700px; }
+thead tr { background:var(--surface2); }
+th {
+  padding:11px 16px; text-align:left; font-size:10px; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--text-muted); font-family:var(--font-mono);
+  white-space:nowrap; border-bottom:1px solid var(--border);
+}
+td {
+  padding:13px 16px; font-size:13px; color:var(--text);
+  border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle;
+}
+tr:last-child td { border-bottom:none; }
+tbody tr { transition:var(--transition); }
+tbody tr:hover { background:var(--surface2); }
+
+/* ── Status badges ── */
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700;
+  font-family:var(--font-mono); white-space:nowrap;
+}
+.badge-draft    { background:rgba(156,163,175,0.12); color:#9CA3AF; border:1px solid rgba(156,163,175,0.2); }
+.badge-sent     { background:rgba(99,102,241,0.12);  color:#818CF8; border:1px solid rgba(99,102,241,0.2); }
+.badge-accepted { background:rgba(34,197,94,0.12);   color:#22C55E; border:1px solid rgba(34,197,94,0.2); }
+.badge-rejected { background:rgba(239,68,68,0.12);   color:#EF4444; border:1px solid rgba(239,68,68,0.2); }
+.badge-expired  { background:rgba(245,158,11,0.12);  color:#F59E0B; border:1px solid rgba(245,158,11,0.2); }
+
+/* ── Action buttons ── */
+.action-btn {
+  background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text-muted); font-size:12px; padding:4px 10px; cursor:pointer;
+  transition:var(--transition);
+}
+.action-btn:hover { border-color:var(--primary); color:var(--primary); }
+.action-btn.del:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ── CRM link ── */
+.crm-link {
+  color:var(--primary); text-decoration:none; font-size:12px;
+  border-bottom:1px dashed rgba(45,212,191,0.3);
+}
+.crm-link:hover { border-bottom-color:var(--primary); }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align:center; padding:60px 24px;
+  color:var(--text-muted); font-size:13px;
+}
+.empty-state-icon { font-size:36px; margin-bottom:12px; }
+.empty-state-title { font-family:var(--font-heading); font-size:16px; font-weight:700; margin-bottom:6px; color:var(--text); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(8px);
+  z-index:1000; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:var(--transition);
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:32px; width:580px; max-width:94vw; max-height:88vh; overflow-y:auto;
+  transform:translateY(16px) scale(0.97); transition:var(--transition-smooth);
+  box-shadow:0 32px 80px rgba(0,0,0,0.55);
+}
+.modal-overlay.open .modal { transform:none; }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:800; margin-bottom:24px; color:var(--text); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-full { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-label { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); font-family:var(--font-mono); }
+.form-input, .form-select, .form-textarea {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:9px 12px; font-size:13px; font-family:var(--font-body);
+  outline:none; transition:var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,212,191,0.1);
+}
+.form-select option { background:var(--surface2); }
+.form-textarea { resize:vertical; min-height:72px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; flex-wrap:wrap; }
+.btn-secondary {
+  padding:9px 18px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text-muted); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-secondary:hover { border-color:var(--border-active); color:var(--text); }
+.btn-danger {
+  padding:9px 18px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
+  border-radius:var(--radius-sm); color:var(--danger); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-danger:hover { background:rgba(239,68,68,0.2); }
+
+/* montant net */
+.net-amount-box {
+  background:var(--surface3); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 16px; display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--font-mono); font-size:13px; color:var(--text-muted);
+}
+.net-amount-val { font-size:18px; font-weight:700; color:var(--primary); font-family:var(--font-heading); }
+
+/* readonly notice */
+.readonly-notice {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25);
+  border-radius:var(--radius-sm); padding:10px 16px; font-size:12px; color:var(--warning);
+  margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div class="hero-bar">
+      <div class="hero-badge">Commercial</div>
+      <h1 class="hero-title">📝 Propositions & Devis</h1>
+      <p class="hero-sub">Gérez vos propositions commerciales et suivez leur statut en temps réel.</p>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- READONLY NOTICE -->
+    <div class="readonly-notice" id="readonlyNotice" style="display:none">
+      ⚠️ Mode lecture seule — Vous n'avez pas les droits pour modifier les propositions.
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-title">Liste des propositions</div>
+      <button class="btn-primary" id="btnNewProposal" style="display:none" onclick="openModal()">+ Nouvelle proposition</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Titre</th>
+              <th>Client CRM</th>
+              <th>Montant HT</th>
+              <th>Remise</th>
+              <th>Taxe</th>
+              <th>Montant net</th>
+              <th>Statut</th>
+              <th>Envoyé le</th>
+              <th>Validité</th>
+              <th id="thActions"></th>
+            </tr>
+          </thead>
+          <tbody id="proposalsTableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="empty-state-icon">📝</div>
+        <div class="empty-state-title">Aucune proposition</div>
+        <div>Créez votre première proposition commerciale.</div>
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouvelle proposition</div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label class="form-label">Titre *</label>
+        <input class="form-input" id="fTitle" placeholder="Proposition de services — Acme Corp">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client CRM</label>
+        <select class="form-select" id="fCrmId">
+          <option value="">— Aucun lien CRM —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Statut</label>
+        <select class="form-select" id="fStatus">
+          <option value="draft">Brouillon</option>
+          <option value="sent">Envoyée</option>
+          <option value="accepted">Acceptée</option>
+          <option value="rejected">Refusée</option>
+          <option value="expired">Expirée</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Montant HT (€)</label>
+        <input class="form-input" id="fAmount" type="number" min="0" placeholder="0" oninput="calcNet()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Remise (%)</label>
+        <input class="form-input" id="fDiscount" type="number" min="0" max="100" placeholder="0" oninput="calcNet()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Taxe / TVA (%)</label>
+        <input class="form-input" id="fTax" type="number" min="0" placeholder="20" oninput="calcNet()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date d'envoi</label>
+        <input class="form-input" id="fSentDate" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valide jusqu'au</label>
+        <input class="form-input" id="fValidUntil" type="date">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="fDescription" placeholder="Détails de la proposition..."></textarea>
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">Montant net calculé</label>
+        <div class="net-amount-box">
+          <span>Montant HT - Remise + Taxe</span>
+          <span class="net-amount-val" id="netAmountDisplay">0,00 €</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="btnDelete" style="display:none;margin-right:auto" onclick="deleteProposal()">Supprimer</button>
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveProposal()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('proposals');
+  var editingId = null;
+
+  // Status config
+  var STATUS_CFG = {
+    draft:    { label:'Brouillon', cls:'badge-draft' },
+    sent:     { label:'Envoyée',   cls:'badge-sent' },
+    accepted: { label:'Acceptée',  cls:'badge-accepted' },
+    rejected: { label:'Refusée',   cls:'badge-rejected' },
+    expired:  { label:'Expirée',   cls:'badge-expired' },
+  };
+
+  function fmt(n) { return Number(n||0).toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+  function fmtDec(n) { return Number(n||0).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function calcNetAmount(amount, discount, tax) {
+    var a = Number(amount) || 0;
+    var d = Number(discount) || 0;
+    var t = Number(tax) || 0;
+    var afterDiscount = a * (1 - d/100);
+    return afterDiscount * (1 + t/100);
+  }
+
+  // Show/hide UI
+  if (canWrite) {
+    document.getElementById('btnNewProposal').style.display = '';
+    document.getElementById('thActions').textContent = 'Actions';
+  } else {
+    document.getElementById('readonlyNotice').style.display = 'flex';
+  }
+
+  // Populate CRM select
+  function populateCRMSelect(selectedId) {
+    var crm = DELHUB.getCRM();
+    var sel = document.getElementById('fCrmId');
+    sel.innerHTML = '<option value="">— Aucun lien CRM —</option>';
+    crm.forEach(function(entry) {
+      var opt = document.createElement('option');
+      opt.value = entry.id;
+      opt.textContent = esc(entry.company) + (entry.contact ? ' – ' + entry.contact : '');
+      if (String(entry.id) === String(selectedId)) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ── KPI STRIP ──
+  function renderKPIs() {
+    var proposals = DELHUB.getProposals();
+    var total = proposals.length;
+    var pending = proposals.filter(function(p) { return p.status === 'sent'; }).length;
+    var accepted = proposals.filter(function(p) { return p.status === 'accepted'; }).length;
+    var totalAmt = proposals.reduce(function(s,p) {
+      return s + calcNetAmount(p.amount, p.discount, p.tax);
+    }, 0);
+    var kpis = [
+      { label:'Total propositions', value:total, sub:'toutes propositions', color:'var(--text)' },
+      { label:'En attente',         value:pending, sub:'envoyées, réponse attendue', color:'var(--warning)' },
+      { label:'Acceptées',          value:accepted, sub:'sur ' + total + ' total', color:'var(--success)' },
+      { label:'Montant total net',  value:fmt(Math.round(totalAmt)) + ' €', sub:'tous statuts confondus', color:'var(--primary)' },
+    ];
+    var html = '';
+    kpis.forEach(function(k) {
+      html += '<div class="kpi-card">' +
+        '<div class="kpi-label">' + k.label + '</div>' +
+        '<div class="kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
+        '<div class="kpi-sub">' + k.sub + '</div>' +
+      '</div>';
+    });
+    document.getElementById('kpiStrip').innerHTML = html;
+  }
+
+  // ── TABLE ──
+  function renderTable() {
+    var proposals = DELHUB.getProposals();
+    var crm = DELHUB.getCRM();
+    var crmMap = {};
+    crm.forEach(function(e) { crmMap[e.id] = e; });
+
+    var tbody = document.getElementById('proposalsTableBody');
+    var empty = document.getElementById('emptyState');
+
+    if (proposals.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+
+    var html = '';
+    proposals.forEach(function(p) {
+      var sc = STATUS_CFG[p.status] || { label:p.status, cls:'badge-draft' };
+      var netAmt = calcNetAmount(p.amount, p.discount, p.tax);
+      var crmEntry = p.crmId ? crmMap[p.crmId] : null;
+      var crmCell = crmEntry
+        ? '<a class="crm-link" href="delhub-crm.html">' + esc(crmEntry.company) + '</a>'
+        : '<span style="color:var(--text-soft)">—</span>';
+      var validColor = '';
+      if (p.validUntil && p.status === 'sent') {
+        var diff = (new Date(p.validUntil) - new Date()) / 86400000;
+        if (diff < 0) validColor = 'color:var(--danger)';
+        else if (diff < 7) validColor = 'color:var(--warning)';
+      }
+
+      html += '<tr>' +
+        '<td style="font-weight:600">' + esc(p.title) + '</td>' +
+        '<td>' + crmCell + '</td>' +
+        '<td style="font-family:var(--font-mono)">' + fmt(p.amount) + ' €</td>' +
+        '<td style="font-family:var(--font-mono);color:var(--warning)">' + (p.discount ? '-' + p.discount + '%' : '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);color:var(--text-muted)">' + (p.tax ? '+' + p.tax + '%' : '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);font-weight:700;color:var(--primary)">' + fmt(Math.round(netAmt)) + ' €</td>' +
+        '<td><span class="badge ' + sc.cls + '">' + sc.label + '</span></td>' +
+        '<td style="color:var(--text-muted);font-size:12px">' + (p.sentDate ? p.sentDate : '—') + '</td>' +
+        '<td style="font-size:12px;' + validColor + '">' + (p.validUntil ? p.validUntil : '—') + '</td>' +
+        '<td>';
+
+      if (canWrite) {
+        html += '<div style="display:flex;gap:6px">' +
+          '<button class="action-btn" onclick="editProposal(' + p.id + ')">Modifier</button>' +
+          '<button class="action-btn del" onclick="deleteProposalDirect(' + p.id + ')">✕</button>' +
+        '</div>';
+      }
+
+      html += '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  function renderAll() {
+    renderKPIs();
+    renderTable();
+  }
+
+  // ── MODAL ──
+  window.calcNet = function() {
+    var a = parseFloat(document.getElementById('fAmount').value) || 0;
+    var d = parseFloat(document.getElementById('fDiscount').value) || 0;
+    var t = parseFloat(document.getElementById('fTax').value) || 0;
+    var net = calcNetAmount(a, d, t);
+    document.getElementById('netAmountDisplay').textContent = fmtDec(net) + ' €';
+  };
+
+  window.openModal = function() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Nouvelle proposition';
+    document.getElementById('fTitle').value      = '';
+    document.getElementById('fStatus').value     = 'draft';
+    document.getElementById('fAmount').value     = '';
+    document.getElementById('fDiscount').value   = '';
+    document.getElementById('fTax').value        = '20';
+    document.getElementById('fSentDate').value   = '';
+    document.getElementById('fValidUntil').value = '';
+    document.getElementById('fDescription').value= '';
+    document.getElementById('btnDelete').style.display = 'none';
+    populateCRMSelect('');
+    calcNet();
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.editProposal = function(id) {
+    var proposals = DELHUB.getProposals();
+    var p = proposals.find(function(x) { return x.id === id; });
+    if (!p) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Modifier la proposition';
+    document.getElementById('fTitle').value      = p.title || '';
+    document.getElementById('fStatus').value     = p.status || 'draft';
+    document.getElementById('fAmount').value     = p.amount || '';
+    document.getElementById('fDiscount').value   = p.discount || '';
+    document.getElementById('fTax').value        = p.tax !== undefined ? p.tax : '20';
+    document.getElementById('fSentDate').value   = p.sentDate || '';
+    document.getElementById('fValidUntil').value = p.validUntil || '';
+    document.getElementById('fDescription').value= p.description || '';
+    document.getElementById('btnDelete').style.display = '';
+    populateCRMSelect(p.crmId);
+    calcNet();
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  };
+
+  window.saveProposal = function() {
+    var title = document.getElementById('fTitle').value.trim();
+    if (!title) { document.getElementById('fTitle').focus(); return; }
+    var data = {
+      title:       title,
+      crmId:       document.getElementById('fCrmId').value ? Number(document.getElementById('fCrmId').value) : null,
+      status:      document.getElementById('fStatus').value,
+      amount:      Number(document.getElementById('fAmount').value) || 0,
+      discount:    Number(document.getElementById('fDiscount').value) || 0,
+      tax:         Number(document.getElementById('fTax').value) || 0,
+      sentDate:    document.getElementById('fSentDate').value || null,
+      validUntil:  document.getElementById('fValidUntil').value || null,
+      description: document.getElementById('fDescription').value.trim(),
+    };
+    if (editingId) {
+      DELHUB.updateProposal(editingId, data);
+    } else {
+      DELHUB.addProposal(data);
+    }
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteProposal = function() {
+    if (!editingId) return;
+    if (!confirm('Supprimer cette proposition ?')) return;
+    DELHUB.deleteProposal(editingId);
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteProposalDirect = function(id) {
+    if (!confirm('Supprimer cette proposition ?')) return;
+    DELHUB.deleteProposal(id);
+    renderAll();
+  };
+
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+  // Init
+  renderAll();
+
+  DELHUB.onChange(function(e) {
+    if (e.detail && (e.detail.key === DELHUB.KEYS.proposals || e.detail.key === DELHUB.KEYS.crm)) renderAll();
+  });
+
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-proposals',
+  title: 'IA Propositions & Devis',
+  icon: '\u{1F4DD}',
+  suggestions: ['Analyse de mes propositions en cours', 'Taux de conversion par type', 'Propositions a relancer', 'Optimisation des prix'],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    try {
+      var props = DELHUB.getProposals();
+      var lines = ['=== PROPOSITIONS (' + props.length + ') ==='];
+      props.forEach(function(p) { lines.push('- ' + (p.title||'?') + ': ' + (p.amount||0) + 'EUR, statut=' + (p.status||'?')); });
+      return lines.join('\n');
+    } catch(e) { return ''; }
+  },
+  predictions: function() { return 'Analyse mes propositions commerciales et donne: taux de conversion, propositions a relancer, et recommandations de pricing.'; },
+  importPrompt: 'Extrais les donnees de cette proposition: titre, client, montant, marge, validite, conditions. Genere un JSON: {title, client, amount, margin, validUntil, status}.',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined') return;
+    var props = DELHUB.getProposals();
+    if (Array.isArray(data)) { data.forEach(function(d) { d.id = 'prop-' + Date.now() + '-' + Math.random().toString(36).substr(2,4); props.push(d); }); }
+    else if (data && data.title) { data.id = 'prop-' + Date.now(); props.push(data); }
+    DELHUB.saveProposals(props);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

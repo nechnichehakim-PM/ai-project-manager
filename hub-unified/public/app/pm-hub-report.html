@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Rapport de statut</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
+.main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:40px 48px 100px;position:relative;z-index:1;}
+
+/* PAGE HEADER */
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
+.page-h1 em{font-style:italic;color:var(--accent2);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:32px;}
+
+/* CONTROLS BAR */
+.controls-bar{display:flex;align-items:center;gap:12px;margin-bottom:36px;flex-wrap:wrap;}
+.ctrl-select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;border-radius:6px;cursor:pointer;outline:none;transition:border-color .2s;min-width:200px;}
+.ctrl-select:focus{border-color:var(--accent);}
+.period-chips{display:flex;gap:6px;}
+.period-chip{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:7px 14px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .2s;}
+.period-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(99,210,180,0.06);}
+.spacer{flex:1;}
+.btn-ai-gen{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(90deg,rgba(99,210,180,0.18) 0%,rgba(99,210,180,0.06) 25%,rgba(99,210,180,0.22) 50%,rgba(99,210,180,0.06) 75%,rgba(99,210,180,0.18) 100%);
+  background-size:300% auto;
+  animation:ai-shimmer-rep 4s linear infinite;
+  border:1px solid rgba(99,210,180,0.3);color:var(--accent);
+  padding:9px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;
+  cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;
+  box-shadow:0 2px 12px rgba(99,210,180,0.12);
+}
+@keyframes ai-shimmer-rep{
+  0%{background-position:200% center;}
+  100%{background-position:-200% center;}
+}
+.btn-ai-gen:hover{animation-duration:2s;border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(99,210,180,0.25);}
+.btn-ai-gen:active{transform:translateY(1px)!important;box-shadow:0 1px 6px rgba(99,210,180,0.12)!important;transition:transform .07s ease!important;}
+.btn-ai-gen:disabled{opacity:0.4;cursor:not-allowed;animation:none;transform:none;box-shadow:none;}
+.btn-export{display:flex;align-items:center;gap:7px;background:transparent;color:var(--text-soft);padding:9px 16px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.btn-export:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px);}
+.btn-export:active{transform:translateY(1px)!important;opacity:0.7;transition:transform .07s ease!important;}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:80px 40px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);}
+.empty-state-icon{font-size:36px;margin-bottom:16px;opacity:0.4;}
+
+/* REPORT DOCUMENT */
+.report-doc{max-width:860px;display:flex;flex-direction:column;gap:20px;}
+
+/* REPORT HEADER CARD */
+.report-header-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;}
+.report-meta{display:flex;flex-direction:column;gap:6px;}
+.report-project-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;line-height:1.1;}
+.report-meta-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:6px;}
+.report-meta-item{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.report-meta-item span{color:var(--text-soft);}
+.rag-badge{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
+.rag-circle{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;border:2px solid;}
+.rag-circle.vert{background:rgba(99,210,180,0.1);border-color:var(--accent);color:var(--accent);}
+.rag-circle.ambre{background:rgba(212,175,100,0.1);border-color:var(--accent2);color:var(--accent2);}
+.rag-circle.rouge{background:rgba(232,100,100,0.1);border-color:var(--danger);color:var(--danger);}
+.rag-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+
+/* SECTION CARD */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);}
+.section-head-left{display:flex;align-items:center;gap:10px;}
+.section-icon{font-size:16px;width:20px;text-align:center;}
+.section-title{font-size:13px;font-weight:700;letter-spacing:0.02em;}
+.section-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;}
+.section-body{padding:20px 24px;}
+
+/* EXECUTIVE SUMMARY */
+.summary-area{width:100%;min-height:100px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;outline:none;}
+.summary-area::placeholder{color:var(--text-muted);}
+.summary-ai-hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.ai-loading{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);display:flex;align-items:center;gap:8px;padding:12px 0;}
+
+/* PROGRESS SECTION */
+.progress-row{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.progress-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);width:120px;flex-shrink:0;}
+.progress-bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.progress-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);width:40px;text-align:right;flex-shrink:0;}
+.kpi-mini-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;}
+.kpi-mini{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;flex:1;min-width:120px;}
+.kpi-mini-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.kpi-mini-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;}
+.kpi-mini-val.ok{color:var(--accent);}
+.kpi-mini-val.warn{color:var(--accent2);}
+.kpi-mini-val.bad{color:var(--danger);}
+.kpi-mini-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:3px;}
+
+/* MILESTONES */
+.ms-list{display:flex;flex-direction:column;gap:0;}
+.ms-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.ms-row:last-child{border-bottom:none;}
+.ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ms-name{flex:1;font-size:12px;font-weight:600;}
+.ms-proj{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.ms-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;}
+.ms-chip{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;}
+
+/* RISKS TABLE */
+.risk-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.risk-row:last-child{border-bottom:none;}
+.risk-level{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.risk-body{flex:1;}
+.risk-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.risk-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* DECISIONS */
+.decision-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.decision-row:last-child{border-bottom:none;}
+.decision-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);white-space:nowrap;margin-top:2px;min-width:70px;}
+.decision-body{flex:1;}
+.decision-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.decision-owner{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* ACTIONS */
+.action-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.action-row:last-child{border-bottom:none;}
+.action-overdue{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(232,100,100,0.1);border:1px solid rgba(232,100,100,0.3);color:var(--danger);white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.action-body{flex:1;}
+.action-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.action-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+
+/* NEXT STEPS */
+.next-steps-area{width:100%;min-height:80px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;resize:vertical;outline:none;}
+.next-steps-area::placeholder{color:var(--text-muted);}
+.auto-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.auto-step-row{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;}
+.auto-step-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0;}
+.auto-step-text{flex:1;color:var(--text-soft);}
+.auto-step-date{color:var(--text-muted);font-size:10px;}
+
+/* EMPTY SECTION */
+.section-empty{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);padding:12px 0;}
+
+/* AI FLOAT */
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+
+/* ── PRINT ─────────────────────────────────────────── */
+@media print {
+  body::before,nav,.sidebar,.controls-bar .btn-ai-gen,.controls-bar .btn-export,.controls-bar .period-chips,.ai-float-btn{display:none!important;}
+  body{background:#fff;color:#111;overflow:visible;}
+  .layout{display:block;margin-top:0;height:auto;}
+  .main{padding:0;overflow:visible;}
+  .report-doc{max-width:100%;}
+  .section-card,.report-header-card{border:1px solid #ddd;break-inside:avoid;background:#fff;}
+  .rag-circle.vert{border-color:#2a9d6e;color:#2a9d6e;background:#f0fdf9;}
+  .rag-circle.ambre{border-color:#c48a00;color:#c48a00;background:#fffbf0;}
+  .rag-circle.rouge{border-color:#c0392b;color:#c0392b;background:#fff5f5;}
+  .kpi-mini{background:#f8f8f8;border-color:#ddd;}
+  .summary-area,.next-steps-area{color:#333;}
+  .section-title,.report-project-name{color:#111;}
+  .section-icon,.section-badge,.ms-chip,.risk-level{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Rapports" class="ai-float-btn" title="Assistant IA">🤖</a>
+
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+
+    <div class="page-tag">Gouvernance projet</div>
+    <h1 class="page-h1">Rapport de <em>statut</em></h1>
+    <p class="page-sub">Document de statut formel par projet et par période — à destination du sponsor, du comité ou du PMO.</p>
+
+    <div class="controls-bar no-print">
+      <select class="ctrl-select" id="projectSelect" onchange="onProjectChange()">
+        <option value="">— Sélectionner un projet —</option>
+      </select>
+      <div class="period-chips" id="periodChips">
+        <button class="period-chip active" onclick="setPeriod('semaine',this)">Semaine</button>
+        <button class="period-chip" onclick="setPeriod('mois',this)">Mois</button>
+        <button class="period-chip" onclick="setPeriod('trimestre',this)">Trimestre</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-ai-gen" id="btnAiGen" onclick="generateAI()" disabled>✨ Générer avec l'IA</button>
+      <button class="btn-export" onclick="window.print()">🖨 Exporter PDF</button>
+    </div>
+
+    <div id="reportRoot">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        Sélectionnez un projet pour générer le rapport de statut.
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────
+let currentProjectId = null;
+let currentPeriod    = 'semaine'; // semaine | mois | trimestre
+let summaryText      = '';
+let nextStepsText    = '';
+
+// ── INIT ─────────────────────────────────────────────────────────
+(function init() {
+  const projects = PMHUB.getProjects().filter(p => p.status !== 'archived');
+  const sel = document.getElementById('projectSelect');
+  projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.icon || '📁') + ' ' + p.name;
+    sel.appendChild(opt);
+  });
+
+  // Auto-select from URL ?project=
+  const urlId = new URLSearchParams(window.location.search).get('project');
+  if (urlId) {
+    sel.value = urlId;
+    onProjectChange();
+  }
+})();
+
+// ── CONTROLS ─────────────────────────────────────────────────────
+function onProjectChange() {
+  const sel = document.getElementById('projectSelect');
+  currentProjectId = sel.value || null;
+  summaryText  = '';
+  nextStepsText = '';
+  renderReport();
+  const btn = document.getElementById('btnAiGen');
+  btn.disabled = !currentProjectId || !PMHUB.isAIEnabled();
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderReport();
+}
+
+// ── PERIOD HELPERS ────────────────────────────────────────────────
+function getPeriodRange() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  let start = new Date(now), end = new Date(now);
+  if (currentPeriod === 'semaine') {
+    const day = now.getDay() || 7;
+    start.setDate(now.getDate() - day + 1);
+    end.setDate(start.getDate() + 6);
+  } else if (currentPeriod === 'mois') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else {
+    const q = Math.floor(now.getMonth() / 3);
+    start = new Date(now.getFullYear(), q * 3, 1);
+    end   = new Date(now.getFullYear(), q * 3 + 3, 0);
+  }
+  return { start, end };
+}
+
+function fmtPeriodLabel() {
+  const { start, end } = getPeriodRange();
+  const opts = { day: 'numeric', month: 'short' };
+  if (currentPeriod === 'semaine')
+    return 'Semaine du ' + start.toLocaleDateString('fr-FR', opts) + ' au ' + end.toLocaleDateString('fr-FR', { ...opts, year: 'numeric' });
+  if (currentPeriod === 'mois')
+    return start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  return 'T' + (Math.floor(start.getMonth() / 3) + 1) + ' ' + start.getFullYear();
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return isNaN(d) ? str : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function inPeriod(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const { start, end } = getPeriodRange();
+  return d >= start && d <= end;
+}
+
+function isPast(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return d < now;
+}
+
+// ── RAG CALCULATION ───────────────────────────────────────────────
+function calcRAG(project, raid, evm) {
+  let score = 0; // 0=vert 1=ambre 2=rouge
+  // Risks critiques
+  const criticalRisks = (raid.risks || []).filter(r => {
+    const sev = (r.probability || 0) * (r.impact || 0);
+    return r.status !== 'closed' && sev >= 9;
+  });
+  if (criticalRisks.length >= 3) score = Math.max(score, 2);
+  else if (criticalRisks.length >= 1) score = Math.max(score, 1);
+
+  // Budget CPI
+  if (evm && evm.cpi) {
+    if (evm.cpi < 0.85) score = Math.max(score, 2);
+    else if (evm.cpi < 0.95) score = Math.max(score, 1);
+  }
+
+  // Jalons en retard
+  if (project.status === 'risk') score = Math.max(score, 2);
+  else if (project.progress < 20 && project.status === 'active') score = Math.max(score, 1);
+
+  // Issues ouvertes bloquantes
+  const blockingIssues = (raid.issues || []).filter(i => i.status !== 'closed' && i.priority === 'critical');
+  if (blockingIssues.length > 0) score = Math.max(score, 2);
+
+  return score === 0 ? 'vert' : score === 1 ? 'ambre' : 'rouge';
+}
+
+function ragLabel(rag) {
+  return rag === 'vert' ? 'VERT' : rag === 'ambre' ? 'AMBRE' : 'ROUGE';
+}
+
+// ── RENDER REPORT ─────────────────────────────────────────────────
+function renderReport() {
+  const root = document.getElementById('reportRoot');
+  if (!currentProjectId) {
+    root.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div>Sélectionnez un projet pour générer le rapport de statut.</div>';
+    return;
+  }
+
+  const project  = PMHUB.getProjectById(currentProjectId);
+  if (!project) {
+    root.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div>Projet introuvable.</div>';
+    return;
+  }
+
+  const raid     = PMHUB.getRaids(currentProjectId);
+  const gantt    = PMHUB.getGanttTasks(currentProjectId);
+  const tasks    = (gantt && gantt.tasks) ? gantt.tasks : [];
+  const evm      = (typeof PMHUB.getBudgetEVM === 'function') ? PMHUB.getBudgetEVM(currentProjectId) : null;
+  const rag      = calcRAG(project, raid, evm);
+  const today    = new Date(); today.setHours(0,0,0,0);
+
+  // Changes & Lessons from governance (direct localStorage)
+  let changes  = [];
+  let lessons  = [];
+  try { changes = JSON.parse(localStorage.getItem('pmhub_changes_' + currentProjectId) || '[]'); } catch(e) {}
+  try { lessons = JSON.parse(localStorage.getItem('pmhub_lessons_' + currentProjectId) || '[]'); } catch(e) {}
+
+  // ── SECTION: ACCOMPLISSEMENTS (milestones + tasks achevés dans la période) ──
+  const completedMilestones = tasks.filter(t => (t.milestone || t.type === 'milestone') && inPeriod(t.end) && (t.progress || 0) >= 100);
+  const completedTasks = tasks.filter(t => !(t.milestone || t.type === 'milestone') && inPeriod(t.end) && (t.progress || 0) >= 100);
+
+  // ── SECTION: JALONS À VENIR ──
+  const upcomingMilestones = tasks
+    .filter(t => (t.milestone || t.type === 'milestone') && (t.progress || 0) < 100)
+    .sort((a, b) => new Date(a.end) - new Date(b.end))
+    .slice(0, 5);
+
+  // ── SECTION: RISQUES ESCALADÉS (critique/élevé, non fermés) ──
+  const escalatedRisks = (raid.risks || [])
+    .filter(r => r.status !== 'closed' && ((r.probability || 0) * (r.impact || 0) >= 6))
+    .sort((a, b) => (b.probability * b.impact) - (a.probability * a.impact))
+    .slice(0, 5);
+
+  // ── SECTION: DÉCISIONS DE LA PÉRIODE ──
+  const periodDecisions = (raid.decisions || []).filter(d => inPeriod(d.date));
+  // Changements de gouvernance dans la période
+  const periodChanges = changes.filter(c => inPeriod(c.date || c.createdAt));
+
+  // ── SECTION: ACTIONS EN RETARD ──
+  const overdueActions = (raid.actions || [])
+    .filter(a => a.status !== 'closed' && a.due && isPast(a.due))
+    .sort((a, b) => new Date(a.due) - new Date(b.due))
+    .slice(0, 6);
+
+  // ── SECTION: PROCHAINES ÉTAPES (tasks non terminées, les plus proches) ──
+  const nextTasks = tasks
+    .filter(t => !(t.milestone || t.type === 'milestone') && (t.progress || 0) < 100 && t.end)
+    .sort((a, b) => new Date(a.end) - new Date(b.end))
+    .slice(0, 5);
+
+  // ── BUDGET KPI ──
+  const budgetPct = (evm && evm.bac) ? Math.round((evm.ac || 0) / evm.bac * 100) : null;
+  const cpiVal    = (evm && evm.cpi) ? evm.cpi.toFixed(2) : null;
+  const spiVal    = (evm && evm.spi) ? evm.spi.toFixed(2) : null;
+
+  // ── BUILD HTML ──────────────────────────────────────────────────
+  root.innerHTML = `
+  <div class="report-doc">
+
+    <!-- HEADER -->
+    <div class="report-header-card">
+      <div class="report-meta">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Rapport de statut · ${fmtPeriodLabel()}</div>
+        <div class="report-project-name">${project.icon || '📁'} ${project.name}</div>
+        <div class="report-meta-row">
+          <div class="report-meta-item">Statut <span>${statusLabel(project.status)}</span></div>
+          <div class="report-meta-item">Avancement <span>${project.progress || 0}%</span></div>
+          ${project.end ? `<div class="report-meta-item">Fin prévue <span>${fmtDate(project.end)}</span></div>` : ''}
+          ${project.manager ? `<div class="report-meta-item">Chef de projet <span>${project.manager}</span></div>` : ''}
+          <div class="report-meta-item">Généré le <span>${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</span></div>
+        </div>
+      </div>
+      <div class="rag-badge">
+        <div class="rag-circle ${rag}">${ragLabel(rag).charAt(0)}</div>
+        <div class="rag-label">Statut ${ragLabel(rag)}</div>
+      </div>
+    </div>
+
+    <!-- RÉSUMÉ EXÉCUTIF -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📝</span>
+          <span class="section-title">Résumé exécutif</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Éditable</span>
+      </div>
+      <div class="section-body">
+        <textarea class="summary-area" id="summaryArea" placeholder="Saisissez un résumé du statut du projet pour cette période, ou utilisez le bouton ✨ Générer avec l'IA..."
+          oninput="summaryText=this.value">${summaryText}</textarea>
+        <div id="aiLoadingIndicator" style="display:none;" class="ai-loading">⟳ Génération en cours…</div>
+        <div class="summary-ai-hint">💡 Utilisez "✨ Générer avec l'IA" pour rédiger automatiquement ce résumé à partir des données du projet.</div>
+      </div>
+    </div>
+
+    <!-- AVANCEMENT -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📊</span>
+          <span class="section-title">Avancement du projet</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">${project.progress || 0}% global</span>
+      </div>
+      <div class="section-body">
+        <div class="progress-row">
+          <div class="progress-label">Avancement global</div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${project.progress||0}%;background:${project.status==='risk'?'var(--danger)':'var(--accent)'};"></div></div>
+          <div class="progress-val">${project.progress || 0}%</div>
+        </div>
+        ${budgetPct !== null ? `
+        <div class="progress-row">
+          <div class="progress-label">Budget consommé</div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${Math.min(budgetPct,100)}%;background:${budgetPct>100?'var(--danger)':budgetPct>80?'var(--warning)':'var(--accent3)'};"></div></div>
+          <div class="progress-val">${budgetPct}%</div>
+        </div>` : ''}
+        ${(cpiVal || spiVal) ? `
+        <div class="kpi-mini-row">
+          ${cpiVal ? `<div class="kpi-mini"><div class="kpi-mini-label">CPI</div><div class="kpi-mini-val ${parseFloat(cpiVal)>=1?'ok':parseFloat(cpiVal)>=0.9?'warn':'bad'}">${cpiVal}</div><div class="kpi-mini-sub">Cost Perf. Index</div></div>` : ''}
+          ${spiVal ? `<div class="kpi-mini"><div class="kpi-mini-label">SPI</div><div class="kpi-mini-val ${parseFloat(spiVal)>=1?'ok':parseFloat(spiVal)>=0.9?'warn':'bad'}">${spiVal}</div><div class="kpi-mini-sub">Schedule Perf. Index</div></div>` : ''}
+          ${(escalatedRisks.length) ? `<div class="kpi-mini"><div class="kpi-mini-label">Risques escaladés</div><div class="kpi-mini-val ${escalatedRisks.length>2?'bad':escalatedRisks.length>0?'warn':'ok'}">${escalatedRisks.length}</div><div class="kpi-mini-sub">Critique / Élevé</div></div>` : ''}
+          ${(overdueActions.length) ? `<div class="kpi-mini"><div class="kpi-mini-label">Actions en retard</div><div class="kpi-mini-val ${overdueActions.length>0?'bad':'ok'}">${overdueActions.length}</div><div class="kpi-mini-sub">Échéance dépassée</div></div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- ACCOMPLISSEMENTS DE LA PÉRIODE -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">✅</span>
+          <span class="section-title">Accompli sur la période</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">${completedMilestones.length + completedTasks.length} élément(s)</span>
+      </div>
+      <div class="section-body">
+        ${completedMilestones.length === 0 && completedTasks.length === 0
+          ? `<div class="section-empty">Aucun jalon ou livrable achevé durant cette période.</div>`
+          : `<div class="ms-list">
+              ${completedMilestones.map(t => `
+                <div class="ms-row">
+                  <div class="ms-dot" style="background:var(--accent);"></div>
+                  <div class="ms-name">🏁 ${t.name||t.label||'Jalon'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Jalon atteint</span>
+                </div>`).join('')}
+              ${completedTasks.map(t => `
+                <div class="ms-row">
+                  <div class="ms-dot" style="background:var(--accent3);"></div>
+                  <div class="ms-name">${t.name||t.label||'Tâche'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:var(--accent3);border-color:rgba(122,184,232,0.3);">Terminé</span>
+                </div>`).join('')}
+            </div>`}
+      </div>
+    </div>
+
+    <!-- JALONS À VENIR -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🎯</span>
+          <span class="section-title">Jalons à venir</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">${upcomingMilestones.length} jalon(s)</span>
+      </div>
+      <div class="section-body">
+        ${upcomingMilestones.length === 0
+          ? `<div class="section-empty">Aucun jalon à venir. Définissez des jalons dans le Gantt.</div>`
+          : `<div class="ms-list">
+              ${upcomingMilestones.map(t => {
+                const d = new Date(t.end); d.setHours(0,0,0,0);
+                const daysLeft = Math.round((d - today) / 86400000);
+                const isPastMs = daysLeft < 0;
+                const isUrgent = !isPastMs && daysLeft <= 14;
+                const color = isPastMs ? 'var(--danger)' : isUrgent ? 'var(--accent2)' : 'var(--accent3)';
+                const chip  = isPastMs ? 'En retard' : isUrgent ? `J-${daysLeft}` : `J-${daysLeft}`;
+                return `<div class="ms-row">
+                  <div class="ms-dot" style="background:${color};"></div>
+                  <div class="ms-name">${t.name||t.label||'Jalon'}</div>
+                  <div class="ms-date">${fmtDate(t.end)}</div>
+                  <span class="ms-chip" style="color:${color};border-color:${color}33;">${chip}</span>
+                </div>`;
+              }).join('')}
+            </div>`}
+      </div>
+    </div>
+
+    <!-- RISQUES ESCALADÉS -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">⚠️</span>
+          <span class="section-title">Risques escaladés</span>
+        </div>
+        <span class="section-badge" style="color:${escalatedRisks.length>0?'var(--danger)':'var(--accent)'};border-color:${escalatedRisks.length>0?'rgba(232,100,100,0.3)':'rgba(99,210,180,0.3)'};">${escalatedRisks.length} critique(s)/élevé(s)</span>
+      </div>
+      <div class="section-body">
+        ${escalatedRisks.length === 0
+          ? `<div class="section-empty">Aucun risque critique ou élevé en cours.</div>`
+          : escalatedRisks.map(r => {
+              const sev = (r.probability || 0) * (r.impact || 0);
+              const isCrit = sev >= 9;
+              const c = isCrit ? 'var(--danger)' : 'var(--accent2)';
+              return `<div class="risk-row">
+                <span class="risk-level" style="color:${c};border-color:${c}44;">${isCrit ? '🔴 CRITIQUE' : '🟠 ÉLEVÉ'}</span>
+                <div class="risk-body">
+                  <div class="risk-title">${r.title || r.description || '—'}</div>
+                  <div class="risk-owner">Responsable : ${r.owner || r.responsible || '—'} · P×I = ${sev} · Plan : ${r.mitigation || r.response || '—'}</div>
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>
+
+    <!-- DÉCISIONS & CHANGEMENTS DE LA PÉRIODE -->
+    ${(periodDecisions.length > 0 || periodChanges.length > 0) ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">📌</span>
+          <span class="section-title">Décisions & changements de la période</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent3);border-color:rgba(122,184,232,0.3);">${periodDecisions.length + periodChanges.length} élément(s)</span>
+      </div>
+      <div class="section-body">
+        ${periodDecisions.map(d => `
+          <div class="decision-row">
+            <div class="decision-date">${fmtDate(d.date)}</div>
+            <div class="decision-body">
+              <div class="decision-title">${d.title || d.description || '—'}</div>
+              <div class="decision-owner">Décision · ${d.owner || d.responsible || '—'}</div>
+            </div>
+          </div>`).join('')}
+        ${periodChanges.map(c => `
+          <div class="decision-row">
+            <div class="decision-date">${fmtDate(c.date || c.createdAt)}</div>
+            <div class="decision-body">
+              <div class="decision-title">${c.title || c.description || '—'}</div>
+              <div class="decision-owner">Demande de changement · Statut : ${c.status || '—'}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- ACTIONS EN RETARD -->
+    ${overdueActions.length > 0 ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🔴</span>
+          <span class="section-title">Actions en retard</span>
+        </div>
+        <span class="section-badge" style="color:var(--danger);border-color:rgba(232,100,100,0.3);">${overdueActions.length} en retard</span>
+      </div>
+      <div class="section-body">
+        ${overdueActions.map(a => {
+          const d = new Date(a.due); d.setHours(0,0,0,0);
+          const daysLate = Math.round((today - d) / 86400000);
+          return `<div class="action-row">
+            <span class="action-overdue">J+${daysLate}</span>
+            <div class="action-body">
+              <div class="action-title">${a.title || a.description || '—'}</div>
+              <div class="action-meta">Responsable : ${a.owner || a.responsible || '—'} · Échéance : ${fmtDate(a.due)}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- PROCHAINES ÉTAPES -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-head-left">
+          <span class="section-icon">🚀</span>
+          <span class="section-title">Prochaines étapes</span>
+        </div>
+        <span class="section-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">Éditable</span>
+      </div>
+      <div class="section-body">
+        <textarea class="next-steps-area" id="nextStepsArea" placeholder="Saisissez les prochaines étapes manuellement, ou laissez l'IA les générer..."
+          oninput="nextStepsText=this.value">${nextStepsText}</textarea>
+        ${nextTasks.length > 0 ? `
+        <div class="auto-steps">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Tâches planifiées (Gantt)</div>
+          ${nextTasks.map(t => `
+            <div class="auto-step-row">
+              <div class="auto-step-dot"></div>
+              <div class="auto-step-text">${t.name||t.label||'Tâche'}</div>
+              <div class="auto-step-date">${fmtDate(t.end)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>
+    </div>
+
+  </div>`;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function statusLabel(s) {
+  return { active: 'En cours', risk: 'À risque', hold: 'En pause', closed: 'Clôturé' }[s] || s;
+}
+
+// ── AI GENERATION ─────────────────────────────────────────────────
+async function generateAI() {
+  if (!currentProjectId || typeof PMHUB === 'undefined' || !PMHUB.isAIEnabled()) return;
+
+  const project = PMHUB.getProjectById(currentProjectId);
+  if (!project) return;
+
+  const raid   = PMHUB.getRaids(currentProjectId);
+  const gantt  = PMHUB.getGanttTasks(currentProjectId);
+  const tasks  = (gantt && gantt.tasks) ? gantt.tasks : [];
+  const evm    = (typeof PMHUB.getBudgetEVM === 'function') ? PMHUB.getBudgetEVM(currentProjectId) : null;
+  const rag    = calcRAG(project, raid, evm);
+
+  const critRisks = (raid.risks || []).filter(r => r.status !== 'closed' && (r.probability||0)*(r.impact||0) >= 6).slice(0,3);
+  const overdueActs = (raid.actions || []).filter(a => a.status !== 'closed' && a.due && isPast(a.due)).length;
+  const upcomingMs = tasks.filter(t => (t.milestone||t.type==='milestone') && (t.progress||0)<100).sort((a,b)=>new Date(a.end)-new Date(b.end)).slice(0,3);
+
+  const btn = document.getElementById('btnAiGen');
+  const loadingEl = document.getElementById('aiLoadingIndicator');
+  btn.disabled = true;
+  btn.classList.add('btn-loading');
+  if (loadingEl) loadingEl.style.display = 'flex';
+
+  const systemPrompt = `Tu es un assistant PM expert (PMP®, PRINCE2). Tu rédiges des rapports de statut projet professionnels, concis et orientés décision. Réponds toujours en français.`;
+
+  const userPrompt = `Rédige le résumé exécutif et les prochaines étapes du rapport de statut suivant :
+
+Projet : ${project.name} (${statusLabel(project.status)})
+Période : ${fmtPeriodLabel()}
+Avancement : ${project.progress || 0}%
+Statut RAG : ${ragLabel(rag)}
+${evm ? `CPI : ${evm.cpi?.toFixed(2)||'N/A'} · SPI : ${evm.spi?.toFixed(2)||'N/A'}` : ''}
+Risques escaladés (${critRisks.length}) : ${critRisks.map(r=>`"${r.title||r.description}" (P${r.probability}×I${r.impact})`).join(', ') || 'Aucun'}
+Actions en retard : ${overdueActs}
+Jalons à venir : ${upcomingMs.map(m=>`"${m.name||m.label}" le ${fmtDate(m.end)}`).join(', ') || 'Aucun'}
+
+Réponds en JSON strict :
+{
+  "resume": "3-4 phrases de résumé exécutif professionnel (statut, points d'attention, message clé au sponsor)",
+  "prochaines_etapes": "3-5 prochaines étapes concrètes, une par ligne (format: - Action)"
+}`;
+
+  try {
+    const raw = await PMHUB.callAI(systemPrompt, userPrompt);
+    let parsed;
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    } catch(e) {
+      parsed = { resume: raw, prochaines_etapes: '' };
+    }
+
+    summaryText   = parsed.resume || '';
+    nextStepsText = parsed.prochaines_etapes || '';
+
+    const sa = document.getElementById('summaryArea');
+    const na = document.getElementById('nextStepsArea');
+    if (sa) sa.value = summaryText;
+    if (na) na.value = nextStepsText;
+  } catch(e) {
+    alert('Erreur IA : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('btn-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+}
+</script>
+<div id="ai-suggestions-bar"></div>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Génération Rapport de Statut',
+  cacheKey: 'report_' + (new URLSearchParams(location.search).get('project')||''),
+  system: 'Tu es un chef de projet PMP® expert en communication. Génère un rapport de statut hebdomadaire professionnel et complet en français. Structure: Résumé exécutif, Avancement, Risques & Actions, Budget, Prochaines étapes. Ton: professionnel, factuel, orienté action.',
+  buildPrompt: function() {
+    var pid = new URLSearchParams(location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    var p = PMHUB.getProjectById(pid);
+    if (!p) return 'Aucun projet sélectionné.';
+    var raids = PMHUB.getRaids(pid);
+    var b = PMHUB.getBudget ? PMHUB.getBudget(pid) : {};
+    var raw = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(pid) : null;
+    var tasks = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.tasks) ? raw.tasks : []);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var late = tasks.filter(function(t){return t.end&&new Date(t.end)<today&&(t.progress||0)<100;}).length;
+    var openRisks = (raids.risks||[]).filter(function(r){return r.status!=='closed';}).length;
+    var critRisks = (raids.risks||[]).filter(function(r){return r.status!=='closed'&&(r.severity==='critical'||r.severity==='haute');}).length;
+    var openActions = (raids.actions||[]).filter(function(a){return a.status!=='closed';}).length;
+    var planned = Number(b.planned)||0;
+    var consumed = Number(b.consumed)||0;
+    var txBudget = planned>0?Math.round(consumed/planned*100):0;
+    return 'DONNÉES PROJET — Semaine du '+new Date().toLocaleDateString('fr-FR')+'\nProjet: '+p.name+' ('+p.ref+')\nMéthodologie: '+(p.methodology||'waterfall')+'\nPhase: '+(p.phase||'N/A')+'\nAvancement: '+(p.progress||0)+'%\nStatut: '+p.status+'\n\nPLANNING:\n- Tâches en retard: '+late+'\n- Tâches totales: '+tasks.length+'\n\nRAID:\n- Risques ouverts: '+openRisks+' (critiques: '+critRisks+')\n- Actions en cours: '+openActions+'\n\nBUDGET:\n- Dotation: '+planned+' €\n- Consommé: '+consumed+' € ('+txBudget+'%)\n\nObjectifs: '+(p.objectives||[]).slice(0,2).join(' | ')+'\nDate fin: '+(p.end||'N/A')+'\nCommanditaire: '+(p.sponsor||'N/A')+'\n\nGénère le rapport de statut hebdomadaire complet.';
+  }
+};
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'pm-hub-report',
+  title: 'IA Rapports',
+  icon: '\uD83D\uDCDD',
+  suggestions: [
+    'Generer le rapport hebdomadaire',
+    'Synthese des alertes projet',
+    'Rapport de statut COMEX',
+    'Analyse des tendances'
+  ],
+  buildContext: function() {
+    if (typeof PMHUB === 'undefined') return '';
+    var pid = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    var p = pid && PMHUB.getProjectById ? PMHUB.getProjectById(pid) : null;
+    if (!p) return 'Aucun projet charge.';
+    var raids = PMHUB.getRaids(pid);
+    var b = PMHUB.getBudget ? PMHUB.getBudget(pid) : {};
+    var raw = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(pid) : null;
+    var tasks = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.tasks) ? raw.tasks : []);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var late = tasks.filter(function(t){return t.end&&new Date(t.end)<today&&(t.progress||0)<100;}).length;
+    var openRisks = (raids.risks||[]).filter(function(r){return r.status!=='closed';}).length;
+    var critRisks = (raids.risks||[]).filter(function(r){return r.status!=='closed'&&(r.severity==='critical'||r.severity==='haute');}).length;
+    var openActions = (raids.actions||[]).filter(function(a){return a.status!=='closed';}).length;
+    var planned = Number(b.planned)||0;
+    var consumed = Number(b.consumed)||0;
+    var txBudget = planned>0?Math.round(consumed/planned*100):0;
+    var lines = ['=== DONNEES RAPPORT ==='];
+    lines.push('Projet: '+p.name+' ('+p.ref+'), Phase: '+(p.phase||'N/A'));
+    lines.push('Avancement: '+(p.progress||0)+'%, Statut: '+p.status);
+    lines.push('Planning: '+late+' taches en retard sur '+tasks.length);
+    lines.push('RAID: '+openRisks+' risques ('+critRisks+' critiques), '+openActions+' actions');
+    lines.push('Budget: '+consumed+'/'+planned+' EUR ('+txBudget+'%)');
+    lines.push('Fin prevue: '+(p.end||'N/A')+', Sponsor: '+(p.sponsor||'N/A'));
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Genere le rapport de statut hebdomadaire: 1) Resume executif (3 lignes) 2) Avancement vs plan avec tendance 3) Alertes et risques majeurs 4) Budget: situation et prevision 5) Decisions requises 6) Plan de la semaine prochaine 7) RAG global avec justification';
+  },
+  importPrompt: 'Analyse ce rapport de statut et extrais: avancement, risques, decisions, actions. Genere un JSON avec: risks (array of {title, severity, status}), actions (array of {title, owner, deadline, status}).',
+  importHandler: function(data) {
+    if (typeof PMHUB === 'undefined') return;
+    var pid = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    if (!pid) return;
+    var raids = PMHUB.getRaids(pid);
+    if (data.risks) {
+      raids.risks = raids.risks || [];
+      data.risks.forEach(function(r) { raids.risks.push({id:'r_'+Date.now()+'_'+Math.random().toString(36).substr(2,4), title:r.title, severity:r.severity||'medium', status:r.status||'open', date:new Date().toISOString().split('T')[0]}); });
+    }
+    if (data.actions) {
+      raids.actions = raids.actions || [];
+      data.actions.forEach(function(a) { raids.actions.push({id:'a_'+Date.now()+'_'+Math.random().toString(36).substr(2,4), title:a.title, owner:a.owner||'', deadline:a.deadline||'', status:a.status||'open'}); });
+    }
+    PMHUB.saveRaids(pid, raids);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Pilotage Transverse</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-context{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-icon{font-size:16px;color:var(--text-muted);text-decoration:none;padding:7px 10px;border-radius:5px;}
+.nav-back{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:5px;transition:all .2s;}
+.nav-back:hover{color:var(--text);border-color:var(--text-muted);}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,.35);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
+.main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:36px 40px 100px;}
+
+/* PAGE HEADER */
+.page-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;line-height:1.15;margin-bottom:6px;}
+.page-h1 em{font-style:italic;color:var(--accent);}
+.page-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:24px;}
+
+/* PROJECT SELECTOR */
+.proj-selector-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;}
+.proj-selector-bar label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);flex-shrink:0;}
+.proj-selector-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:7px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;flex:1;max-width:320px;cursor:pointer;outline:none;}
+.proj-selector-bar select:focus{border-color:rgba(99,210,180,.4);}
+
+/* TABS */
+.tabs-bar{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab-btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text-muted);background:transparent;border-top:none;border-left:none;border-right:none;white-space:nowrap;transition:color .15s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;line-height:1;}
+.kpi-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+
+/* SECTION */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:28px;}
+.section-hd h3{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-soft);}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+.card-head{padding:16px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+.card-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-soft);}
+.card-body{padding:16px 20px 20px;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl thead th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+.tbl tbody tr{border-bottom:1px solid rgba(255,255,255,.03);}
+.tbl tbody tr:last-child{border-bottom:none;}
+.tbl td{padding:10px 14px;font-size:12px;vertical-align:middle;}
+.tbl input,.tbl select,.tbl textarea{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px 9px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;width:100%;outline:none;}
+.tbl input:focus,.tbl select:focus{border-color:rgba(99,210,180,.35);}
+
+/* BADGES */
+.badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);}
+.badge.green{background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.25);}
+.badge.amber{background:rgba(245,158,11,.1);color:#f59e0b;border-color:rgba(245,158,11,.25);}
+.badge.red{background:rgba(239,68,68,.1);color:var(--danger);border-color:rgba(239,68,68,.25);}
+.badge.blue{background:rgba(99,210,180,.08);color:var(--accent);border-color:rgba(99,210,180,.2);}
+
+/* BUTTONS */
+.btn{font-family:'DM Mono',monospace;font-size:10px;padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.btn:hover{color:var(--text);border-color:var(--text-soft);}
+.btn.primary{background:rgba(99,210,180,.1);border-color:rgba(99,210,180,.3);color:var(--accent);}
+.btn.primary:hover{background:rgba(99,210,180,.18);}
+.btn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.2);color:var(--danger);}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+
+/* POWER/INTEREST MATRIX */
+.matrix-wrap{display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;aspect-ratio:1.6;position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.matrix-q{padding:12px;position:relative;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.matrix-q:nth-child(2){border-right:none;}
+.matrix-q:nth-child(3){border-bottom:none;}
+.matrix-q:nth-child(4){border-right:none;border-bottom:none;}
+.matrix-q-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.matrix-q-strategy{font-family:'DM Mono',monospace;font-size:9px;color:var(--accent);font-weight:500;}
+.matrix-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.matrix-dot{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-soft);cursor:default;}
+.matrix-axis-x{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);}
+.matrix-container{position:relative;padding-bottom:24px;margin-bottom:8px;}
+.matrix-axis-labels{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:4px;}
+
+/* BUDGET */
+.budget-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.bkpi{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.bkpi-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;margin-bottom:2px;}
+.bkpi-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);}
+.bkpi.over .bkpi-val{color:var(--danger);}
+.progress-wrap{margin-bottom:20px;}
+.progress-label{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:6px;}
+.progress-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;position:relative;}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s;}
+.progress-committed{position:absolute;top:0;height:100%;background:rgba(212,175,100,.3);border-radius:4px;}
+.budget-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);}
+.form-input,.form-select,.form-textarea{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color .15s;}
+.form-input:focus,.form-textarea:focus{border-color:rgba(99,210,180,.35);}
+.form-textarea{resize:vertical;line-height:1.5;}
+.full{grid-column:1/-1;}
+
+/* ONE-PAGER */
+.onepager-form{display:flex;flex-direction:column;gap:14px;}
+.op-field{display:flex;flex-direction:column;gap:5px;}
+@media print{
+  nav,.sidebar,.tabs-bar,.proj-selector-bar,.btn-row,.ai-float-btn,#pmhub-sidebar{display:none!important;}
+  .layout{display:block!important;margin-top:0!important;}
+  .main{padding:16px!important;overflow:visible!important;}
+  body{overflow:auto!important;height:auto!important;}
+  .card{break-inside:avoid;}
+}
+
+/* TRANSVERSE TIMELINE */
+.tx-timeline{display:flex;flex-direction:column;gap:6px;}
+.tx-tl-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);}
+.tx-tl-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--accent);width:60px;flex-shrink:0;}
+.tx-tl-name{font-size:12px;font-weight:500;flex:1;}
+.tx-tl-proj{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.tx-tl-late{color:var(--danger);}
+
+/* SHARED STAKEHOLDERS */
+.shared-sk-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
+.shared-sk-row:last-child{border-bottom:none;}
+.shared-sk-name{font-size:12px;font-weight:500;flex:1;}
+.shared-sk-projs{display:flex;flex-wrap:wrap;gap:4px;}
+.proj-tag{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(99,210,180,.08);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+
+/* NO PROJECT */
+.no-proj{padding:40px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);}
+.no-proj a{color:var(--accent);}
+</style>
+</head>
+<body>
+<nav>
+  <a href="pm-hub.html" class="nav-back">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Transverse" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="page-tag">PMO · Fonctions transverses</div>
+    <h1 class="page-h1">Pilotage <em>transverse</em></h1>
+    <p class="page-sub">Vue cross-projets · Parties prenantes · Communication · Budget · Livrables · One-pager · REX</p>
+
+    <div class="tabs-bar" id="tabsBar">
+      <button class="tab-btn active" data-tab="transverse">🔀 Vue transverse</button>
+      <button class="tab-btn" data-tab="stakeholders">👥 Parties prenantes</button>
+      <button class="tab-btn" data-tab="communication">📢 Communication</button>
+      <button class="tab-btn" data-tab="budget">💰 Budget</button>
+      <button class="tab-btn" data-tab="deliverables">📎 Livrables</button>
+      <button class="tab-btn" data-tab="onepager">📄 One-pager</button>
+      <button class="tab-btn" data-tab="retro">💡 REX</button>
+    </div>
+
+    <!-- Sélecteur projet (masqué pour onglet transverse) -->
+    <div class="proj-selector-bar" id="projSelectorBar" style="display:none;">
+      <label>Projet</label>
+      <select id="projectSelect" onchange="switchProject(this.value)"></select>
+    </div>
+
+    <div id="tabContent"></div>
+  </main>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+var currentProjectId = null;
+var currentTab = 'transverse';
+var allProjects = PMHUB.getProjects();
+
+// ── INIT ─────────────────────────────────────────────────────────
+function init() {
+  var sel = document.getElementById('projectSelect');
+  sel.innerHTML = '<option value="">— Choisir un projet —</option>' +
+    allProjects.map(function(p) {
+      return '<option value="' + p.id + '">' + escAttr(p.ref) + ' — ' + escAttr(p.name) + '</option>';
+    }).join('');
+  var param = PMHUB.getParam ? PMHUB.getParam('project') : new URLSearchParams(window.location.search).get('project');
+  if (param) { sel.value = param; switchProject(param); }
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { setTab(btn.dataset.tab); });
+  });
+  renderTab('transverse');
+}
+
+function setTab(tabId) {
+  currentTab = tabId;
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === tabId); });
+  document.getElementById('projSelectorBar').style.display = tabId === 'transverse' ? 'none' : 'flex';
+  renderTab(tabId);
+}
+
+function switchProject(id) {
+  currentProjectId = id ? (parseInt(id, 10) || id) : null;
+  renderTab(currentTab);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function fmtMoney(v, curr) {
+  v = Number(v) || 0; curr = curr || '€';
+  if (v >= 1000000) return (v/1000000).toFixed(1).replace('.0','') + ' M' + curr;
+  if (v >= 1000)    return Math.round(v/1000) + ' k' + curr;
+  return v.toLocaleString('fr-FR') + ' ' + curr;
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+function renderTab(tabId) {
+  var c = document.getElementById('tabContent');
+  if (tabId === 'transverse')    { renderTransverse(c); return; }
+  if (!currentProjectId) { c.innerHTML = '<div class="no-proj">Sélectionnez un projet ci-dessus ou <a href="pm-hub.html">créez-en un</a>.</div>'; return; }
+  if (tabId === 'stakeholders')  renderStakeholders(c);
+  else if (tabId === 'communication') renderCommunication(c);
+  else if (tabId === 'budget')   renderBudget(c);
+  else if (tabId === 'deliverables') renderDeliverables(c);
+  else if (tabId === 'onepager') renderOnePager(c);
+  else if (tabId === 'retro')    renderRetro(c);
+}
+
+// ══ VUE TRANSVERSE ═══════════════════════════════════════════════
+function renderTransverse(c) {
+  var activeProjs = allProjects.filter(function(p){ return p.status === 'active'; });
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  // KPIs transverses
+  var totalSk = 0, totalDel = 0, totalRex = 0, totalComm = 0;
+  activeProjs.forEach(function(p) {
+    totalSk  += (PMHUB.getStakeholders ? PMHUB.getStakeholders(p.id) || [] : []).length;
+    totalDel += (PMHUB.getDeliverables ? PMHUB.getDeliverables(p.id) || [] : []).length;
+    totalRex += (PMHUB.getRetros ? PMHUB.getRetros(p.id) || [] : []).length;
+    var cp = PMHUB.getCommunicationPlan ? PMHUB.getCommunicationPlan(p.id) : null;
+    totalComm += cp && cp.plan ? cp.plan.length : 0;
+  });
+
+  var html = '';
+  html += '<div class="kpi-strip">';
+  html += '<div class="kpi-card"><div class="kpi-label">Projets actifs</div><div class="kpi-val">' + activeProjs.length + '</div><div class="kpi-sub">/ ' + allProjects.length + ' total</div></div>';
+  html += '<div class="kpi-card"><div class="kpi-label">Parties prenantes</div><div class="kpi-val">' + totalSk + '</div><div class="kpi-sub">toutes sources</div></div>';
+  html += '<div class="kpi-card"><div class="kpi-label">Livrables</div><div class="kpi-val">' + totalDel + '</div><div class="kpi-sub">enregistrés</div></div>';
+  html += '<div class="kpi-card"><div class="kpi-label">REX / Rétros</div><div class="kpi-val">' + totalRex + '</div><div class="kpi-sub">sessions capitalisées</div></div>';
+  html += '</div>';
+
+  // Parties prenantes partagées (mêmes noms sur plusieurs projets)
+  var skMap = {};
+  activeProjs.forEach(function(p) {
+    var list = PMHUB.getStakeholders ? PMHUB.getStakeholders(p.id) || [] : [];
+    list.forEach(function(s) {
+      var key = (s.name || '').trim().toLowerCase();
+      if (!key) return;
+      if (!skMap[key]) skMap[key] = { name: s.name, projs: [] };
+      skMap[key].projs.push(p.name || p.ref);
+    });
+  });
+  var sharedSk = Object.values(skMap).filter(function(v){ return v.projs.length > 1; });
+
+  html += '<div class="section-hd"><h3>👥 Parties prenantes partagées</h3><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + sharedSk.length + ' en commun sur plusieurs projets</span></div>';
+  html += '<div class="card"><div class="card-body" style="padding-top:8px;">';
+  if (sharedSk.length) {
+    sharedSk.forEach(function(sk) {
+      html += '<div class="shared-sk-row"><div class="shared-sk-name">' + esc(sk.name) + '</div>';
+      html += '<div class="shared-sk-projs">' + sk.projs.map(function(n){ return '<span class="proj-tag">' + esc(n) + '</span>'; }).join('') + '</div></div>';
+    });
+  } else {
+    html += '<p style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucune partie prenante commune détectée entre les projets actifs.</p>';
+  }
+  html += '</div></div>';
+
+  // Jalons transverses — 60 jours
+  var milestones = [];
+  activeProjs.forEach(function(p) {
+    var gantt = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(p.id) : [];
+    var tasks = Array.isArray(gantt) ? gantt : (gantt && gantt.tasks ? gantt.tasks : []);
+    tasks.forEach(function(t) {
+      if (t.type === 'milestone' || t.milestone) {
+        var d = t.end ? new Date(t.end) : null;
+        if (d) {
+          var diff = Math.round((d - today) / 86400000);
+          if (diff >= -7 && diff <= 60) milestones.push({ name: t.name, date: d, diff: diff, proj: p.name || p.ref });
+        }
+      }
+    });
+  });
+  milestones.sort(function(a, b){ return a.date - b.date; });
+
+  html += '<div class="section-hd"><h3>📅 Jalons transverses — 60 jours</h3><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + milestones.length + ' jalon(s)</span></div>';
+  html += '<div class="card"><div class="card-body">';
+  if (milestones.length) {
+    html += '<div class="tx-timeline">';
+    milestones.forEach(function(m) {
+      var late = m.diff < 0;
+      html += '<div class="tx-tl-row">';
+      html += '<span class="tx-tl-date' + (late ? ' tx-tl-late' : '') + '">' + fmtDate(m.date) + '</span>';
+      html += '<span class="tx-tl-name">' + esc(m.name) + '</span>';
+      html += '<span class="tx-tl-proj">' + esc(m.proj) + '</span>';
+      if (late) html += '<span class="badge red">Dépassé</span>';
+      else if (m.diff <= 7) html += '<span class="badge amber">Cette semaine</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucun jalon dans les 60 prochains jours.</p>';
+  }
+  html += '</div></div>';
+
+  // Livrables en retard ou en revue
+  var delAlerts = [];
+  activeProjs.forEach(function(p) {
+    var list = PMHUB.getDeliverables ? PMHUB.getDeliverables(p.id) || [] : [];
+    list.forEach(function(d) {
+      if (d.status === 'review' || (d.date && new Date(d.date) < today && d.status !== 'validated')) {
+        delAlerts.push({ name: d.name, status: d.status, date: d.date, proj: p.name || p.ref });
+      }
+    });
+  });
+
+  html += '<div class="section-hd"><h3>📎 Livrables en attention</h3><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + delAlerts.length + ' item(s)</span></div>';
+  html += '<div class="card"><div class="card-body">';
+  if (delAlerts.length) {
+    html += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Livrable</th><th>Projet</th><th>Statut</th><th>Échéance</th></tr></thead><tbody>';
+    delAlerts.forEach(function(d) {
+      var late = d.date && new Date(d.date) < today && d.status !== 'validated';
+      var badgeCls = d.status === 'review' ? 'amber' : late ? 'red' : '';
+      var badgeLbl = d.status === 'review' ? 'En revue' : late ? 'En retard' : d.status;
+      html += '<tr><td>' + esc(d.name || '—') + '</td><td><span class="badge blue">' + esc(d.proj) + '</span></td>';
+      html += '<td><span class="badge ' + badgeCls + '">' + esc(badgeLbl) + '</span></td>';
+      html += '<td style="font-family:\'DM Mono\',monospace;font-size:10px;">' + (d.date ? fmtDate(d.date) : '—') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<p style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">✅ Aucun livrable en retard ou en attente de revue.</p>';
+  }
+  html += '</div></div>';
+
+  c.innerHTML = html;
+}
+
+// ══ PARTIES PRENANTES ════════════════════════════════════════════
+function renderStakeholders(c) {
+  var list = PMHUB.getStakeholders(currentProjectId) || [];
+
+  // Matrice quadrants
+  var q = { hh: [], hf: [], fh: [], ff: [] };
+  list.forEach(function(s) {
+    var key = (s.power === 'Haut' ? 'h' : 'f') + (s.interest === 'Haut' ? 'h' : 'f');
+    q[key].push(s.name || '?');
+  });
+  var matrixDots = function(arr) {
+    return arr.map(function(n){ return '<span class="matrix-dot">' + esc(n) + '</span>'; }).join('');
+  };
+
+  var tableRows = list.map(function(s, i) {
+    return '<tr>' +
+      '<td><input type="text" value="' + escAttr(s.name||'') + '" onchange="updateSk(' + i + ',\'name\',this.value)"/></td>' +
+      '<td><select onchange="updateSk(' + i + ',\'power\',this.value)">' +
+        '<option value="Haut"' + (s.power==='Haut'?' selected':'') + '>Haut</option>' +
+        '<option value="Moyen"' + (s.power==='Moyen'?' selected':'') + '>Moyen</option>' +
+        '<option value="Faible"' + (s.power==='Faible'?' selected':'') + '>Faible</option>' +
+      '</select></td>' +
+      '<td><select onchange="updateSk(' + i + ',\'interest\',this.value)">' +
+        '<option value="Haut"' + (s.interest==='Haut'?' selected':'') + '>Haut</option>' +
+        '<option value="Moyen"' + (s.interest==='Moyen'?' selected':'') + '>Moyen</option>' +
+        '<option value="Faible"' + (s.interest==='Faible'?' selected':'') + '>Faible</option>' +
+      '</select></td>' +
+      '<td><input type="text" value="' + escAttr(s.strategy||'') + '" placeholder="Gérer de près…" onchange="updateSk(' + i + ',\'strategy\',this.value)"/></td>' +
+      '<td><button class="btn danger" onclick="deleteSk(' + i + ')">🗑</button></td>' +
+    '</tr>';
+  }).join('');
+
+  c.innerHTML =
+    '<div class="card"><div class="card-head"><div class="card-title">Registre parties prenantes</div></div><div class="card-body">' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nom / Rôle</th><th>Pouvoir</th><th>Intérêt</th><th>Stratégie</th><th></th></tr></thead>' +
+    '<tbody>' + (tableRows || '<tr><td colspan="5" style="color:var(--text-muted);font-family:\'DM Mono\',monospace;font-size:10px;padding:20px;">Aucune partie prenante enregistrée.</td></tr>') + '</tbody></table></div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="addSk()">+ Ajouter</button></div>' +
+    '</div></div>' +
+
+    '<div class="card"><div class="card-head"><div class="card-title">Matrice Pouvoir × Intérêt</div></div><div class="card-body">' +
+    '<div class="matrix-container">' +
+    '<div style="display:flex;gap:4px;font-family:\'DM Mono\',monospace;font-size:8px;color:var(--text-muted);margin-bottom:4px;padding-left:8px;">' +
+      '<span style="flex:1;text-align:center;">Intérêt FAIBLE</span><span style="flex:1;text-align:center;">Intérêt HAUT</span>' +
+    '</div>' +
+    '<div style="display:flex;gap:0;align-items:stretch;">' +
+      '<div style="display:flex;flex-direction:column;justify-content:space-between;padding-right:6px;">' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;">Pouvoir HAUT</span>' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;">Pouvoir FAIBLE</span>' +
+      '</div>' +
+      '<div class="matrix-wrap" style="flex:1;">' +
+        '<div class="matrix-q" style="background:rgba(245,158,11,.04);">' +
+          '<div class="matrix-q-label">Pouvoir Haut · Intérêt Faible</div>' +
+          '<div class="matrix-q-strategy">Satisfaire</div>' +
+          '<div class="matrix-dots">' + matrixDots(q.hf) + '</div>' +
+        '</div>' +
+        '<div class="matrix-q" style="background:rgba(239,68,68,.04);">' +
+          '<div class="matrix-q-label">Pouvoir Haut · Intérêt Haut</div>' +
+          '<div class="matrix-q-strategy">Gérer de près</div>' +
+          '<div class="matrix-dots">' + matrixDots(q.hh) + '</div>' +
+        '</div>' +
+        '<div class="matrix-q" style="background:rgba(99,210,180,.03);">' +
+          '<div class="matrix-q-label">Pouvoir Faible · Intérêt Faible</div>' +
+          '<div class="matrix-q-strategy">Observer</div>' +
+          '<div class="matrix-dots">' + matrixDots(q.ff) + '</div>' +
+        '</div>' +
+        '<div class="matrix-q" style="background:rgba(99,210,180,.06);">' +
+          '<div class="matrix-q-label">Pouvoir Faible · Intérêt Haut</div>' +
+          '<div class="matrix-q-strategy">Informer</div>' +
+          '<div class="matrix-dots">' + matrixDots(q.fh) + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '</div></div></div>';
+}
+
+// ══ COMMUNICATION ════════════════════════════════════════════════
+function renderCommunication(c) {
+  var data = PMHUB.getCommunicationPlan(currentProjectId) || { plan: [], history: [] };
+  var plan = data.plan || [];
+
+  var planRows = plan.map(function(p, i) {
+    return '<tr>' +
+      '<td><input type="text" value="' + escAttr(p.who||'') + '" onchange="updateComm(' + i + ',\'who\',this.value)" placeholder="Destinataire"/></td>' +
+      '<td><input type="text" value="' + escAttr(p.what||'') + '" onchange="updateComm(' + i + ',\'what\',this.value)" placeholder="Objet / contenu"/></td>' +
+      '<td><input type="text" value="' + escAttr(p.when||'') + '" onchange="updateComm(' + i + ',\'when\',this.value)" placeholder="Hebdo / Mensuel…"/></td>' +
+      '<td><input type="text" value="' + escAttr(p.channel||'') + '" onchange="updateComm(' + i + ',\'channel\',this.value)" placeholder="Email / Réunion…"/></td>' +
+      '<td><button class="btn danger" onclick="deleteComm(' + i + ')">🗑</button></td>' +
+    '</tr>';
+  }).join('');
+
+  var histRows = (data.history||[]).slice(0,20).map(function(h) {
+    return '<tr><td style="font-family:\'DM Mono\',monospace;font-size:10px;">' + esc(h.date||'—') + '</td><td>' + esc(h.desc||'') + '</td></tr>';
+  }).join('') || '<tr><td colspan="2" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucun envoi enregistré.</td></tr>';
+
+  c.innerHTML =
+    '<div class="card"><div class="card-head"><div class="card-title">Plan de communication</div></div><div class="card-body">' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Qui</th><th>Quoi</th><th>Quand</th><th>Canal</th><th></th></tr></thead>' +
+    '<tbody>' + (planRows || '<tr><td colspan="5" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);padding:20px;">Aucune entrée.</td></tr>') + '</tbody></table></div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="addComm()">+ Ajouter</button></div>' +
+    '</div></div>' +
+
+    '<div class="card"><div class="card-head"><div class="card-title">Historique des envois</div></div><div class="card-body">' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Contenu / Destinataire</th></tr></thead>' +
+    '<tbody>' + histRows + '</tbody></table></div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="addCommHistory()">+ Enregistrer un envoi</button></div>' +
+    '</div></div>';
+}
+
+// ══ BUDGET ═══════════════════════════════════════════════════════
+function renderBudget(c) {
+  var b = PMHUB.getBudget(currentProjectId) || {};
+  var planned   = Number(b.planned)   || 0;
+  var committed = Number(b.committed) || 0;
+  var consumed  = Number(b.consumed)  || 0;
+  var curr = b.currency || '€';
+  var consumedPct   = planned > 0 ? Math.round(consumed   / planned * 100) : 0;
+  var committedPct  = planned > 0 ? Math.round(committed  / planned * 100) : 0;
+  var isOver = planned > 0 && consumed > planned;
+  var pctColor = consumedPct > 90 ? 'var(--danger)' : consumedPct > 70 ? '#f59e0b' : '#22c55e';
+  var fillBg   = consumedPct > 90 ? 'var(--danger)' : consumedPct > 70 ? '#f59e0b' : 'var(--accent)';
+
+  var entries = b.entries || [];
+  var entryRows = entries.map(function(e, i) {
+    return '<tr>' +
+      '<td><input type="text" value="' + escAttr(e.label||'') + '" onchange="updateBudgetEntry(' + i + ',\'label\',this.value)" placeholder="Poste de dépense"/></td>' +
+      '<td><input type="number" value="' + (e.planned||0) + '" onchange="updateBudgetEntry(' + i + ',\'planned\',this.value)" style="width:100px;"/></td>' +
+      '<td><input type="number" value="' + (e.consumed||0) + '" onchange="updateBudgetEntry(' + i + ',\'consumed\',this.value)" style="width:100px;"/></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (e.consumed > e.planned && e.planned > 0 ? 'var(--danger)' : 'var(--text-muted)') + ';">' +
+        (e.planned > 0 ? Math.round((e.consumed||0)/e.planned*100) + '%' : '—') +
+      '</td>' +
+      '<td><button class="btn danger" onclick="deleteBudgetEntry(' + i + ')">🗑</button></td>' +
+    '</tr>';
+  }).join('');
+
+  c.innerHTML =
+    '<div class="budget-kpis">' +
+      '<div class="bkpi"><div class="bkpi-val">' + fmtMoney(planned, curr) + '</div><div class="bkpi-lbl">Prévu</div></div>' +
+      '<div class="bkpi"><div class="bkpi-val" style="color:rgba(212,175,100,.9);">' + fmtMoney(committed, curr) + '</div><div class="bkpi-lbl">Engagé</div></div>' +
+      '<div class="bkpi' + (isOver?' over':'') + '"><div class="bkpi-val" style="color:' + pctColor + ';">' + fmtMoney(consumed, curr) + '</div><div class="bkpi-lbl">Consommé' + (isOver?' — ⚠ Dépassement':'') + '</div></div>' +
+    '</div>' +
+    '<div class="progress-wrap">' +
+      '<div class="progress-label"><span>Consommé</span><span style="color:' + pctColor + ';font-weight:600;">' + consumedPct + '%</span></div>' +
+      '<div class="progress-track">' +
+        '<div class="progress-committed" style="width:' + Math.min(100,committedPct) + '%;"></div>' +
+        '<div class="progress-fill" style="width:' + Math.min(100,consumedPct) + '%;background:' + fillBg + ';position:relative;z-index:1;"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:16px;margin-top:6px;">' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);"><span style="display:inline-block;width:10px;height:4px;background:' + fillBg + ';border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Consommé</span>' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);"><span style="display:inline-block;width:10px;height:4px;background:rgba(212,175,100,.3);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Engagé</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card"><div class="card-head"><div class="card-title">Lignes budgétaires</div></div><div class="card-body">' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Poste</th><th>Prévu (' + curr + ')</th><th>Consommé (' + curr + ')</th><th>%</th><th></th></tr></thead>' +
+    '<tbody>' + (entryRows || '<tr><td colspan="5" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);padding:16px;">Aucune ligne budgétaire.</td></tr>') + '</tbody></table></div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="addBudgetEntry()">+ Ajouter une ligne</button></div>' +
+    '</div></div>' +
+
+    '<div class="card"><div class="card-head"><div class="card-title">Paramètres budget</div></div><div class="card-body">' +
+    '<div class="budget-form">' +
+      '<div class="form-field"><label class="form-label">Prévu</label><input type="number" class="form-input" id="b_planned" value="' + planned + '"/></div>' +
+      '<div class="form-field"><label class="form-label">Engagé</label><input type="number" class="form-input" id="b_committed" value="' + committed + '"/></div>' +
+      '<div class="form-field"><label class="form-label">Consommé</label><input type="number" class="form-input" id="b_consumed" value="' + consumed + '"/></div>' +
+      '<div class="form-field"><label class="form-label">Devise</label><input type="text" class="form-input" id="b_currency" value="' + escAttr(curr) + '" style="width:80px;"/></div>' +
+    '</div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="saveBudget()">💾 Enregistrer</button></div>' +
+    '</div></div>';
+}
+
+// ══ LIVRABLES ════════════════════════════════════════════════════
+function renderDeliverables(c) {
+  var list = PMHUB.getDeliverables(currentProjectId) || [];
+  var statusLabel = { draft: 'Brouillon', review: 'En revue', validated: 'Validé' };
+  var statusClass = { draft: '', review: 'amber', validated: 'green' };
+
+  var rows = list.map(function(d, i) {
+    return '<tr>' +
+      '<td><input type="text" value="' + escAttr(d.name||'') + '" onchange="updateDel(' + i + ',\'name\',this.value)" placeholder="Nom du livrable"/></td>' +
+      '<td><select onchange="updateDel(' + i + ',\'status\',this.value)">' +
+        '<option value="draft"' + (d.status==='draft'?' selected':'') + '>Brouillon</option>' +
+        '<option value="review"' + (d.status==='review'?' selected':'') + '>En revue</option>' +
+        '<option value="validated"' + (d.status==='validated'?' selected':'') + '>Validé</option>' +
+      '</select></td>' +
+      '<td><input type="date" value="' + escAttr(d.date||'') + '" onchange="updateDel(' + i + ',\'date\',this.value)"/></td>' +
+      '<td><button class="btn danger" onclick="deleteDel(' + i + ')">🗑</button></td>' +
+    '</tr>';
+  }).join('');
+
+  c.innerHTML =
+    '<div class="card"><div class="card-head"><div class="card-title">Livrables / Documentation</div></div><div class="card-body">' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nom du livrable</th><th>Statut</th><th>Échéance</th><th></th></tr></thead>' +
+    '<tbody>' + (rows || '<tr><td colspan="4" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);padding:20px;">Aucun livrable enregistré.</td></tr>') + '</tbody></table></div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="addDel()">+ Ajouter un livrable</button></div>' +
+    '</div></div>';
+}
+
+// ══ ONE-PAGER ════════════════════════════════════════════════════
+function renderOnePager(c) {
+  var reports = PMHUB.getOnePagerReports(currentProjectId) || [];
+  var last = reports[reports.length - 1] || {};
+  var proj = PMHUB.getProjectById ? PMHUB.getProjectById(currentProjectId) : null;
+
+  var histHtml = '';
+  if (reports.length > 1) {
+    histHtml = '<div class="card" style="margin-top:16px;"><div class="card-head"><div class="card-title">Historique (' + (reports.length - 1) + ' rapport(s))</div></div><div class="card-body">' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Résumé</th></tr></thead><tbody>' +
+      reports.slice(0, -1).reverse().slice(0,5).map(function(r) {
+        return '<tr><td style="font-family:\'DM Mono\',monospace;font-size:10px;">' + esc(r.date||'—') + '</td><td style="font-size:11px;">' + esc((r.summary||'').slice(0,80)) + (r.summary && r.summary.length > 80 ? '…' : '') + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div></div></div>';
+  }
+
+  c.innerHTML =
+    '<div class="card"><div class="card-head">' +
+      '<div><div class="card-title">One-pager · Rapport d\'avancement</div>' +
+      (proj ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;">' + esc(proj.name||proj.ref) + ' · ' + (last.date || 'Nouveau') + '</div>' : '') +
+    '</div></div><div class="card-body">' +
+    '<div class="onepager-form">' +
+      '<div class="op-field"><label class="form-label">Résumé / Contexte</label><textarea class="form-textarea" id="op_summary" rows="3" placeholder="Situation actuelle du projet…">' + esc(last.summary||'') + '</textarea></div>' +
+      '<div class="op-field"><label class="form-label">Jalons clés (atteints / à venir)</label><textarea class="form-textarea" id="op_milestones" rows="2" placeholder="✅ Phase 1 livrée — ⏳ Phase 2 en cours…">' + esc(last.milestones||'') + '</textarea></div>' +
+      '<div class="op-field"><label class="form-label">Risques / Points d\'attention</label><textarea class="form-textarea" id="op_risks" rows="2" placeholder="Risque X (niveau critique) — Action en cours…">' + esc(last.risks||'') + '</textarea></div>' +
+      '<div class="op-field"><label class="form-label">Décisions prises / demandées</label><textarea class="form-textarea" id="op_decisions" rows="2" placeholder="Décision 1 : arbitrage budget validé…">' + esc(last.decisions||'') + '</textarea></div>' +
+      '<div class="op-field"><label class="form-label">Prochaines étapes</label><textarea class="form-textarea" id="op_next" rows="2" placeholder="1. Livraison V2 le 15/04 — 2. COPIL mensuel…">' + esc(last.next||'') + '</textarea></div>' +
+    '</div>' +
+    '<div class="btn-row"><button class="btn primary" onclick="saveOnePager()">💾 Sauvegarder</button><button class="btn" onclick="window.print()">🖨 Imprimer</button></div>' +
+    '</div></div>' + histHtml;
+}
+
+// ══ REX ══════════════════════════════════════════════════════════
+function renderRetro(c) {
+  var list = PMHUB.getRetros(currentProjectId) || [];
+
+  var retroCards = list.map(function(r, i) {
+    return '<div class="card" style="margin-bottom:12px;">' +
+      '<div class="card-head">' +
+        '<div><div class="card-title">' + esc(r.title || 'Rétro #' + (i+1)) + '</div>' +
+          '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;">' + esc(r.date||'') + '</div>' +
+        '</div>' +
+        '<button class="btn danger" onclick="deleteRetro(' + i + ')">🗑 Supprimer</button>' +
+      '</div><div class="card-body">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+        '<div class="form-field"><label class="form-label" style="color:#22c55e;">✅ Ce qui a bien marché</label>' +
+          '<textarea class="form-textarea" rows="3" onchange="updateRetro(' + i + ',\'good\',this.value)">' + esc(r.good||'') + '</textarea></div>' +
+        '<div class="form-field"><label class="form-label" style="color:#f59e0b;">⚠️ À améliorer</label>' +
+          '<textarea class="form-textarea" rows="3" onchange="updateRetro(' + i + ',\'improve\',this.value)">' + esc(r.improve||'') + '</textarea></div>' +
+      '</div>' +
+      '<div class="form-field"><label class="form-label">🎯 Actions</label>' +
+        '<textarea class="form-textarea" rows="2" onchange="updateRetro(' + i + ',\'actions\',this.value)">' + esc(r.actions||'') + '</textarea></div>' +
+      '</div></div>';
+  }).join('');
+
+  c.innerHTML =
+    (retroCards || '<div class="card"><div class="card-body"><p style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">Aucune rétrospective enregistrée.</p></div></div>') +
+    '<div class="btn-row"><button class="btn primary" onclick="addRetro()">+ Nouvelle rétrospective / REX</button></div>';
+}
+
+// ══ CRUD HANDLERS ════════════════════════════════════════════════
+// Stakeholders
+window.updateSk = function(i, field, value) {
+  var list = PMHUB.getStakeholders(currentProjectId) || [];
+  if (list[i]) { list[i][field] = value; PMHUB.saveStakeholders(currentProjectId, list); }
+};
+window.addSk = function() {
+  var list = PMHUB.getStakeholders(currentProjectId) || [];
+  list.push({ name: '', power: 'Moyen', interest: 'Moyen', strategy: '' });
+  PMHUB.saveStakeholders(currentProjectId, list);
+  renderTab('stakeholders');
+};
+window.deleteSk = function(i) {
+  var list = PMHUB.getStakeholders(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveStakeholders(currentProjectId, list);
+  renderTab('stakeholders');
+};
+
+// Communication
+window.updateComm = function(i, field, value) {
+  var data = PMHUB.getCommunicationPlan(currentProjectId) || { plan:[], history:[] };
+  if (data.plan[i]) { data.plan[i][field] = value; PMHUB.saveCommunicationPlan(currentProjectId, data); }
+};
+window.addComm = function() {
+  var data = PMHUB.getCommunicationPlan(currentProjectId) || { plan:[], history:[] };
+  data.plan.push({ who:'', what:'', when:'', channel:'' });
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+};
+window.deleteComm = function(i) {
+  var data = PMHUB.getCommunicationPlan(currentProjectId) || { plan:[], history:[] };
+  data.plan.splice(i, 1);
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+};
+window.addCommHistory = function() {
+  var d = prompt('Date (AAAA-MM-JJ) :') || new Date().toISOString().split('T')[0];
+  var desc = prompt('Contenu / Destinataire :') || '';
+  if (!desc) return;
+  var data = PMHUB.getCommunicationPlan(currentProjectId) || { plan:[], history:[] };
+  data.history.unshift({ date: d, desc: desc });
+  PMHUB.saveCommunicationPlan(currentProjectId, data);
+  renderTab('communication');
+};
+
+// Budget
+window.saveBudget = function() {
+  var b = PMHUB.getBudget(currentProjectId) || {};
+  b.planned   = Number(document.getElementById('b_planned')?.value)   || 0;
+  b.committed = Number(document.getElementById('b_committed')?.value) || 0;
+  b.consumed  = Number(document.getElementById('b_consumed')?.value)  || 0;
+  b.currency  = (document.getElementById('b_currency')?.value || '€').trim();
+  b.entries   = b.entries || [];
+  PMHUB.saveBudget(currentProjectId, b);
+  renderTab('budget');
+};
+window.addBudgetEntry = function() {
+  var b = PMHUB.getBudget(currentProjectId) || {};
+  b.entries = b.entries || [];
+  b.entries.push({ label:'', planned:0, consumed:0 });
+  PMHUB.saveBudget(currentProjectId, b);
+  renderTab('budget');
+};
+window.updateBudgetEntry = function(i, field, value) {
+  var b = PMHUB.getBudget(currentProjectId) || {};
+  if (!b.entries || !b.entries[i]) return;
+  b.entries[i][field] = field === 'label' ? value : Number(value)||0;
+  // Recalc totals from entries
+  b.planned   = b.entries.reduce(function(s,e){ return s + (Number(e.planned)||0); }, 0);
+  b.consumed  = b.entries.reduce(function(s,e){ return s + (Number(e.consumed)||0); }, 0);
+  PMHUB.saveBudget(currentProjectId, b);
+};
+window.deleteBudgetEntry = function(i) {
+  var b = PMHUB.getBudget(currentProjectId) || {};
+  if (b.entries) b.entries.splice(i, 1);
+  b.planned  = (b.entries||[]).reduce(function(s,e){ return s + (Number(e.planned)||0); }, 0);
+  b.consumed = (b.entries||[]).reduce(function(s,e){ return s + (Number(e.consumed)||0); }, 0);
+  PMHUB.saveBudget(currentProjectId, b);
+  renderTab('budget');
+};
+
+// Livrables
+window.updateDel = function(i, field, value) {
+  var list = PMHUB.getDeliverables(currentProjectId) || [];
+  if (list[i]) { list[i][field] = value; PMHUB.saveDeliverables(currentProjectId, list); }
+};
+window.addDel = function() {
+  var list = PMHUB.getDeliverables(currentProjectId) || [];
+  list.push({ name:'', status:'draft', date:'' });
+  PMHUB.saveDeliverables(currentProjectId, list);
+  renderTab('deliverables');
+};
+window.deleteDel = function(i) {
+  var list = PMHUB.getDeliverables(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveDeliverables(currentProjectId, list);
+  renderTab('deliverables');
+};
+
+// One-pager
+window.saveOnePager = function() {
+  var reports = PMHUB.getOnePagerReports(currentProjectId) || [];
+  reports.push({
+    date:      new Date().toISOString().split('T')[0],
+    summary:   document.getElementById('op_summary')?.value   || '',
+    milestones:document.getElementById('op_milestones')?.value || '',
+    risks:     document.getElementById('op_risks')?.value      || '',
+    decisions: document.getElementById('op_decisions')?.value  || '',
+    next:      document.getElementById('op_next')?.value       || ''
+  });
+  PMHUB.saveOnePagerReports(currentProjectId, reports);
+  renderTab('onepager');
+};
+
+// REX
+window.updateRetro = function(i, field, value) {
+  var list = PMHUB.getRetros(currentProjectId) || [];
+  if (list[i]) { list[i][field] = value; PMHUB.saveRetros(currentProjectId, list); }
+};
+window.addRetro = function() {
+  var list = PMHUB.getRetros(currentProjectId) || [];
+  list.push({ title:'Nouvelle rétro', date:new Date().toISOString().split('T')[0], good:'', improve:'', actions:'' });
+  PMHUB.saveRetros(currentProjectId, list);
+  renderTab('retro');
+};
+window.deleteRetro = function(i) {
+  var list = PMHUB.getRetros(currentProjectId) || [];
+  list.splice(i, 1);
+  PMHUB.saveRetros(currentProjectId, list);
+  renderTab('retro');
+};
+
+init();
+</script>
+<div id="ai-suggestions-bar"></div>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Pilotage Transverse',
+  cacheKey: 'transverse_global',
+  buildPrompt: function() {
+    var projs = PMHUB.getProjects().filter(function(p){return p.status==='active'||p.status==='risk';});
+    var allRisks = 0; var allCrit = 0;
+    projs.forEach(function(p){
+      var r=PMHUB.getRaids(p.id);
+      allRisks+=(r.risks||[]).filter(function(x){return x.status!=='closed';}).length;
+      allCrit+=(r.risks||[]).filter(function(x){return x.status!=='closed'&&(x.severity==='critical'||x.severity==='haute');}).length;
+    });
+    var today=new Date();today.setHours(0,0,0,0);
+    var jalons30=0;
+    projs.forEach(function(p){
+      var raw=PMHUB.getGanttTasks?PMHUB.getGanttTasks(p.id):null;
+      var tasks=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.tasks)?raw.tasks:[]);
+      tasks.forEach(function(t){if((t.milestone||t.type==='milestone')&&t.end){var d=new Date(t.end);var diff=Math.round((d-today)/86400000);if(diff>=0&&diff<=30)jalons30++;}});
+    });
+    var lines=projs.map(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return p.name+' | '+p.progress+'% | RAG:'+h.rag;}).join('\n');
+    return 'VUE TRANSVERSE — '+projs.length+' projets\nRisques totaux ouverts: '+allRisks+' (critiques: '+allCrit+')\nJalons 30 jours: '+jalons30+'\n\nPROJETS:\n'+lines+'\n\nSynthèse transverse: 1) Interdépendances et conflits entre projets 2) Ressources partagées à risque 3) Recommandations de pilotage cross-projets';
+  }
+};
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'pm-hub-transverse',
+  title: 'IA Transverse',
+  icon: '\uD83D\uDD00',
+  suggestions: [
+    'Interdependances entre projets',
+    'Ressources partagees a risque',
+    'Recommandations cross-projets',
+    'Conflits de planning detectes'
+  ],
+  buildContext: function() {
+    if (typeof PMHUB === 'undefined') return '';
+    var projs = PMHUB.getProjects().filter(function(p){return p.status==='active'||p.status==='risk';});
+    var allRisks=0, allCrit=0;
+    projs.forEach(function(p){var r=PMHUB.getRaids(p.id);allRisks+=(r.risks||[]).filter(function(x){return x.status!=='closed';}).length;allCrit+=(r.risks||[]).filter(function(x){return x.status!=='closed'&&(x.severity==='critical'||x.severity==='haute');}).length;});
+    var today=new Date();today.setHours(0,0,0,0);
+    var jalons30=0;
+    projs.forEach(function(p){
+      var raw=PMHUB.getGanttTasks?PMHUB.getGanttTasks(p.id):null;
+      var tasks=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.tasks)?raw.tasks:[]);
+      tasks.forEach(function(t){if((t.milestone||t.type==='milestone')&&t.end){var d=new Date(t.end);var diff=Math.round((d-today)/86400000);if(diff>=0&&diff<=30)jalons30++;}});
+    });
+    var lines = ['=== VUE TRANSVERSE ==='];
+    lines.push(projs.length+' projets, Risques ouverts: '+allRisks+' (critiques: '+allCrit+'), Jalons 30j: '+jalons30);
+    projs.forEach(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};lines.push('- '+p.name+' | '+p.progress+'% | RAG:'+h.rag);});
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Synthese transverse du portefeuille: 1) Interdependances et conflits entre projets 2) Ressources partagees en surcharge 3) Jalons a risque dans les 30 prochains jours 4) Recommandations de pilotage cross-projets 5) Risques de contagion entre projets';
+  },
+  importPrompt: 'Analyse ce document transverse et extrais: interdependances, risques partages, jalons. Genere un JSON avec: dependencies (array of {fromProject, toProject, type, description}), sharedRisks (array of {title, projects, severity}).',
+  importHandler: function(data) {
+    if (typeof PMHUB === 'undefined') return;
+    // Store transverse analysis as portfolio-level metadata
+    var key = 'pmhub_transverse_analysis';
+    var existing = JSON.parse(localStorage.getItem(key) || '{}');
+    if (data.dependencies) existing.dependencies = (existing.dependencies||[]).concat(data.dependencies);
+    if (data.sharedRisks) existing.sharedRisks = (existing.sharedRisks||[]).concat(data.sharedRisks);
+    localStorage.setItem(key, JSON.stringify(existing));
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

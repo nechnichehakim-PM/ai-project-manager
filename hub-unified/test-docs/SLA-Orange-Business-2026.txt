@@ -1,0 +1,107 @@
+CONTRAT DE NIVEAU DE SERVICE (SLA)
+====================================
+Client : TechVision SAS
+Fournisseur : Orange Business Services
+Référence contrat : OBS-2026-TV-0472
+Date d'effet : 01/01/2026
+Date d'expiration : 31/12/2026
+Valeur annuelle : 485 000 EUR HT
+
+1. SERVICES COUVERTS
+---------------------
+
+1.1 Hébergement Cloud Privé
+    - 12 serveurs dédiés (64 vCPU, 256 Go RAM chacun)
+    - Stockage SAN : 50 To
+    - Datacenter : Equinix PA3, Paris
+
+1.2 Réseau MPLS Entreprise
+    - 8 sites connectés (Paris, Lyon, Marseille, Toulouse, Nantes, Lille, Bordeaux, Strasbourg)
+    - Bande passante garantie : 1 Gbps par site
+    - QoS : 3 classes de service (Voix, Données critiques, Best Effort)
+
+1.3 Support & Supervision 24/7
+    - NOC dédié avec 3 niveaux d'escalade
+    - Monitoring Nagios + Grafana
+    - Astreinte week-end et jours fériés
+
+2. INDICATEURS DE PERFORMANCE (KPIs)
+--------------------------------------
+
+2.1 Disponibilité Infrastructure Cloud
+    - Cible : 99.95%
+    - Mesure : mensuelle, fenêtre de maintenance exclue (dimanche 02h-06h)
+    - Actuel : 99.87% (janvier-mars 2026)
+    - Pénalité : 5% de la facture mensuelle par tranche de 0.1% sous la cible
+
+2.2 Disponibilité Réseau MPLS
+    - Cible : 99.99%
+    - Mesure : mensuelle par site
+    - Actuel : 99.97%
+    - Pénalité : 2 500 EUR par site par heure d'indisponibilité au-delà de la cible
+
+2.3 Temps de Réponse Incident P1 (Critique)
+    - Cible : 15 minutes
+    - Mesure : de l'ouverture du ticket à la première action corrective
+    - Actuel : 22 minutes (moyenne Q1 2026)
+    - Pénalité : 1 000 EUR par incident dépassant 30 minutes
+
+2.4 Temps de Résolution Incident P1
+    - Cible : 4 heures
+    - Mesure : de l'ouverture à la résolution complète
+    - Actuel : 3.5 heures
+    - Pénalité : 2 000 EUR par incident dépassant 6 heures
+
+2.5 Temps de Réponse Incident P2 (Majeur)
+    - Cible : 1 heure
+    - Mesure : de l'ouverture du ticket à la prise en charge
+    - Actuel : 48 minutes
+    - Pénalité : 500 EUR par incident dépassant 2 heures
+
+2.6 Temps de Résolution Incident P2
+    - Cible : 8 heures
+    - Mesure : de l'ouverture à la résolution complète
+    - Actuel : 7.2 heures
+    - Pénalité : 1 000 EUR par incident dépassant 12 heures
+
+2.7 Taux de Perte de Paquets Réseau
+    - Cible : < 0.01%
+    - Mesure : mensuelle, agrégée tous sites
+    - Actuel : 0.008%
+    - Pénalité : 1 500 EUR si dépassement 2 mois consécutifs
+
+2.8 Latence Réseau Inter-sites
+    - Cible : < 10 ms
+    - Mesure : RTT moyen mensuel entre sites principaux
+    - Actuel : 7.3 ms
+    - Pénalité : 1 000 EUR par mois de dépassement
+
+3. INCIDENTS RÉCENTS
+---------------------
+
+- 12/01/2026 - P1 - Panne stockage SAN baie 3 - Résolu en 5h12 - DÉPASSEMENT
+- 28/01/2026 - P2 - Dégradation MPLS Lyon - Résolu en 6h30 - OK
+- 15/02/2026 - P1 - Incident sécurité firewall - Résolu en 2h45 - OK
+- 03/03/2026 - P2 - Latence anormale Marseille-Paris - Résolu en 9h15 - DÉPASSEMENT
+- 18/03/2026 - P1 - Indisponibilité partielle Cloud zone B - Résolu en 3h30 - OK
+
+4. REPORTING
+-------------
+- Fréquence : mensuelle
+- Format : rapport PDF + dashboard Grafana live
+- Comité de pilotage : trimestriel
+- Revue contractuelle : semestrielle
+
+5. ESCALADE
+------------
+- Niveau 1 : NOC (24/7) — support@orange-business.com — 0800 123 456
+- Niveau 2 : Service Delivery Manager — Jean-Marc DUPONT — jm.dupont@orange.com
+- Niveau 3 : Directeur de Compte — Sophie MARTIN — s.martin@orange.com
+- Niveau 4 : Direction Générale — escalation-dg@orange-business.com
+
+6. CONDITIONS DE PÉNALITÉS
+---------------------------
+- Plafond mensuel des pénalités : 15% de la facture mensuelle
+- Plafond annuel des pénalités : 30% du montant annuel du contrat
+- Application : déduit sur la facture M+1
+- Contestation : sous 10 jours ouvrés après réception du rapport mensuel

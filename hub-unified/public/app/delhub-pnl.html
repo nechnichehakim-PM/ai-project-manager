@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — P&amp;L / Marges</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+/* ── KPI STRIP ── */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin:24px 0; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:var(--shadow-card-hover); }
+.kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+/* ── HERO ── */
+.hero-bar { margin-bottom:4px; }
+.hero-badge { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--primary); background:rgba(45,212,191,.1); border:1px solid rgba(45,212,191,.2); border-radius:20px; padding:3px 10px; margin-bottom:10px; }
+.hero-title { font-family:var(--font-heading); font-size:26px; font-weight:800; color:var(--text); }
+.hero-sub { color:var(--text-muted); font-size:13px; margin-top:6px; }
+
+/* ── CHART ROW ── */
+.chart-row { display:grid; grid-template-columns:1fr; gap:20px; margin-top:24px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.card-title { font-family:var(--font-heading); font-size:14px; font-weight:700; margin-bottom:16px; color:var(--text); }
+
+/* ── TABLE ── */
+.table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-top:24px; }
+.table-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); }
+.table-title { font-family:var(--font-heading); font-size:14px; font-weight:700; color:var(--text); }
+table { width:100%; border-collapse:collapse; }
+thead th { padding:11px 14px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; color:var(--text-muted); border-bottom:1px solid var(--border); font-family:var(--font-mono); white-space:nowrap; }
+tbody tr { border-bottom:1px solid var(--border); transition:var(--transition); }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:var(--surface2); }
+tbody td { padding:11px 14px; font-size:13px; color:var(--text); vertical-align:middle; }
+
+/* ── BUTTONS ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--radius-sm); font-size:12px; font-weight:600; cursor:pointer; border:none; transition:var(--transition); text-decoration:none; }
+.btn-primary { background:var(--primary); color:#0B0F19; }
+.btn-primary:hover { filter:brightness(1.1); }
+.btn-ghost { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--surface2); color:var(--text); border-color:var(--border-active); }
+.btn-danger { background:rgba(239,68,68,.1); color:#EF4444; border:1px solid rgba(239,68,68,.2); }
+.btn-danger:hover { background:rgba(239,68,68,.2); }
+.action-btns { display:flex; gap:6px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  width:min(640px,95vw); max-height:85vh; overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+  animation:modalIn .2s var(--ease-out);
+}
+@keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
+.modal-head { padding:24px 28px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-head h2 { font-family:var(--font-heading); font-size:16px; font-weight:700; }
+.modal-close { background:transparent; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px; }
+.modal-close:hover { color:var(--text); }
+.modal-body { padding:24px 28px; }
+.modal-foot { padding:16px 28px 24px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid var(--border); }
+.form-row { margin-bottom:16px; }
+.form-row label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:6px; font-family:var(--font-mono); }
+.form-row input, .form-row select {
+  width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:var(--font-body); font-size:13px; padding:9px 12px;
+  transition:var(--transition); outline:none;
+}
+.form-row input:focus, .form-row select:focus { border-color:var(--primary); box-shadow:0 0 0 2px rgba(45,212,191,.1); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-section { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--primary); margin:16px 0 10px; font-family:var(--font-mono); }
+.margin-preview { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; }
+.margin-preview-label { font-size:12px; color:var(--text-muted); }
+.margin-preview-value { font-size:18px; font-weight:700; font-family:var(--font-heading); }
+
+/* ── COST BREAKDOWN ── */
+.breakdown-chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; margin-right:4px; }
+.chip-labor { background:rgba(99,102,241,.15); color:#818CF8; }
+.chip-tools { background:rgba(45,212,191,.15); color:#2DD4BF; }
+.chip-overhead { background:rgba(245,158,11,.15); color:#F59E0B; }
+.chip-other { background:rgba(156,163,175,.15); color:#9CA3AF; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; opacity:.5; }
+.empty-state p { font-size:14px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <!-- HERO -->
+    <div class="hero-bar">
+      <span class="hero-badge">Business</span>
+      <h1 class="hero-title">P&amp;L / Marges</h1>
+      <p class="hero-sub">Suivi du compte de résultat, marges et décomposition des coûts par contrat.</p>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- CHART -->
+    <div class="card chart-row">
+      <div class="card-title">Revenue vs Coûts par période</div>
+      <div id="chartPnL" style="width:100%;height:300px"></div>
+    </div>
+
+    <!-- TABLE P&L -->
+    <div class="table-wrap" id="tableWrap">
+      <div class="table-header">
+        <span class="table-title">Entrées P&amp;L</span>
+        <button class="btn btn-primary" id="btnAdd" style="display:none" onclick="openModal()">+ Nouvelle entrée</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Contrat</th>
+              <th>Période</th>
+              <th>Revenue</th>
+              <th>Coûts</th>
+              <th>Marge</th>
+              <th>Détail coûts</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pnlTableBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">📊</div>
+          <p>Aucune entrée P&amp;L. Ajoutez votre premier enregistrement.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL CRUD -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Nouvelle entrée P&amp;L</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Contrat *</label>
+          <select id="fContractId"></select>
+        </div>
+        <div class="form-row">
+          <label>Période *</label>
+          <input type="month" id="fPeriod">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Revenue (€)</label>
+          <input type="number" id="fRevenue" placeholder="0" min="0" step="100" oninput="calcMargin()">
+        </div>
+        <div class="form-row">
+          <label>Coûts totaux (€)</label>
+          <input type="number" id="fCosts" placeholder="Calculé auto" min="0" step="100" readonly style="opacity:.7">
+        </div>
+      </div>
+      <div class="form-section">Décomposition des coûts</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Main d'oeuvre (€)</label>
+          <input type="number" id="fLabor" placeholder="0" min="0" step="100" oninput="calcCosts()">
+        </div>
+        <div class="form-row">
+          <label>Outils / Licences (€)</label>
+          <input type="number" id="fTools" placeholder="0" min="0" step="100" oninput="calcCosts()">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Frais généraux (€)</label>
+          <input type="number" id="fOverhead" placeholder="0" min="0" step="100" oninput="calcCosts()">
+        </div>
+        <div class="form-row">
+          <label>Autres (€)</label>
+          <input type="number" id="fOther" placeholder="0" min="0" step="100" oninput="calcCosts()">
+        </div>
+      </div>
+      <div class="margin-preview">
+        <span class="margin-preview-label">Marge calculée</span>
+        <span class="margin-preview-value" id="marginPreview">—</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="savePnL()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('pnl');
+  if (canWrite) document.getElementById('btnAdd').style.display = 'inline-flex';
+
+  // ── FORMAT ───────────────────────────────────────────────────────
+  function fmtMoney(v) { return Number(v || 0).toLocaleString('fr-FR') + ' €'; }
+  function fmtPct(v) { return (Math.round(Number(v || 0) * 10) / 10) + '%'; }
+
+  function marginColor(m) {
+    return Number(m) > 0 ? 'var(--success)' : Number(m) < 0 ? 'var(--danger)' : 'var(--text-muted)';
+  }
+
+  // ── RENDER KPIs ───────────────────────────────────────────────────
+  function renderKPIs() {
+    var pnl = DELHUB.getPnL();
+    var revenue = pnl.reduce(function(s,e) { return s + (Number(e.revenue)||0); }, 0);
+    var costs   = pnl.reduce(function(s,e) { return s + (Number(e.costs)||0); }, 0);
+    var margin  = pnl.reduce(function(s,e) { return s + (Number(e.margin)||0); }, 0);
+    var pct     = revenue > 0 ? Math.round(margin / revenue * 1000) / 10 : 0;
+
+    var html = [
+      kpiCard('Revenue total', fmtMoney(revenue), pnl.length + ' entrées', 'var(--primary)'),
+      kpiCard('Coûts totaux', fmtMoney(costs), 'labor + tools + overhead + other', 'var(--warning)'),
+      kpiCard('Marge totale', fmtMoney(margin), 'net', marginColor(margin)),
+      kpiCard('Marge %', fmtPct(pct), revenue > 0 ? 'sur CA total' : 'aucun CA', pct >= 0 ? 'var(--success)' : 'var(--danger)'),
+    ];
+    document.getElementById('kpiStrip').innerHTML = html.join('');
+  }
+
+  function kpiCard(label, value, sub, color) {
+    return '<div class="kpi-card">' +
+      '<div class="kpi-label">' + label + '</div>' +
+      '<div class="kpi-value" style="color:' + color + '">' + value + '</div>' +
+      '<div class="kpi-sub">' + sub + '</div>' +
+    '</div>';
+  }
+
+  // ── RENDER CHART ─────────────────────────────────────────────────
+  var chartInst = null;
+  function renderChart() {
+    var pnl = DELHUB.getPnL();
+    if (!pnl.length) { document.getElementById('chartPnL').innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:60px">Aucune donnée à afficher.</p>'; return; }
+
+    // Group by period
+    var byPeriod = {};
+    pnl.forEach(function(e) {
+      var p = e.period || 'N/A';
+      if (!byPeriod[p]) byPeriod[p] = { revenue:0, costs:0, margin:0 };
+      byPeriod[p].revenue += Number(e.revenue)||0;
+      byPeriod[p].costs   += Number(e.costs)||0;
+      byPeriod[p].margin  += Number(e.margin)||0;
+    });
+
+    var periods = Object.keys(byPeriod).sort();
+    var revenues = periods.map(function(p) { return byPeriod[p].revenue; });
+    var costsArr = periods.map(function(p) { return byPeriod[p].costs; });
+    var margins  = periods.map(function(p) { return byPeriod[p].margin; });
+
+    if (!chartInst) chartInst = echarts.init(document.getElementById('chartPnL'));
+    chartInst.setOption({
+      tooltip: { trigger:'axis', axisPointer:{ type:'cross' } },
+      legend: { data:['Revenue','Coûts','Marge'], textStyle:{ color:'#9CA3AF', fontSize:11 } },
+      xAxis: { type:'category', data:periods, axisLabel:{ color:'#9CA3AF', fontSize:11 } },
+      yAxis: [
+        { type:'value', axisLabel:{ color:'#9CA3AF', fontSize:10 }, splitLine:{ lineStyle:{ color:'rgba(255,255,255,0.06)' } } },
+        { type:'value', axisLabel:{ color:'#9CA3AF', fontSize:10 }, splitLine:{ show:false } }
+      ],
+      series: [
+        { name:'Revenue', type:'bar', data:revenues, barWidth:'30%', itemStyle:{ color:'#2DD4BF', borderRadius:[4,4,0,0] } },
+        { name:'Coûts',   type:'bar', data:costsArr, barWidth:'30%', itemStyle:{ color:'#F59E0B', borderRadius:[4,4,0,0] } },
+        { name:'Marge',   type:'line', data:margins, yAxisIndex:1, smooth:true, lineStyle:{ color:'#22C55E', width:2 }, itemStyle:{ color:'#22C55E' }, symbol:'circle', symbolSize:6 }
+      ],
+      backgroundColor:'transparent',
+      grid:{ left:60, right:60, top:40, bottom:36 }
+    });
+    window.addEventListener('resize', function() { chartInst && chartInst.resize(); });
+  }
+
+  // ── RENDER TABLE ─────────────────────────────────────────────────
+  function renderTable() {
+    var pnl = DELHUB.getPnL();
+    var contracts = DELHUB.getContracts();
+
+    function contractLabel(cid) {
+      var c = contracts.find(function(x) { return String(x.id) === String(cid); });
+      return c ? c.client : 'Contrat #' + cid;
+    }
+
+    var tbody = document.getElementById('pnlTableBody');
+    var empty = document.getElementById('emptyState');
+
+    if (pnl.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = pnl.map(function(e) {
+      var margin = Number(e.margin)||0;
+      var d = e.details || {};
+      var breakdown = '';
+      if (d.labor)    breakdown += '<span class="breakdown-chip chip-labor">MO: ' + Number(d.labor).toLocaleString('fr-FR') + '€</span>';
+      if (d.tools)    breakdown += '<span class="breakdown-chip chip-tools">Outils: ' + Number(d.tools).toLocaleString('fr-FR') + '€</span>';
+      if (d.overhead) breakdown += '<span class="breakdown-chip chip-overhead">FG: ' + Number(d.overhead).toLocaleString('fr-FR') + '€</span>';
+      if (d.other)    breakdown += '<span class="breakdown-chip chip-other">Autre: ' + Number(d.other).toLocaleString('fr-FR') + '€</span>';
+      if (!breakdown) breakdown = '<span style="color:var(--text-soft);font-size:12px">—</span>';
+
+      return '<tr>' +
+        '<td><strong>' + contractLabel(e.contractId) + '</strong></td>' +
+        '<td style="font-family:var(--font-mono)">' + (e.period || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);color:var(--primary)">' + fmtMoney(e.revenue) + '</td>' +
+        '<td style="font-family:var(--font-mono);color:var(--warning)">' + fmtMoney(e.costs) + '</td>' +
+        '<td style="font-family:var(--font-mono);font-weight:700;color:' + marginColor(margin) + '">' + fmtMoney(margin) + '</td>' +
+        '<td>' + breakdown + '</td>' +
+        '<td>' + (canWrite ?
+          '<div class="action-btns">' +
+          '<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="openModal(' + e.id + ')">✏</button>' +
+          '<button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deletePnL(' + e.id + ')">✕</button>' +
+          '</div>' : '') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ── MODAL HELPERS ────────────────────────────────────────────────
+  function populateContractSelect(selectedId) {
+    var contracts = DELHUB.getContracts();
+    var sel = document.getElementById('fContractId');
+    sel.innerHTML = '<option value="">— Sélectionner un contrat —</option>' +
+      contracts.map(function(c) {
+        return '<option value="' + c.id + '"' + (String(c.id) === String(selectedId) ? ' selected' : '') + '>' + c.client + ' (' + c.status + ')</option>';
+      }).join('');
+  }
+
+  window.calcCosts = function() {
+    var l = Number(document.getElementById('fLabor').value)||0;
+    var t = Number(document.getElementById('fTools').value)||0;
+    var o = Number(document.getElementById('fOverhead').value)||0;
+    var x = Number(document.getElementById('fOther').value)||0;
+    var total = l + t + o + x;
+    document.getElementById('fCosts').value = total;
+    calcMargin();
+  };
+
+  window.calcMargin = function() {
+    var rev   = Number(document.getElementById('fRevenue').value)||0;
+    var costs = Number(document.getElementById('fCosts').value)||0;
+    var margin = rev - costs;
+    var preview = document.getElementById('marginPreview');
+    preview.textContent = fmtMoney(margin);
+    preview.style.color = marginColor(margin);
+  };
+
+  window.openModal = function(id) {
+    document.getElementById('modalTitle').textContent = id ? 'Modifier l\'entrée P&L' : 'Nouvelle entrée P&L';
+    document.getElementById('fId').value = id || '';
+
+    if (id) {
+      var e = DELHUB.getPnL().find(function(x) { return x.id === id; });
+      if (!e) return;
+      populateContractSelect(e.contractId);
+      document.getElementById('fPeriod').value   = e.period || '';
+      document.getElementById('fRevenue').value  = e.revenue || '';
+      document.getElementById('fCosts').value    = e.costs || '';
+      var d = e.details || {};
+      document.getElementById('fLabor').value    = d.labor || '';
+      document.getElementById('fTools').value    = d.tools || '';
+      document.getElementById('fOverhead').value = d.overhead || '';
+      document.getElementById('fOther').value    = d.other || '';
+    } else {
+      populateContractSelect('');
+      ['fPeriod','fRevenue','fCosts','fLabor','fTools','fOverhead','fOther'].forEach(function(fid) {
+        document.getElementById(fid).value = '';
+      });
+    }
+    calcMargin();
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  };
+
+  window.savePnL = function() {
+    var id = document.getElementById('fId').value;
+    var contractId = document.getElementById('fContractId').value;
+    var period = document.getElementById('fPeriod').value;
+    if (!contractId) { alert('Sélectionnez un contrat.'); return; }
+    if (!period) { alert('La période est requise.'); return; }
+
+    var revenue  = Number(document.getElementById('fRevenue').value)||0;
+    var labor    = Number(document.getElementById('fLabor').value)||0;
+    var tools    = Number(document.getElementById('fTools').value)||0;
+    var overhead = Number(document.getElementById('fOverhead').value)||0;
+    var other    = Number(document.getElementById('fOther').value)||0;
+    var costs    = labor + tools + overhead + other;
+    var margin   = revenue - costs;
+
+    var data = {
+      contractId: contractId,
+      period: period,
+      revenue: revenue,
+      costs: costs,
+      margin: margin,
+      details: { labor:labor, tools:tools, overhead:overhead, other:other },
+    };
+
+    if (id) {
+      DELHUB.updatePnLEntry(Number(id), data);
+    } else {
+      DELHUB.addPnLEntry(data);
+    }
+
+    closeModal();
+    renderAll();
+  };
+
+  window.deletePnL = function(id) {
+    if (!confirm('Supprimer cette entrée P&L ?')) return;
+    DELHUB.deletePnLEntry(id);
+    renderAll();
+  };
+
+  // ── RENDER ALL ────────────────────────────────────────────────────
+  function renderAll() {
+    renderKPIs();
+    renderChart();
+    renderTable();
+  }
+
+  renderAll();
+  DELHUB.onChange(function() { renderAll(); });
+
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-pnl',
+  title: 'IA P&L / Marges',
+  icon: '\u{1F4B0}',
+  suggestions: [
+    'Prevision de marge a 6 mois',
+    'Postes de couts a optimiser',
+    'Tendance revenue vs couts',
+    'Recommandations de rentabilite'
+  ],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var pnl = DELHUB.getPnL();
+    var lines = ['=== P&L (' + pnl.length + ' lignes) ==='];
+    var totalRev = 0, totalCost = 0, totalMargin = 0;
+    pnl.forEach(function(e) {
+      totalRev += Number(e.revenue)||0; totalCost += Number(e.costs)||0; totalMargin += Number(e.margin)||0;
+      lines.push('- ' + (e.name||e.category||e.month||'?') + ': rev=' + (e.revenue||0) + 'EUR, couts=' + (e.costs||0) + 'EUR, marge=' + (e.margin||0) + 'EUR');
+    });
+    lines.push('\nTOTAL: Revenue=' + totalRev + 'EUR, Couts=' + totalCost + 'EUR, Marge=' + totalMargin + 'EUR (' + (totalRev>0 ? Math.round(totalMargin/totalRev*100) : 0) + '%)');
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse mon P&L et donne: 1) Tendance des marges sur les derniers mois 2) Prevision de marge a 3 et 6 mois 3) Postes de couts en croissance anormale 4) Recommandations d\'optimisation 5) Seuil de rentabilite et risques 6) Comparaison avec benchmarks secteur';
+  },
+  importPrompt: 'Analyse ce document financier et extrais les donnees P&L: categories, revenus, couts, marges par periode. Genere un JSON array avec: name, month, revenue, costs, margin.',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined') return;
+    var pnl = DELHUB.getPnL();
+    if (Array.isArray(data)) { data.forEach(function(d) { pnl.push(d); }); }
+    DELHUB.savePnL(pnl);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

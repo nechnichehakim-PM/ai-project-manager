@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub — Centre IA Unifie</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<style>
+html, body { height:100%; }
+.layout { height:calc(100vh - 56px); }
+.main-col { display:flex; flex-direction:column; overflow:hidden; }
+.main { display:flex; flex-direction:column; padding:0 !important; overflow:hidden !important; height:100%; }
+
+/* ── Chat Layout ── */
+.chat-wrapper { display:flex; flex-direction:column; height:100%; }
+
+.chat-header {
+  padding:16px 28px 12px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.chat-title { font-family:var(--font-heading); font-size:18px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.chat-sub { font-size:12px; color:var(--text-muted); margin-top:4px; }
+
+/* ── Mode Tabs ── */
+.mode-bar {
+  padding:10px 28px;
+  display:flex; flex-wrap:wrap; gap:6px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  background:var(--surface);
+}
+.mode-tab {
+  padding:7px 16px; background:transparent; border:1px solid var(--border);
+  border-radius:20px; font-size:12px; color:var(--text-muted); cursor:pointer;
+  transition:var(--transition); font-family:var(--font-body); font-weight:500;
+  display:flex; align-items:center; gap:5px;
+}
+.mode-tab:hover { border-color:var(--primary); color:var(--primary); }
+.mode-tab.active { background:var(--primary); border-color:var(--primary); color:#0B0F19; font-weight:600; }
+
+/* ── Context Chips ── */
+.ctx-bar {
+  padding:8px 28px;
+  display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.ctx-chip {
+  display:flex; align-items:center; gap:4px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+  padding:3px 10px; font-family:var(--font-mono); font-size:9px; color:var(--text-muted);
+}
+.ctx-val { font-size:12px; font-weight:600; color:var(--text); margin-right:2px; }
+
+/* ── Suggestions ── */
+.suggestions-bar {
+  padding:10px 28px;
+  display:flex; flex-wrap:wrap; gap:8px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.sug-chip {
+  padding:6px 14px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:20px; font-size:11px; color:var(--text-soft); cursor:pointer;
+  transition:var(--transition); font-family:var(--font-body);
+}
+.sug-chip:hover { border-color:var(--primary); color:var(--primary); }
+
+/* ── Messages ── */
+.messages-area {
+  flex:1; overflow-y:auto; padding:20px 28px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.message { display:flex; flex-direction:column; max-width:80%; }
+.message.user { align-self:flex-end; align-items:flex-end; }
+.message.ai   { align-self:flex-start; align-items:flex-start; }
+.message.error { align-self:flex-start; align-items:flex-start; }
+.message.system { align-self:center; align-items:center; max-width:90%; }
+
+.msg-bubble {
+  padding:12px 16px; border-radius:16px; font-size:13px; line-height:1.7;
+  font-family:var(--font-body); white-space:pre-wrap; word-break:break-word;
+}
+.message.user .msg-bubble { background:var(--primary); color:#0B0F19; border-radius:16px 4px 16px 16px; }
+.message.ai .msg-bubble { background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:4px 16px 16px 16px; }
+.message.error .msg-bubble { background:rgba(239,68,68,0.12); color:var(--danger); border:1px solid rgba(239,68,68,0.3); border-radius:4px 16px 16px 16px; }
+.message.system .msg-bubble { background:rgba(var(--primary-rgb,99,102,241),0.08); color:var(--text-soft); border:1px dashed var(--border); border-radius:12px; font-size:12px; text-align:center; }
+.msg-meta { font-size:10px; color:var(--text-muted); margin-top:4px; font-family:var(--font-mono); }
+
+/* File attached indicator */
+.msg-file { display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; font-size:11px; color:var(--text-soft); margin-bottom:6px; }
+.msg-file-icon { font-size:16px; }
+.msg-file-name { font-weight:600; color:var(--text); }
+.msg-file-size { color:var(--text-muted); font-family:var(--font-mono); font-size:9px; }
+
+.typing-indicator { display:flex; gap:4px; padding:12px 16px; }
+.typing-dot {
+  width:7px; height:7px; border-radius:50%; background:var(--text-muted);
+  animation:typing 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay:0.2s; }
+.typing-dot:nth-child(3) { animation-delay:0.4s; }
+@keyframes typing { 0%,80%,100%{transform:scale(0.8);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
+
+/* ── Input Area ── */
+.input-area {
+  padding:12px 28px 20px;
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.input-row { display:flex; gap:8px; align-items:flex-end; }
+.chat-textarea {
+  flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 16px; color:var(--text); font-family:var(--font-body); font-size:13px;
+  resize:none; min-height:48px; max-height:160px; transition:var(--transition); line-height:1.5;
+}
+.chat-textarea:focus { outline:none; border-color:var(--primary); }
+
+/* Upload button */
+.btn-upload {
+  flex-shrink:0; width:48px; height:48px; border-radius:var(--radius);
+  background:var(--surface2); color:var(--text-muted); border:1px solid var(--border);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px;
+  transition:var(--transition); position:relative;
+}
+.btn-upload:hover { border-color:var(--primary); color:var(--primary); }
+.btn-upload input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+.btn-send {
+  flex-shrink:0; width:48px; height:48px; border-radius:var(--radius);
+  background:var(--primary); color:#0B0F19; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:20px;
+  transition:var(--transition);
+}
+.btn-send:hover { opacity:0.88; transform:scale(1.04); }
+.btn-send:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+.input-footer { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+.input-hint { font-size:10px; color:var(--text-muted); font-family:var(--font-mono); }
+.btn-clear {
+  font-size:10px; color:var(--text-muted); background:none; border:none; cursor:pointer;
+  font-family:var(--font-mono); transition:var(--transition);
+}
+.btn-clear:hover { color:var(--danger); }
+
+/* File preview bar */
+.file-preview {
+  display:none; padding:8px 0 0; gap:8px; flex-wrap:wrap;
+}
+.file-preview.visible { display:flex; }
+.file-tag {
+  display:flex; align-items:center; gap:6px; padding:5px 12px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  font-size:11px; color:var(--text);
+}
+.file-tag-remove {
+  cursor:pointer; color:var(--text-muted); font-size:14px; margin-left:4px;
+  transition:var(--transition);
+}
+.file-tag-remove:hover { color:var(--danger); }
+
+/* AI not configured */
+.ai-not-configured {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  flex:1; gap:16px; padding:40px;
+}
+.ai-not-configured .icon { font-size:56px; }
+.ai-not-configured h2 { font-family:var(--font-heading); font-size:20px; }
+.ai-not-configured p { color:var(--text-muted); font-size:14px; text-align:center; }
+.btn-primary-link {
+  display:inline-flex; align-items:center; gap:6px; padding:11px 22px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:14px; cursor:pointer; transition:var(--transition); text-decoration:none;
+}
+.btn-primary-link:hover { opacity:0.88; }
+
+.messages-area::-webkit-scrollbar { width:4px; }
+.messages-area::-webkit-scrollbar-track { background:transparent; }
+.messages-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="pm-hub.html" style="color:inherit;text-decoration:none;">Hub Platform</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub-settings.html" class="nav-icon" title="Parametres"><span class="nav-icon-symbol">&#x2699;</span></a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="hub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="chat-wrapper" id="chatWrapper"></div>
+  </main>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Config ──
+  var SESSION_KEY = 'hub_ai_chat_history';
+  var hasPM  = typeof PMHUB  !== 'undefined';
+  var hasDel = typeof DELHUB !== 'undefined';
+  var aiOk = (hasPM && PMHUB.isAIEnabled()) || (hasDel && DELHUB.isAIEnabled());
+  var wrapper = document.getElementById('chatWrapper');
+
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('hub_profile') || localStorage.getItem('delhub_profile') || '{}'); } catch(e) {}
+  var role = profile.role || 'pm';
+  var simRole = sessionStorage.getItem('hub_simulated_role');
+  if (simRole && role === 'god') role = simRole;
+
+  // ── AI Modes ──
+  var MODES = [
+    { id: 'chat',       icon: '\u{1F4AC}', label: 'Chat',        desc: 'Conversation libre avec contexte complet' },
+    { id: 'document',   icon: '\u{1F4C4}', label: 'Document',    desc: 'Upload et analyse de documents (PDF, texte)' },
+    { id: 'contract',   icon: '\u{1F4CB}', label: 'Contrat',     desc: 'Analyse contractuelle : clauses, obligations, risques' },
+    { id: 'sla',        icon: '\u{1F3AF}', label: 'SLA',         desc: 'Conformite SLA, predictions de breach, penalites' },
+    { id: 'prediction', icon: '\u{1F4C8}', label: 'Predictions', desc: 'Forecasting budget, planning, risques, delivery' }
+  ];
+  var currentMode = 'chat';
+  var uploadedFiles = []; // { name, size, text }
+  var history = [];
+
+  // ── System prompts per mode ──
+  function getSystemPrompt() {
+    var base = 'Tu es un assistant IA expert de niveau senior. Tu maitrises : gestion de projet (PMP, PRINCE2 7th, Agile), delivery management, business management, analyse contractuelle, SLA, P&L, CRM, forecasting. Tu reponds toujours en francais, de facon structuree, professionnelle et actionnable. Utilise des ## pour les sections, **gras** pour les points cles, des listes numerotees pour les recommandations.';
+
+    var modePrompts = {
+      chat: base + '\n\nMode conversation libre. Reponds a toutes les questions en utilisant le contexte de donnees fourni quand pertinent.',
+
+      document: base + '\n\nMode analyse de document. L\'utilisateur a uploade un ou plusieurs documents. Tu dois :\n1. Faire un resume executif du document\n2. Extraire les points cles, chiffres importants, dates limites\n3. Identifier les risques, obligations et engagements\n4. Proposer des actions concretes\n5. Si c\'est un contrat : extraire parties, duree, montant, clauses critiques, penalites\n6. Si c\'est un SLA : extraire les niveaux de service, KPIs, seuils, penalites',
+
+      contract: base + '\n\nMode analyse contractuelle specialisee. Tu dois systematiquement :\n1. **Identification** : parties, objet, duree, montant, devise\n2. **Clauses critiques** : penalites, resiliation, force majeure, confidentialite, propriete intellectuelle\n3. **Obligations** : ce que chaque partie doit faire, avec deadlines\n4. **Risques juridiques** : clauses desequilibrees, zones grises, manques\n5. **SLA associes** : niveaux de service, KPIs, consequences du non-respect\n6. **Recommandations** : points a negocier, amendments suggeres, alertes\n7. **Score de risque contractuel** : note /10 avec justification\nSi des donnees de contrats existants sont fournies, compare avec le portefeuille actuel.',
+
+      sla: base + '\n\nMode analyse SLA specialisee. Tu dois systematiquement :\n1. **Etat actuel** : compliance rate, SLA met/at risk/breached\n2. **Tendances** : evolution sur les derniers mois, degradation ou amelioration\n3. **Predictions** : probabilite de breach dans les 30/60/90 prochains jours\n4. **Impact financier** : penalites estimees en cas de breach, cout cumule\n5. **Causes racines** : pourquoi les SLA sont a risque (capacite, incidents, processus)\n6. **Plan d\'action** : mesures correctives concretes avec priorite et responsable\n7. **Benchmark** : comparaison avec les standards du marche\nUtilise les donnees SLA, incidents et engagements fournis.',
+
+      prediction: base + '\n\nMode predictions et forecasting. Tu dois systematiquement :\n1. **Budget** : prediction de depassement base sur EVM (CPI, SPI, EAC, ETC), tendance de consommation\n2. **Planning** : probabilite de retard, chemin critique, goulots d\'etranglement\n3. **Risques** : scoring predictif des risques, probabilite d\'occurrence, impact estime\n4. **Delivery** : forecast de livraison pipeline, capacity vs demand\n5. **Business** : prevision revenue/marge, win rate CRM, tendance P&L\n6. **Recommandations** : actions preventives avec priorite et impact attendu\n7. **Indicateurs d\'alerte** : les 3 metriques a surveiller en priorite cette semaine\nBase tes predictions sur les donnees reelles fournies et les tendances observees.'
+    };
+
+    return modePrompts[currentMode] || modePrompts.chat;
+  }
+
+  // ── Build full context from PM + Del data ──
+  function buildContext() {
+    var ctx = [];
+    ctx.push('=== PROFIL ===');
+    ctx.push('Nom: ' + (profile.name || 'Utilisateur') + ', Role: ' + role);
+
+    // PM Hub context
+    if (hasPM) {
+      try {
+        var stats = PMHUB.getStats ? PMHUB.getStats() : {};
+        var projects = PMHUB.getProjects ? PMHUB.getProjects().filter(function(p){ return p.status !== 'archived'; }) : [];
+        ctx.push('');
+        ctx.push('=== PORTEFEUILLE PROJETS ===');
+        ctx.push('Actifs: ' + (stats.active||0) + ', En attente: ' + (stats.hold||0) + ', A risque: ' + (stats.risk||0) + ', Clotures: ' + (stats.closed||0) + ', Total: ' + (stats.total||0));
+        ctx.push('Avancement moyen: ' + (stats.avgProgress||0) + '%');
+
+        projects.forEach(function(p) {
+          ctx.push('');
+          ctx.push('--- Projet: ' + (p.name||'Sans nom') + ' (id=' + p.id + ', methodo=' + (p.methodology||'') + ')');
+          ctx.push('  Statut: ' + (p.status||'') + ', Avancement: ' + (p.progress!=null ? p.progress+'%' : '--') + ', Budget: ' + (p.budget||'--') + ', Priorite: ' + (p.priority||'--'));
+          ctx.push('  Debut: ' + (p.start||'--') + ', Fin: ' + (p.end||'--') + ', Client: ' + (p.client||'--'));
+
+          if (PMHUB.getRaids) {
+            var r = PMHUB.getRaids(p.id);
+            var openRisks = (r.risks||[]).filter(function(x){ return x.status!=='closed'; });
+            var openActions = (r.actions||[]).filter(function(x){ return x.status!=='done'; });
+            var openIssues = (r.issues||[]).filter(function(x){ return x.status!=='closed'; });
+            ctx.push('  RAID: ' + openRisks.length + ' risques ouverts, ' + openActions.length + ' actions en cours, ' + openIssues.length + ' issues');
+            openRisks.slice(0,3).forEach(function(risk) {
+              ctx.push('    Risque: ' + (risk.desc||risk.title||'') + ' [severite:' + (risk.severity||'') + ', proba:' + (risk.probability||'') + ']');
+            });
+          }
+          if (PMHUB.getBudget) {
+            var b = PMHUB.getBudget(p.id);
+            if (b && (b.planned || b.consumed)) {
+              ctx.push('  Budget: prevu=' + (b.planned||0) + ', consomme=' + (b.consumed||0) + ', reste=' + ((b.planned||0)-(b.consumed||0)) + ' ' + (b.currency||'EUR'));
+              if (b.evm) ctx.push('  EVM: CPI=' + (b.evm.cpi||'--') + ', SPI=' + (b.evm.spi||'--') + ', EAC=' + (b.evm.eac||'--'));
+            }
+          }
+          if (PMHUB.getProjectHealth) {
+            var h = PMHUB.getProjectHealth(p.id);
+            ctx.push('  Sante: ' + h.score + '/100, RAG: ' + h.rag);
+          }
+          if (p.team && p.team.length) ctx.push('  Equipe: ' + p.team.join(', '));
+        });
+
+        if (PMHUB.getResources) {
+          var resources = PMHUB.getResources();
+          if (resources.length) {
+            ctx.push('');
+            ctx.push('=== RESSOURCES ===');
+            resources.forEach(function(r) {
+              ctx.push('- ' + (r.name||'') + ': ' + (r.role||'') + ', dispo ' + (r.availability!=null ? r.availability+'%' : '--'));
+            });
+          }
+        }
+      } catch(e) { ctx.push('Erreur PM: ' + e.message); }
+    }
+
+    // Del Hub context
+    if (hasDel) {
+      try {
+        // CRM
+        if (['god','sales','business','head'].indexOf(role) >= 0) {
+          var crm = DELHUB.getCRMStats();
+          ctx.push('');
+          ctx.push('=== CRM / COMMERCIAL ===');
+          ctx.push('Opportunites: ' + crm.totalOpportunities + ', Pipeline: ' + crm.pipelineValue.toLocaleString('fr-FR') + 'EUR, Win rate: ' + crm.winRate + '%');
+          // Details per opportunity
+          try {
+            var opps = DELHUB.getOpportunities();
+            if (opps && opps.length) {
+              opps.slice(0,10).forEach(function(o) {
+                ctx.push('  - ' + (o.name||o.company||'') + ': ' + (o.value||0) + 'EUR, stade=' + (o.stage||'') + ', proba=' + (o.probability||'') + '%');
+              });
+            }
+          } catch(e2) {}
+        }
+
+        // Contracts
+        if (['god','business','delivery','head'].indexOf(role) >= 0) {
+          var contracts = DELHUB.getContracts();
+          var active = contracts.filter(function(c){ return c.status === 'active'; });
+          var totalVal = active.reduce(function(s,c){ return s + (Number(c.value)||0); }, 0);
+          ctx.push('');
+          ctx.push('=== CONTRATS ===');
+          ctx.push('Total: ' + contracts.length + ', Actifs: ' + active.length + ', Valeur totale: ' + totalVal.toLocaleString('fr-FR') + 'EUR');
+          active.slice(0,8).forEach(function(c) {
+            ctx.push('  - ' + (c.name||c.client||'') + ': ' + (c.value||0) + 'EUR, fin=' + (c.endDate||c.end||'--') + ', type=' + (c.type||''));
+          });
+        }
+
+        // SLA & Delivery
+        if (['god','delivery','head'].indexOf(role) >= 0) {
+          var eng = DELHUB.getEngagements();
+          var incidents = DELHUB.getIncidents();
+          var met = eng.filter(function(e){ return e.status==='met'; });
+          var atRisk = eng.filter(function(e){ return e.status==='at_risk'; });
+          var breached = eng.filter(function(e){ return e.status==='breached'; });
+          ctx.push('');
+          ctx.push('=== SLA & ENGAGEMENTS ===');
+          ctx.push('Met: ' + met.length + ', At risk: ' + atRisk.length + ', Breached: ' + breached.length + ', Total: ' + eng.length);
+          ctx.push('Compliance: ' + (eng.length ? Math.round(met.length/eng.length*100) : 100) + '%');
+          atRisk.concat(breached).slice(0,5).forEach(function(e) {
+            ctx.push('  - ' + (e.name||e.service||'') + ': ' + e.status + ', cible=' + (e.target||'') + ', actuel=' + (e.current||''));
+          });
+          ctx.push('');
+          ctx.push('=== INCIDENTS ===');
+          var openInc = incidents.filter(function(i){ return i.status==='open'||i.status==='investigating'; });
+          ctx.push('Ouverts: ' + openInc.length + ', Total: ' + incidents.length);
+          var p1 = openInc.filter(function(i){ return i.priority==='P1'||i.severity==='critical'; });
+          ctx.push('P1/Critiques: ' + p1.length);
+          openInc.slice(0,5).forEach(function(i) {
+            ctx.push('  - ' + (i.title||i.name||'') + ': ' + (i.priority||i.severity||'') + ', statut=' + i.status);
+          });
+        }
+
+        // P&L
+        try {
+          var pnl = DELHUB.getPnL();
+          var revenue = pnl.reduce(function(s,e){ return s + (Number(e.revenue)||0); }, 0);
+          var costs   = pnl.reduce(function(s,e){ return s + (Number(e.costs)||0); }, 0);
+          var margin  = pnl.reduce(function(s,e){ return s + (Number(e.margin)||0); }, 0);
+          ctx.push('');
+          ctx.push('=== P&L ===');
+          ctx.push('Revenus: ' + revenue.toLocaleString('fr-FR') + 'EUR, Couts: ' + costs.toLocaleString('fr-FR') + 'EUR, Marge: ' + margin.toLocaleString('fr-FR') + 'EUR');
+          if (revenue > 0) ctx.push('Marge %: ' + Math.round(margin/revenue*100) + '%');
+        } catch(e) {}
+
+        // Pipeline & Capacity
+        if (['god','delivery','head'].indexOf(role) >= 0) {
+          try {
+            var kpis = DELHUB.getDashboardKPIs('delivery');
+            if (kpis && kpis.delivery) {
+              ctx.push('');
+              ctx.push('=== DELIVERY KPIs ===');
+              ctx.push('Releases a venir: ' + (kpis.delivery.upcomingReleases||0));
+            }
+          } catch(e) {}
+        }
+      } catch(e) { ctx.push('Erreur Del: ' + e.message); }
+    }
+
+    return ctx.join('\n');
+  }
+
+  // ── Context chips (quick stats) ──
+  function getContextChips() {
+    var chips = [];
+    if (hasPM && PMHUB.getStats) {
+      var s = PMHUB.getStats();
+      chips.push(['\u{1F4C1}', s.active||0, 'projets actifs']);
+      chips.push(['\u26A0\uFE0F', s.risk||0, 'a risque']);
+    }
+    if (hasPM && PMHUB.getResources) {
+      chips.push(['\u{1F465}', PMHUB.getResources().length, 'ressources']);
+    }
+    if (hasDel) {
+      try {
+        var eng = DELHUB.getEngagements();
+        var breached = eng.filter(function(e){ return e.status==='breached'||e.status==='at_risk'; });
+        chips.push(['\u{1F3AF}', eng.length - breached.length + '/' + eng.length, 'SLA OK']);
+      } catch(e) {}
+      try {
+        var inc = DELHUB.getIncidents().filter(function(i){ return i.status==='open'||i.status==='investigating'; });
+        chips.push(['\u{1F6A8}', inc.length, 'incidents']);
+      } catch(e) {}
+      try {
+        var contracts = DELHUB.getContracts().filter(function(c){ return c.status==='active'; });
+        chips.push(['\u{1F4CB}', contracts.length, 'contrats']);
+      } catch(e) {}
+    }
+    return chips;
+  }
+
+  // ── Suggestions per mode ──
+  function getSuggestions() {
+    var all = {
+      chat: [
+        'Synthese de mon portefeuille',
+        'Top 3 risques critiques',
+        'Etat de mes SLA',
+        'Recommandations prioritaires',
+        'Analyse P&L mensuelle',
+        'Charge equipe cette semaine'
+      ],
+      document: [
+        'Resume ce document',
+        'Extrais les points cles et obligations',
+        'Identifie les risques dans ce document',
+        'Compare avec mes donnees existantes'
+      ],
+      contract: [
+        'Analyse ce contrat completement',
+        'Quelles sont les clauses critiques ?',
+        'Calcule le score de risque contractuel',
+        'Compare avec mon portefeuille contrats'
+      ],
+      sla: [
+        'Etat de conformite de tous mes SLA',
+        'Prediction de breach a 30 jours',
+        'Impact financier des penalites estimees',
+        'Plan d\'action SLA a risque'
+      ],
+      prediction: [
+        'Prevision depassement budget tous projets',
+        'Probabilite de retard sur le planning',
+        'Forecast delivery pipeline Q2',
+        'Prevision win rate et revenue CRM',
+        'Indicateurs d\'alerte cette semaine'
+      ]
+    };
+    return all[currentMode] || all.chat;
+  }
+
+  // ── File handling ──
+  async function extractTextFromFile(file) {
+    var name = file.name.toLowerCase();
+
+    // PDF
+    if (name.endsWith('.pdf')) {
+      try {
+        var arrayBuffer = await file.arrayBuffer();
+        var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        var text = '';
+        for (var i = 1; i <= pdf.numPages; i++) {
+          var page = await pdf.getPage(i);
+          var content = await page.getTextContent();
+          text += content.items.map(function(item){ return item.str; }).join(' ') + '\n\n';
+        }
+        return text.trim() || '[PDF sans texte extractible]';
+      } catch(e) {
+        return '[Erreur lecture PDF: ' + e.message + ']';
+      }
+    }
+
+    // Text / CSV / JSON / Markdown
+    if (name.match(/\.(txt|csv|json|md|xml|html|log|yml|yaml)$/)) {
+      return await file.text();
+    }
+
+    // Word .docx (basic extraction)
+    if (name.endsWith('.docx')) {
+      try {
+        var zip = await file.arrayBuffer();
+        var blob = new Blob([zip]);
+        // Basic docx: extract from word/document.xml
+        var text2 = await blob.text();
+        var stripped = text2.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (stripped.length > 100) return stripped;
+        return '[Document Word - extraction partielle, ' + (file.size/1024).toFixed(0) + 'Ko]';
+      } catch(e) {
+        return '[Document Word - ' + (file.size/1024).toFixed(0) + 'Ko]';
+      }
+    }
+
+    return '[Fichier ' + file.name + ' - ' + (file.size/1024).toFixed(0) + 'Ko - type non supporte pour extraction texte]';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' Ko';
+    return (bytes/1048576).toFixed(1) + ' Mo';
+  }
+
+  // ── History ──
+  function getHistory() {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveHistory(h) {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(h)); } catch(e) {}
+  }
+  function formatTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }); } catch(e) { return ''; }
+  }
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+  }
+
+  // ── AI not configured ──
+  if (!aiOk) {
+    wrapper.innerHTML = '<div class="ai-not-configured">' +
+      '<div class="icon">\u{1F916}</div>' +
+      '<h2>Assistant IA non configure</h2>' +
+      '<p>Configurez un fournisseur IA (OpenAI, Claude, Mistral) pour utiliser le centre IA.</p>' +
+      '<a href="pm-hub-settings.html" class="btn-primary-link">\u2699 Configurer l\'IA</a></div>';
+    return;
+  }
+
+  // ── Render UI ──
+  history = getHistory();
+
+  function renderUI() {
+    var chips = getContextChips();
+    var suggestions = getSuggestions();
+
+    wrapper.innerHTML =
+      // Header
+      '<div class="chat-header">' +
+        '<div class="chat-title">\u{1F916} Centre IA Hub</div>' +
+        '<div class="chat-sub">Contexte : ' + (profile.name || 'Utilisateur') + ' \u2014 ' + role.toUpperCase() + ' \u2014 Mode : ' + MODES.filter(function(m){return m.id===currentMode;})[0].label + '</div>' +
+      '</div>' +
+      // Mode tabs
+      '<div class="mode-bar" id="modeBar">' +
+        MODES.map(function(m) {
+          return '<button class="mode-tab' + (m.id === currentMode ? ' active' : '') + '" data-mode="' + m.id + '" title="' + m.desc + '">' + m.icon + ' ' + m.label + '</button>';
+        }).join('') +
+      '</div>' +
+      // Context chips
+      '<div class="ctx-bar" id="ctxBar">' +
+        chips.map(function(c) {
+          return '<div class="ctx-chip"><span class="ctx-val">' + c[1] + '</span>' + c[0] + ' ' + c[2] + '</div>';
+        }).join('') +
+      '</div>' +
+      // Suggestions
+      '<div class="suggestions-bar" id="sugBar">' +
+        suggestions.map(function(s) {
+          return '<button class="sug-chip">' + s + '</button>';
+        }).join('') +
+      '</div>' +
+      // Messages
+      '<div class="messages-area" id="messagesArea"></div>' +
+      // Input
+      '<div class="input-area">' +
+        '<div class="file-preview" id="filePreview"></div>' +
+        '<div class="input-row">' +
+          '<div class="btn-upload" title="Joindre un fichier (PDF, TXT, CSV, DOCX)">\u{1F4CE}<input type="file" id="fileInput" accept=".pdf,.txt,.csv,.json,.md,.xml,.docx,.doc,.html,.log,.yml,.yaml" multiple></div>' +
+          '<textarea class="chat-textarea" id="chatInput" placeholder="Posez votre question..." rows="1"></textarea>' +
+          '<button class="btn-send" id="btnSend" title="Envoyer">\u27A4</button>' +
+        '</div>' +
+        '<div class="input-footer">' +
+          '<span class="input-hint">Entree = envoyer \u00B7 Shift+Entree = nouvelle ligne \u00B7 \u{1F4CE} = joindre fichier</span>' +
+          '<button class="btn-clear" onclick="window._hubClearChat()">\u{1F5D1} Effacer</button>' +
+        '</div>' +
+      '</div>';
+
+    // Re-render messages
+    renderAllMessages();
+    bindEvents();
+  }
+
+  function renderAllMessages() {
+    var area = document.getElementById('messagesArea');
+    if (!area) return;
+    area.innerHTML = '';
+    history.forEach(function(msg) { appendMessageDOM(msg); });
+    scrollBottom();
+  }
+
+  function appendMessageDOM(msg) {
+    var area = document.getElementById('messagesArea');
+    if (!area) return;
+    var div = document.createElement('div');
+    div.className = 'message ' + msg.role;
+
+    var html = '';
+    // File indicator
+    if (msg.files && msg.files.length) {
+      msg.files.forEach(function(f) {
+        html += '<div class="msg-file"><span class="msg-file-icon">\u{1F4C4}</span><span class="msg-file-name">' + escapeHtml(f.name) + '</span><span class="msg-file-size">' + f.size + '</span></div>';
+      });
+    }
+    html += '<div class="msg-bubble">' + escapeHtml(msg.content) + '</div>';
+    html += '<div class="msg-meta">' + formatTime(msg.ts) + (msg.mode ? ' \u00B7 ' + msg.mode : '') + '</div>';
+    div.innerHTML = html;
+    area.appendChild(div);
+  }
+
+  function appendTyping() {
+    var area = document.getElementById('messagesArea');
+    var div = document.createElement('div');
+    div.className = 'message ai';
+    div.id = 'typingIndicator';
+    div.innerHTML = '<div class="msg-bubble" style="padding:8px 16px"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+    area.appendChild(div);
+    scrollBottom();
+  }
+  function removeTyping() { var t = document.getElementById('typingIndicator'); if (t) t.remove(); }
+  function scrollBottom() { var a = document.getElementById('messagesArea'); if (a) a.scrollTop = a.scrollHeight; }
+
+  // ── Send message ──
+  async function sendMessage(text) {
+    var btn = document.getElementById('btnSend');
+    var inp = document.getElementById('chatInput');
+    if (btn) btn.disabled = true;
+    if (inp) inp.disabled = true;
+
+    // Build user message with files
+    var fileContext = '';
+    var fileMeta = [];
+    if (uploadedFiles.length) {
+      fileContext = '\n\n=== DOCUMENTS JOINTS ===\n';
+      uploadedFiles.forEach(function(f) {
+        fileContext += '\n--- Document: ' + f.name + ' (' + formatFileSize(f.size) + ') ---\n' + f.text.substring(0, 15000) + '\n';
+        fileMeta.push({ name: f.name, size: formatFileSize(f.size) });
+      });
+      fileContext += '=== FIN DOCUMENTS ===\n';
+    }
+
+    var userMsg = { role: 'user', content: text, ts: new Date().toISOString(), mode: currentMode, files: fileMeta.length ? fileMeta : undefined };
+    history.push(userMsg);
+    appendMessageDOM(userMsg);
+    appendTyping();
+    scrollBottom();
+
+    // Clear file queue after sending
+    uploadedFiles = [];
+    updateFilePreview();
+
+    var fullContext = buildContext() + fileContext;
+    var systemPrompt = getSystemPrompt() + '\n\n=== DONNEES ACTUELLES ===\n' + fullContext + '\n=== FIN DONNEES ===';
+
+    // Call AI
+    var aiModule = (hasPM && PMHUB.isAIEnabled()) ? PMHUB : (hasDel && DELHUB.isAIEnabled()) ? DELHUB : null;
+    try {
+      var result = await aiModule.callAI(systemPrompt, text);
+      removeTyping();
+      var aiMsg = { role: 'ai', content: result, ts: new Date().toISOString(), mode: currentMode };
+      history.push(aiMsg);
+      appendMessageDOM(aiMsg);
+    } catch(err) {
+      removeTyping();
+      var errMsg = { role: 'error', content: 'Erreur : ' + err.message, ts: new Date().toISOString() };
+      history.push(errMsg);
+      appendMessageDOM(errMsg);
+    }
+
+    saveHistory(history);
+    scrollBottom();
+    if (btn) btn.disabled = false;
+    if (inp) { inp.disabled = false; inp.focus(); }
+  }
+
+  // ── File preview ──
+  function updateFilePreview() {
+    var preview = document.getElementById('filePreview');
+    if (!preview) return;
+    if (!uploadedFiles.length) {
+      preview.className = 'file-preview';
+      preview.innerHTML = '';
+      return;
+    }
+    preview.className = 'file-preview visible';
+    preview.innerHTML = uploadedFiles.map(function(f, i) {
+      return '<div class="file-tag">\u{1F4C4} ' + escapeHtml(f.name) + ' <span style="color:var(--text-muted);font-size:9px">' + formatFileSize(f.size) + '</span><span class="file-tag-remove" data-idx="' + i + '">\u00D7</span></div>';
+    }).join('');
+    preview.querySelectorAll('.file-tag-remove').forEach(function(el) {
+      el.addEventListener('click', function() {
+        uploadedFiles.splice(Number(el.dataset.idx), 1);
+        updateFilePreview();
+      });
+    });
+  }
+
+  // ── Event binding ──
+  function bindEvents() {
+    // Mode tabs
+    document.querySelectorAll('.mode-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        currentMode = tab.dataset.mode;
+        // Update tabs visually
+        document.querySelectorAll('.mode-tab').forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+        // Update subtitle
+        var sub = document.querySelector('.chat-sub');
+        if (sub) sub.textContent = 'Contexte : ' + (profile.name||'Utilisateur') + ' \u2014 ' + role.toUpperCase() + ' \u2014 Mode : ' + MODES.filter(function(m){return m.id===currentMode;})[0].label;
+        // Update suggestions
+        var sugBar = document.getElementById('sugBar');
+        if (sugBar) {
+          sugBar.innerHTML = getSuggestions().map(function(s) {
+            return '<button class="sug-chip">' + s + '</button>';
+          }).join('');
+          sugBar.querySelectorAll('.sug-chip').forEach(function(chip) {
+            chip.addEventListener('click', function() { sendMessage(chip.textContent); });
+          });
+        }
+        // System message
+        var sysMsg = { role: 'system', content: MODES.filter(function(m){return m.id===currentMode;})[0].icon + ' Mode ' + MODES.filter(function(m){return m.id===currentMode;})[0].label + ' active \u2014 ' + MODES.filter(function(m){return m.id===currentMode;})[0].desc, ts: new Date().toISOString() };
+        history.push(sysMsg);
+        appendMessageDOM(sysMsg);
+        saveHistory(history);
+        scrollBottom();
+      });
+    });
+
+    // Suggestions
+    document.querySelectorAll('.sug-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() { sendMessage(chip.textContent); });
+    });
+
+    // Input
+    var input = document.getElementById('chatInput');
+    if (input) {
+      input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          var text = input.value.trim();
+          if (!text && !uploadedFiles.length) return;
+          input.value = '';
+          input.style.height = 'auto';
+          sendMessage(text || 'Analyse les documents joints.');
+        }
+      });
+    }
+
+    // Send button
+    var sendBtn = document.getElementById('btnSend');
+    if (sendBtn) {
+      sendBtn.addEventListener('click', function() {
+        var text = (input ? input.value.trim() : '');
+        if (!text && !uploadedFiles.length) return;
+        if (input) { input.value = ''; input.style.height = 'auto'; }
+        sendMessage(text || 'Analyse les documents joints.');
+      });
+    }
+
+    // File upload
+    var fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', async function() {
+        var files = Array.from(fileInput.files);
+        for (var i = 0; i < files.length; i++) {
+          var f = files[i];
+          var text = await extractTextFromFile(f);
+          uploadedFiles.push({ name: f.name, size: f.size, text: text });
+        }
+        fileInput.value = '';
+        updateFilePreview();
+        // Auto-switch to document mode if not already
+        if (currentMode === 'chat' && uploadedFiles.length) {
+          document.querySelector('.mode-tab[data-mode="document"]').click();
+        }
+      });
+    }
+  }
+
+  // ── Clear chat ──
+  window._hubClearChat = function() {
+    if (!confirm('Effacer toute la conversation ?')) return;
+    history.length = 0;
+    saveHistory(history);
+    uploadedFiles = [];
+    renderAllMessages();
+    updateFilePreview();
+  };
+
+  // ── Init ──
+  renderUI();
+
+})();
+</script>
+</body>
+</html>

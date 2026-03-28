@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Administration</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px 20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--primary); transform:translateY(-2px); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:6px; }
+.kpi-value { font-size:22px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:3px; }
+
+.section-title { font-family:var(--font-heading); font-size:16px; font-weight:700; }
+.section-sub   { font-size:13px; color:var(--text-muted); margin-top:4px; margin-bottom:20px; }
+
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+.btn-primary {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:13px; cursor:pointer; transition:var(--transition); font-family:var(--font-heading);
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-ghost {
+  display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+  background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:var(--radius-sm);
+  font-size:13px; cursor:pointer; transition:var(--transition);
+}
+.btn-ghost:hover { color:var(--text); border-color:var(--primary); }
+.btn-danger {
+  display:inline-flex; align-items:center; gap:6px; padding:6px 12px;
+  background:transparent; color:var(--danger); border:1px solid var(--danger); border-radius:var(--radius-sm);
+  font-size:12px; cursor:pointer; transition:var(--transition);
+}
+.btn-danger:hover { background:rgba(239,68,68,0.1); }
+.btn-sm {
+  padding:5px 10px; font-size:11px; border-radius:var(--radius-sm);
+  background:transparent; color:var(--text-muted); border:1px solid var(--border); cursor:pointer; transition:var(--transition);
+}
+.btn-sm:hover { color:var(--text); border-color:var(--primary); }
+
+/* Table */
+.data-table { width:100%; border-collapse:collapse; font-size:13px; }
+.data-table th { text-align:left; padding:10px 14px; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; font-family:var(--font-mono); color:var(--text-muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+.data-table td { padding:11px 14px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); vertical-align:middle; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:rgba(255,255,255,0.02); }
+
+.user-select {
+  background:var(--surface2); border:1px solid var(--border); border-radius:4px;
+  padding:4px 8px; color:var(--text); font-size:12px; font-family:var(--font-body); cursor:pointer;
+}
+.user-select:focus { outline:none; border-color:var(--primary); }
+
+/* Status badge */
+.badge {
+  display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:600; font-family:var(--font-mono);
+}
+.badge-green  { background:rgba(34,197,94,0.15);  color:#22C55E; }
+.badge-gray   { background:rgba(100,116,139,0.2); color:#94A3B8; }
+.badge-teal   { background:rgba(45,212,191,0.15); color:var(--primary); }
+.badge-indigo { background:rgba(99,102,241,0.15); color:#818CF8; }
+.badge-amber  { background:rgba(245,158,11,0.15); color:var(--warning); }
+.badge-red    { background:rgba(239,68,68,0.15);  color:var(--danger); }
+
+/* Modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+  opacity:0; pointer-events:none; transition:opacity 0.2s;
+}
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:32px; width:min(500px,95vw); transform:translateY(12px); transition:transform 0.2s; max-height:90vh; overflow-y:auto;
+}
+.modal-overlay.active .modal { transform:translateY(0); }
+.modal-title { font-family:var(--font-heading); font-size:17px; font-weight:700; margin-bottom:22px; }
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:6px; }
+.form-input, .form-select {
+  width:100%; box-sizing:border-box; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:10px 12px; color:var(--text); font-family:var(--font-body); font-size:14px; transition:var(--transition);
+}
+.form-input:focus, .form-select:focus { outline:none; border-color:var(--primary); }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+
+/* Simulation */
+.toggle-row { display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+.toggle-switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; border-radius:24px; background:var(--surface3);
+  cursor:pointer; transition:0.3s; border:1px solid var(--border);
+}
+.toggle-slider:before {
+  content:''; position:absolute; left:3px; top:3px; width:16px; height:16px;
+  border-radius:50%; background:var(--text-muted); transition:0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background:var(--primary); border-color:var(--primary); }
+.toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); background:#0B0F19; }
+
+/* Stats table */
+.stats-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.stats-row:last-child { border-bottom:none; }
+.stats-label { font-size:13px; color:var(--text-soft); }
+.stats-val { font-family:var(--font-mono); font-size:14px; font-weight:600; color:var(--text); }
+
+.empty-row { text-align:center; padding:32px; color:var(--text-muted); font-size:14px; }
+
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 20px; font-size:14px; color:var(--text); box-shadow:var(--shadow);
+  transform:translateY(20px); opacity:0; transition:all 0.3s; pointer-events:none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <!-- HERO -->
+    <div class="hero-bar" style="margin-bottom:28px">
+      <div class="hero-left">
+        <span class="hero-badge">GOD MODE</span>
+        <h1 class="hero-title">Administration</h1>
+        <p class="hero-sub">Gestion des utilisateurs, simulation de rôle et statistiques système.</p>
+      </div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- USERS TABLE -->
+    <div class="card" style="padding:24px;margin-bottom:24px">
+      <div class="toolbar">
+        <div>
+          <div class="section-title">Gestion des utilisateurs</div>
+          <div class="section-sub" style="margin-bottom:0">Simulation localStorage — données persistées dans delhub_users.</div>
+        </div>
+        <button class="btn-primary" onclick="openAddUser()">+ Ajouter un utilisateur</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Dernier login</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+        <div id="usersEmpty" style="display:none" class="empty-row">Aucun utilisateur. Cliquez sur "Ajouter un utilisateur".</div>
+      </div>
+    </div>
+
+    <!-- SIMULATION -->
+    <div class="card" style="padding:24px;margin-bottom:24px">
+      <div class="section-title">Simulateur de rôle</div>
+      <div class="section-sub">Visualisez le hub depuis la perspective d'un autre rôle.</div>
+      <div class="form-group" style="max-width:300px">
+        <label class="form-label">Rôle à simuler</label>
+        <select class="form-select" id="simulateRole">
+          <option value="head">Head / C-Level</option>
+          <option value="business">Business Manager</option>
+          <option value="delivery">Delivery Manager</option>
+          <option value="sales">Sales / Commercial</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="startSimulation()">▶ Simuler</button>
+        <button class="btn-ghost" id="btnStopSim" onclick="stopSimulation()" style="display:none">⏹ Arrêter la simulation</button>
+      </div>
+      <div id="simStatus" style="margin-top:12px;font-size:13px;color:var(--warning);display:none"></div>
+    </div>
+
+    <!-- STATISTIQUES -->
+    <div class="card" style="padding:24px">
+      <div class="section-title">Statistiques système</div>
+      <div class="section-sub">Inventaire des données stockées localement.</div>
+      <div id="statsContainer"></div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- Modal ajouter/éditer user -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-title" id="userModalTitle">Ajouter un utilisateur</div>
+    <div class="form-group">
+      <label class="form-label">Nom</label>
+      <input type="text" class="form-input" id="uName" placeholder="Prénom Nom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" id="uEmail" placeholder="user@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rôle</label>
+      <select class="form-select" id="uRole">
+        <option value="god">GOD / Admin</option>
+        <option value="head">Head / C-Level</option>
+        <option value="business">Business Manager</option>
+        <option value="delivery">Delivery Manager</option>
+        <option value="sales">Sales / Commercial</option>
+        <option value="pm">Chef de Projet</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Statut</label>
+      <select class="form-select" id="uStatus">
+        <option value="active">Actif</option>
+        <option value="inactive">Inactif</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeUserModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveUser()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  // Guard GOD
+  if (!DELHUB.isGod()) {
+    window.location.href = 'delhub-dashboard.html';
+    return;
+  }
+
+  var USERS_KEY = 'delhub_users';
+  var roleLabels = { god:'GOD / Admin', head:'Head / C-Level', business:'Business Manager', delivery:'Delivery Manager', sales:'Sales / Commercial', pm:'Chef de Projet' };
+  var roleBadges = { god:'badge-red', head:'badge-indigo', business:'badge-amber', delivery:'badge-teal', sales:'badge-green', pm:'badge-gray' };
+
+  function getUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function saveUsers(list) { localStorage.setItem(USERS_KEY, JSON.stringify(list)); }
+
+  // ── KPI STRIP ──
+  function renderKPIs() {
+    var users = getUsers();
+    var byRole = {};
+    users.forEach(function(u) { byRole[u.role] = (byRole[u.role] || 0) + 1; });
+    var active   = users.filter(function(u){ return u.status === 'active'; }).length;
+    var inactive = users.filter(function(u){ return u.status !== 'active'; }).length;
+
+    var strip = document.getElementById('kpiStrip');
+    strip.innerHTML = '';
+    var kpis = [
+      { label:'Utilisateurs total', value: users.length, color:'var(--primary)' },
+      { label:'Actifs', value: active, color:'var(--success)' },
+      { label:'Inactifs', value: inactive, color:'var(--text-muted)' },
+      { label:'Admins (GOD)', value: byRole.god || 0, color:'#EF4444' },
+      { label:'Rôles Head', value: byRole.head || 0, color:'#818CF8' },
+      { label:'Delivery / Business', value: (byRole.delivery||0) + (byRole.business||0), color:'var(--warning)' },
+    ];
+    kpis.forEach(function(k) {
+      var card = document.createElement('div');
+      card.className = 'kpi-card';
+      card.innerHTML = '<div class="kpi-label">' + k.label + '</div><div class="kpi-value" style="color:' + k.color + '">' + k.value + '</div>';
+      strip.appendChild(card);
+    });
+  }
+
+  // ── USERS TABLE ──
+  function renderUsers() {
+    var users = getUsers();
+    var tbody = document.getElementById('usersTbody');
+    var empty = document.getElementById('usersEmpty');
+    tbody.innerHTML = '';
+    if (!users.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    users.forEach(function(u, idx) {
+      var tr = document.createElement('tr');
+      var statusBadge = u.status === 'active'
+        ? '<span class="badge badge-green">Actif</span>'
+        : '<span class="badge badge-gray">Inactif</span>';
+      var lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('fr-FR') : '—';
+
+      tr.innerHTML = '<td style="font-weight:600">' + escHtml(u.name || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:12px;color:var(--text-soft)">' + escHtml(u.email || '—') + '</td>' +
+        '<td><select class="user-select" data-idx="' + idx + '" onchange="changeRole(this)">' + buildRoleOptions(u.role) + '</select></td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + lastLogin + '</td>' +
+        '<td><div style="display:flex;gap:6px">' +
+          '<button class="btn-sm" onclick="toggleUserStatus(' + idx + ')">' + (u.status === 'active' ? 'Désactiver' : 'Activer') + '</button>' +
+          '<button class="btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteUser(' + idx + ')">Suppr.</button>' +
+        '</div></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildRoleOptions(selected) {
+    return Object.keys(roleLabels).map(function(k) {
+      return '<option value="' + k + '"' + (k === selected ? ' selected' : '') + '>' + roleLabels[k] + '</option>';
+    }).join('');
+  }
+
+  window.changeRole = function(sel) {
+    var users = getUsers();
+    var idx = parseInt(sel.getAttribute('data-idx'));
+    users[idx].role = sel.value;
+    saveUsers(users);
+    renderKPIs();
+    showToast('Rôle mis à jour.');
+  };
+
+  window.toggleUserStatus = function(idx) {
+    var users = getUsers();
+    users[idx].status = users[idx].status === 'active' ? 'inactive' : 'active';
+    saveUsers(users);
+    renderUsers();
+    renderKPIs();
+  };
+
+  window.deleteUser = function(idx) {
+    if (!confirm('Supprimer cet utilisateur ?')) return;
+    var users = getUsers();
+    users.splice(idx, 1);
+    saveUsers(users);
+    renderUsers();
+    renderKPIs();
+    showToast('Utilisateur supprimé.');
+  };
+
+  // ── ADD / EDIT USER MODAL ──
+  var _editIdx = null;
+
+  window.openAddUser = function() {
+    _editIdx = null;
+    document.getElementById('userModalTitle').textContent = 'Ajouter un utilisateur';
+    document.getElementById('uName').value = '';
+    document.getElementById('uEmail').value = '';
+    document.getElementById('uRole').value = 'delivery';
+    document.getElementById('uStatus').value = 'active';
+    document.getElementById('userModal').classList.add('active');
+  };
+
+  window.closeUserModal = function() {
+    document.getElementById('userModal').classList.remove('active');
+  };
+
+  window.saveUser = function() {
+    var name   = document.getElementById('uName').value.trim();
+    var email  = document.getElementById('uEmail').value.trim();
+    var role   = document.getElementById('uRole').value;
+    var status = document.getElementById('uStatus').value;
+    if (!name || !email) { alert('Nom et email obligatoires.'); return; }
+    var users = getUsers();
+    var user = { id: Date.now(), name, email, role, status, createdAt: new Date().toISOString(), lastLogin: null };
+    users.unshift(user);
+    saveUsers(users);
+    closeUserModal();
+    renderUsers();
+    renderKPIs();
+    showToast('Utilisateur ajouté.');
+  };
+
+  document.getElementById('userModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUserModal();
+  });
+
+  // ── SIMULATION ──
+  var simulated = sessionStorage.getItem('delhub_simulated_role');
+  if (simulated) {
+    document.getElementById('simulateRole').value = simulated;
+    document.getElementById('btnStopSim').style.display = 'inline-flex';
+    document.getElementById('simStatus').style.display = 'block';
+    document.getElementById('simStatus').textContent = '▶ Simulation active : ' + (roleLabels[simulated] || simulated);
+  }
+
+  window.startSimulation = function() {
+    var r = document.getElementById('simulateRole').value;
+    sessionStorage.setItem('delhub_simulated_role', r);
+    location.reload();
+  };
+
+  window.stopSimulation = function() {
+    sessionStorage.removeItem('delhub_simulated_role');
+    location.reload();
+  };
+
+  // ── STATS ──
+  function renderStats() {
+    var ENTITY_MAP = [
+      { label: 'Opportunités CRM',   key: 'delhub_crm',          getData: DELHUB.getCRM },
+      { label: 'Propositions',       key: 'delhub_proposals',     getData: DELHUB.getProposals },
+      { label: 'Contrats',           key: 'delhub_contracts',     getData: DELHUB.getContracts },
+      { label: 'Entrées P&L',        key: 'delhub_pnl',           getData: DELHUB.getPnL },
+      { label: 'Forecasts',          key: 'delhub_forecast',      getData: DELHUB.getForecasts },
+      { label: 'SLA / Engagements',  key: 'delhub_engagements',   getData: DELHUB.getEngagements },
+      { label: 'Pipeline delivery',  key: 'delhub_pipeline',      getData: DELHUB.getPipeline },
+      { label: 'Releases',           key: 'delhub_releases',      getData: DELHUB.getReleases },
+      { label: 'Incidents',          key: 'delhub_incidents',     getData: DELHUB.getIncidents },
+      { label: 'Sessions exec',      key: 'delhub_exec_sessions', getData: DELHUB.getExecSessions },
+      { label: 'Utilisateurs admin', key: 'delhub_users',         getData: getUsers },
+    ];
+
+    // Calc localStorage size
+    var totalBytes = 0;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k2 = localStorage.key(i);
+      if (k2 && k2.startsWith('delhub_')) {
+        totalBytes += (localStorage.getItem(k2) || '').length * 2; // UTF-16
+      }
+    }
+    var sizeKB = (totalBytes / 1024).toFixed(1);
+
+    var container = document.getElementById('statsContainer');
+    container.innerHTML = '';
+
+    ENTITY_MAP.forEach(function(e) {
+      var count = 0;
+      try { count = (e.getData() || []).length; } catch(ex) {}
+      var row = document.createElement('div');
+      row.className = 'stats-row';
+      row.innerHTML = '<span class="stats-label">' + e.label + '</span><span class="stats-val">' + count + ' entrée' + (count !== 1 ? 's' : '') + '</span>';
+      container.appendChild(row);
+    });
+
+    var sizeRow = document.createElement('div');
+    sizeRow.className = 'stats-row';
+    sizeRow.style.marginTop = '16px';
+    sizeRow.style.paddingTop = '16px';
+    sizeRow.style.borderTop = '1px solid var(--border)';
+    sizeRow.innerHTML = '<span class="stats-label" style="color:var(--text);font-weight:600">Taille estimée localStorage (données delhub_*)</span><span class="stats-val" style="color:var(--primary)">' + sizeKB + ' Ko</span>';
+    container.appendChild(sizeRow);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = '✓ ' + msg;
+    toast.className = 'toast show';
+    setTimeout(function(){ toast.className = 'toast'; }, 2500);
+  }
+
+  // Init
+  renderKPIs();
+  renderUsers();
+  renderStats();
+})();
+</script>
+</body>
+</html>

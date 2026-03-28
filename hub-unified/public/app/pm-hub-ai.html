@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Centre IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<script src="hub-data.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-nav-context.js"></script>
+<script>
+if (typeof PMHUB === 'undefined') {
+  const _ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
+  const AIP={openai:{label:'OpenAI',endpoint:'https://api.openai.com/v1/chat/completions',models:['gpt-5.4','gpt-5-mini','gpt-4.1','gpt-4.1-mini','gpt-4.1-nano','gpt-4o','gpt-4o-mini','gpt-4-turbo','o1','o1-mini','o3-mini','gpt-3.5-turbo'],headerKey:'Authorization',headerPrefix:'Bearer '},anthropic:{label:'Anthropic',endpoint:'https://api.anthropic.com/v1/messages',models:['claude-opus-4-5','claude-sonnet-4-5','claude-haiku-4-5'],headerKey:'x-api-key',headerPrefix:''},mistral:{label:'Mistral',endpoint:'https://api.mistral.ai/v1/chat/completions',models:['mistral-large-latest','mistral-medium-latest'],headerKey:'Authorization',headerPrefix:'Bearer '},custom:{label:'Custom',endpoint:'',models:[],headerKey:'Authorization',headerPrefix:'Bearer '}};
+  window.PMHUB={AI_PROVIDERS:AIP,getAISettings:()=>_ls.get('pmhub_ai_settings',{provider:'',apiKey:'',model:'',endpoint:'',enabled:false}),saveAISettings:(d)=>_ls.set('pmhub_ai_settings',d),isAIEnabled:()=>{const s=_ls.get('pmhub_ai_settings',{});return s.enabled&&s.apiKey&&s.provider;},getProfile:()=>_ls.get('pmhub_profile',{initials:'AN',name:'Abdelhakim Nechniche',title:'Telecom & IT Project Manager - PMP - PRINCE2 7th - Agile Scrum Master',company:'AMARIS Consulting',location:'Orvault, France',badges:['PMP','PRINCE2 7th','Agile Scrum Master','PMOCP']}),getProjects:()=>_ls.get('pmhub_projects',[{id:1,ref:'PRJ-2025-001',name:'AI-Driven Smart Data Center',status:'active',progress:35,type:'R&D / Innovation',start:'2025-11-01',end:'2026-09-30',budget:'450 000',team:['AN','ML','KB','SC'],phase:'Planification',priority:'Critique',risks:3,actions:7,desc:'Deploiement datacenter intelligent IA, automatisation operations, optimisation energetique, monitoring predictif.',sponsor:'Direction Innovation AMARIS',client:'Interne Grand Compte',color:'#63d2b4'},{id:2,ref:'PRJ-2024-008',name:'Orange PMPR / BLIM',status:'closed',progress:100,type:'Telecoms',client:'Orange France'},{id:3,ref:'PRJ-2025-002',name:'Power BI R&D',status:'closed',progress:100,type:'Data Analytics'}]),getResources:()=>_ls.get('pmhub_resources',[{id:'AN',name:'Abdelhakim Nechniche',role:'Project Manager',level:'Senior',availability:80,skills:['PMP','PRINCE2','Jira','Power BI','Telecoms']},{id:'ML',name:'Marc Leblanc',role:'Data Architect',level:'Senior',availability:60,skills:['Data Engineering','Python','Azure']},{id:'KB',name:'Karim Benali',role:'Infrastructure Engineer',level:'Confirme',availability:80,skills:['Datacenter','Reseau','VMware']},{id:'SC',name:'Sophie Carre',role:'AI/ML Engineer',level:'Confirme',availability:70,skills:['ML','Python','TensorFlow']}]),getRaids:(id)=>{const all=_ls.get('pmhub_raids',{});return all[id]||{risks:[{desc:'Retard fournisseur infrastructure serveurs',severity:'high',status:'open',owner:'AN',mitigation:'Identifier fournisseurs alternatifs'},{desc:'Derive du perimetre en phase deploiement',severity:'critical',status:'watch',owner:'AN',mitigation:'Comite changement formel'},{desc:'Competences IA/ML insuffisantes',severity:'medium',status:'progress',owner:'SC',mitigation:'Formation + recrutement contractor'}],actions:[{desc:'Valider architecture avec direction technique',status:'progress',owner:'AN',due:'2026-01-20'},{desc:'Obtenir devis fournisseurs hardware',status:'open',owner:'KB',due:'2026-01-31'},{desc:'Rediger plan formation equipe',status:'open',owner:'SC',due:'2026-02-15'}],issues:[{desc:'Acces VPN bloque equipe distante',severity:'high',status:'progress',owner:'KB'}],decisions:[{desc:'Architecture hybride cloud/on-premise retenue',status:'closed',owner:'AN'},{desc:'Methodologie Hybride validee',status:'closed',owner:'AN'}]};},
+  async callAI(sys,usr){const s=this.getAISettings();if(!s.enabled||!s.apiKey||!s.provider)throw new Error('IA non configuree. Allez dans Parametres.');const p=AIP[s.provider];const ep=s.provider==='custom'?s.endpoint:p.endpoint;const mdl=s.model||p.models[0];const hdrs={'Content-Type':'application/json'};hdrs[p.headerKey]=p.headerPrefix+s.apiKey;if(s.provider==='anthropic')hdrs['anthropic-version']='2023-06-01';let body;if(s.provider==='anthropic'){body={model:mdl,max_tokens:3000,system:sys,messages:[{role:'user',content:usr}]};}else{body={model:mdl,messages:[{role:'system',content:sys},{role:'user',content:usr}],temperature:0.7,max_completion_tokens:3000};}const res=await fetch(ep,{method:'POST',headers:hdrs,body:JSON.stringify(body)});if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur API '+res.status);}const d=await res.json();if(s.provider==='anthropic')return d.content?.[0]?.text||'';return d.choices?.[0]?.message?.content||'';}};
+}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-links a.active{color:var(--accent);background:rgba(99,210,180,0.07);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;}
+.sidebar{border-right:1px solid var(--border);background:rgba(12,17,24,0.85);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-status{padding:18px;border-bottom:1px solid var(--border);}
+.sb-badge-ai{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:8px 12px;border-radius:6px;margin-bottom:6px;}
+.sb-badge-ai.on{background:rgba(99,210,180,0.08);border:1px solid rgba(99,210,180,0.2);color:var(--accent);}
+.sb-badge-ai.off{background:rgba(224,112,112,0.06);border:1px solid rgba(224,112,112,0.15);color:var(--danger);}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.ai-dot.on{animation:glow 2s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 6px rgba(99,210,180,0.5)}50%{box-shadow:0 0 14px rgba(99,210,180,0.8)}}
+.sb-model{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 0;}
+.sb-sec{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-muted);padding:12px 18px 5px;}
+.sb-btn{display:flex;align-items:center;gap:11px;padding:10px 18px;cursor:pointer;transition:all .18s;border-left:2px solid transparent;font-size:12px;font-weight:600;color:var(--text-soft);border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover{background:rgba(99,210,180,0.04);color:var(--text);border-left-color:rgba(99,210,180,0.2);}
+.sb-btn.active{background:rgba(99,210,180,0.07);color:var(--accent);border-left-color:var(--accent);}
+.sb-btn-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sb-btn-lbl{flex:1;}
+.sb-btn-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.sb-projs{padding:12px 14px 14px;border-top:1px solid var(--border);}
+.sb-projs-title{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.proj-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;cursor:pointer;transition:all .18s;}
+.proj-chip:hover{border-color:var(--border-a);}
+.proj-chip.active{border-color:var(--accent);background:rgba(99,210,180,0.05);}
+.proj-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.proj-name{font-size:10px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.main{display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;min-height:0;}
+.panel{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+.panel.active{display:flex;}
+.tool-body{flex:1;min-height:0;overflow-y:auto;padding:22px 32px;}
+.ph{padding:22px 32px 14px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.ph-row{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.ph-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.ph-tag::before{content:'';width:12px;height:1px;background:var(--accent);}
+.ph-h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:-0.02em;}
+.ph-h1 em{font-style:italic;color:var(--accent);}
+.ph-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:3px;}
+.chat-body{flex:1;overflow-y:auto;padding:18px 32px;display:flex;flex-direction:column;gap:12px;}
+.chat-welcome{text-align:center;padding:32px 16px;}
+.cw-icon{font-size:42px;margin-bottom:14px;}
+.cw-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;margin-bottom:8px;}
+.cw-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.8;margin-bottom:20px;}
+.sug-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;}
+.sug{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;cursor:pointer;transition:all .2s;}
+.sug:hover{border-color:var(--border-a);background:rgba(99,210,180,0.03);}
+.sug-icon{font-size:14px;margin-bottom:5px;}
+.sug-text{font-size:11px;font-weight:600;line-height:1.3;}
+.sug-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.msg{display:flex;gap:9px;animation:fadeUp .3s ease;}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;max-width:88%;}
+.msg.ai{align-self:flex-start;max-width:92%;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:'DM Mono',monospace;font-weight:600;}
+.msg-av.u{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#060a0d;}
+.msg-av.a{background:var(--surface2);border:1px solid var(--border-a);color:var(--accent);}
+.msg-bbl{padding:10px 14px;border-radius:9px;font-size:12px;line-height:1.75;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-word;}
+.msg-bbl.u{background:rgba(99,210,180,0.1);border:1px solid rgba(99,210,180,0.18);color:var(--text);}
+.msg-bbl.a{background:var(--surface);border:1px solid var(--border);color:var(--text-soft);}
+.msg-bbl.thinking{color:var(--text-muted);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.chat-footer{flex-shrink:0;padding:10px 32px 18px;border-top:1px solid var(--border);}
+.chat-row{display:flex;gap:9px;align-items:flex-end;}
+.chat-ta{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;resize:none;outline:none;min-height:44px;max-height:120px;line-height:1.6;transition:border-color .2s;}
+.chat-ta:focus{border-color:var(--border-a);}
+.send-btn{width:44px;height:44px;background:var(--accent);border:none;border-radius:7px;cursor:pointer;flex-shrink:0;font-size:16px;transition:all .2s;}
+.send-btn:hover{background:#7fe0c8;}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.chat-hint{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:5px;text-align:center;}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-bottom:22px;}
+.opts.three{grid-template-columns:repeat(3,1fr);}
+.opt{background:var(--surface);border:2px solid var(--border);border-radius:9px;padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.opt:hover{border-color:rgba(99,210,180,0.25);transform:translateY(-1px);}
+.opt.selected{border-color:var(--accent);background:rgba(99,210,180,0.04);}
+.opt.selected::after{content:'checkmark';font-size:0;position:absolute;top:10px;right:12px;width:16px;height:16px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.opt.selected::before{content:'✓';position:absolute;top:11px;right:14px;font-size:10px;color:#060a0d;font-weight:700;z-index:1;}
+.opt-icon{font-size:22px;margin-bottom:9px;}
+.opt-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.opt-desc{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);line-height:1.5;}
+.fcard{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:22px;margin-bottom:14px;}
+.fcard-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.frow{display:grid;gap:12px;margin-bottom:12px;}
+.frow.two{grid-template-columns:1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.flabel{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);}
+.fsel,.finput{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;transition:border-color .2s;}
+.fsel:focus,.finput:focus{border-color:var(--accent);}
+.fta{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;width:100%;resize:vertical;min-height:68px;line-height:1.7;transition:border-color .2s;}
+.fta:focus{border-color:var(--accent);}
+.rcard{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:20px;margin-top:14px;display:none;}
+.rcard.show{display:block;}
+.rcard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.rcard-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);}
+.rcard-acts{display:flex;gap:7px;}
+.rcard-body{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.9;white-space:pre-wrap;word-break:break-word;max-height:52vh;overflow-y:auto;}
+.rcard-body.loading{color:var(--text-muted);animation:blink 1s infinite;}
+.btn-p{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#060a0d;padding:10px 20px;border-radius:5px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;}
+.btn-p:hover{background:#7fe0c8;transform:translateY(-1px);}
+.btn-p:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-s{display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--text-muted);padding:6px 12px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);}
+.ia-off{background:rgba(224,112,112,0.05);border:1px solid rgba(224,112,112,0.2);border-radius:9px;padding:18px 22px;display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.ia-off-ttl{font-size:13px;font-weight:700;color:var(--danger);margin-bottom:3px;}
+.ia-off-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;}
+.ia-off a{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);text-decoration:none;padding:7px 13px;border:1px solid rgba(99,210,180,0.25);border-radius:5px;white-space:nowrap;margin-left:auto;transition:all .2s;}
+.ia-off a:hover{background:rgba(99,210,180,0.07);}
+.akpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.akpi{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px;text-align:center;}
+.akpi-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;margin-bottom:3px;}
+.akpi-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.bsections{display:flex;flex-direction:column;gap:12px;}
+.bblock{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:18px;}
+.bblock-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.bblock-icon{font-size:16px;}
+.bblock-title{font-size:13px;font-weight:700;}
+.bblock-body{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);line-height:1.9;white-space:pre-wrap;}
+.bblock-body.loading{color:var(--text-muted);animation:blink 1s infinite;}
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--surface);border:1px solid rgba(99,210,180,0.3);border-radius:9px;padding:12px 17px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);transform:translateY(65px);opacity:0;transition:all .3s;pointer-events:none;}
+.ctx-banner{background:rgba(99,210,180,0.06);border:1px solid rgba(99,210,180,0.2);border-radius:8px;padding:10px 16px;margin:0 32px 14px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--accent);display:flex;align-items:center;gap:10px;}
+.ctx-banner span{color:var(--text-muted);}
+/* AI Command Center — structure UX Human first / AI optional */
+.ai-command-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ai-command-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+.ai-command-h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:-0.02em;}
+.ai-command-h1 em{font-style:italic;color:var(--accent);}
+.ai-command-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:6px;}
+.ai-command-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--text-muted);}
+.ai-section-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);padding:24px 32px 10px;}
+.ai-modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:0 32px 24px;}
+.ai-module-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color .2s, box-shadow .2s;}
+.ai-module-card:hover{border-color:rgba(99,210,180,0.25);box-shadow:0 4px 20px rgba(0,0,0,0.15);}
+.ai-module-card h3{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.ai-module-card h3 span{font-size:18px;}
+.ai-module-card p{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;}
+.ai-module-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.ai-module-actions .btn-manual{background:transparent;color:var(--text-soft);border:1px solid var(--border);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-decoration:none;transition:all .18s;}
+.ai-module-actions .btn-manual:hover{border-color:var(--accent);color:var(--accent);}
+.ai-module-actions .btn-assist{background:rgba(99,210,180,0.08);color:var(--accent);border:1px solid rgba(99,210,180,0.25);padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all .18s;}
+.ai-module-actions .btn-assist:hover{background:rgba(99,210,180,0.12);}
+.ai-module-actions .btn-full{background:var(--accent);color:#060a0d;border:none;padding:8px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;cursor:pointer;transition:all .18s;}
+.ai-module-actions .btn-full:hover{background:#7fe0c8;transform:translateY(-1px);}
+.ai-manual-zone{padding:0 32px 24px;}
+.ai-manual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ai-manual-link{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:var(--text);text-decoration:none;font-size:12px;font-weight:600;transition:all .18s;}
+.ai-manual-link:hover{border-color:rgba(99,210,180,0.2);background:rgba(255,255,255,0.02);}
+.ai-manual-link span{font-size:16px;}
+.ai-quick-bar{display:flex;flex-wrap:wrap;gap:10px;padding:16px 32px 28px;border-top:1px solid var(--border);background:rgba(12,17,24,0.5);margin-top:auto;}
+.ai-quick-bar .btn-p{margin:0;}
+.panel-dashboard{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;}
+.panel-dashboard .chat-body{max-height:320px;flex-shrink:0;}
+.panel-dashboard .chat-footer{flex-shrink:0;padding:10px 32px 16px;}
+.nav-back{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:0.1em;color:var(--text-muted);text-decoration:none;padding:6px 0;margin-right:16px;transition:color .2s;}
+.nav-back:hover{color:var(--text);}
+.ph-with-back{display:flex;align-items:center;flex-wrap:wrap;}
+@media (max-width:900px){.ai-modules-grid{grid-template-columns:1fr;} .ai-manual-grid{grid-template-columns:1fr 1fr;}}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="#" class="nav-cta" onclick="window.location.href='pm-hub.html'; return false;">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <main class="main">
+
+    <!-- DASHBOARD ACCUEIL — Human first / AI optional -->
+    <div class="panel active panel-dashboard" id="panel-dashboard">
+      <div class="ai-command-header">
+        <div class="ai-command-tag">Centre IA</div>
+        <h1 class="ai-command-h1">AI Command <em>Center</em></h1>
+        <p class="ai-command-sub">Pilotez vos projets avec ou sans IA — vous gardez le contrôle.</p>
+        <div class="ai-command-badge">Human control first · AI assistance optional</div>
+      </div>
+
+      <!-- Section 1 : Assistant PM Copilot -->
+      <div class="ai-section-title">Assistant PM Copilot</div>
+      <div class="ph" style="padding-top:0;border:none;"><div class="ph-tag">Conversation</div><div class="ph-h1">Votre <em>assistant</em> de projet</div><div class="ph-sub">Analyse, recommandations, génération de documents — toujours modifiable par vous.</div></div>
+      <p style="padding:0 32px 20px;"><a href="pm-hub-ai-chat.html" class="btn-p" style="text-decoration:none;">💬 Ouvrir l'assistant IA →</a></p>
+
+      <!-- Section 2 : Modules IA (3 options par module) -->
+      <div class="ai-section-title">Modules IA</div>
+      <div class="ai-modules-grid">
+        <div class="ai-module-card">
+          <h3><span>⚠️</span> Analyse RAID</h3>
+          <p>Risques, actions, issues, décisions. Créez à la main ou faites analyser/générer par l'IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub-raid.html" class="btn-manual">+ Ajouter un risque (manuel)</a>
+            <a href="pm-hub-ai-raid.html" class="btn-assist">Analyser les risques avec IA</a>
+            <a href="pm-hub-ai-raid.html" class="btn-full">Générer RAID complet avec IA</a>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>✍️</span> Rédaction PM</h3>
+          <p>Emails, CR, rapports de statut, notes d'escalade. Rédaction manuelle ou assistée par IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub-report.html" class="btn-manual">Créer document (manuel)</a>
+            <a href="pm-hub-ai-redac.html" class="btn-assist">Assistant IA</a>
+            <a href="pm-hub-ai-redac.html" class="btn-full">Générer automatiquement</a>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>📊</span> Briefing portfolio</h3>
+          <p>Synthèse hebdomadaire de tous vos projets. Vue manuelle ou génération IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub.html" class="btn-manual">Voir portefeuille (manuel)</a>
+            <a href="pm-hub-ai-briefing.html" class="btn-assist">Assistant IA</a>
+            <a href="pm-hub-ai-briefing.html" class="btn-full">Générer briefing hebdo</a>
+          </div>
+        </div>
+        <div class="ai-module-card">
+          <h3><span>⚡</span> Génération livrables</h3>
+          <p>Charte, WBS, RACI, RAID initial, jalons. Création manuelle ou pack généré par IA.</p>
+          <div class="ai-module-actions">
+            <a href="pm-hub.html" class="btn-manual">Créer manuellement</a>
+            <a href="pm-hub-ai-livrable.html" class="btn-assist">Assistant IA</a>
+            <a href="pm-hub-ai-livrable.html" class="btn-full">Générer automatiquement</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3 : Gestion manuelle (sans IA) -->
+      <div class="ai-section-title">Gestion manuelle</div>
+      <div class="ai-manual-zone">
+        <div class="ai-manual-grid">
+          <a href="pm-hub.html" class="ai-manual-link"><span>➕</span> Créer projet</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📋</span> Ajouter tâche</a>
+          <a href="pm-hub-raid.html" class="ai-manual-link"><span>⚠️</span> Ajouter risque</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>🔗</span> Ajouter dépendance</a>
+          <a href="pm-hub-gantt.html" class="ai-manual-link"><span>📅</span> Créer jalon</a>
+          <a href="pm-hub-raid.html" class="ai-manual-link"><span>📄</span> Créer livrable</a>
+        </div>
+      </div>
+
+      <!-- Section 4 : Quick actions -->
+      <div class="ai-section-title">Actions rapides</div>
+      <div class="ai-quick-bar">
+        <a href="pm-hub.html" class="btn-p" style="text-decoration:none;">+ Créer projet</a>
+        <a href="pm-hub-ai-raid.html" class="btn-p" style="text-decoration:none;">Analyser projet avec IA</a>
+        <a href="pm-hub-ai-briefing.html" class="btn-p" style="text-decoration:none;">Générer briefing hebdomadaire</a>
+        <a href="pm-hub-ai-redac.html" class="btn-p" style="text-decoration:none;">Générer rapport COMEX</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+</body>
+</html>

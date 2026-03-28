@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Vue Portefeuille</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-context{display:flex;gap:6px;align-items:center;flex:1;justify-content:center;}
+.nav-tab{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-tab.active{color:var(--accent);background:rgba(99,210,180,.07);}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-icon{font-size:16px;color:var(--text-muted);text-decoration:none;padding:7px 10px;border-radius:5px;transition:color .2s;}
+.nav-icon:hover{color:var(--text);}
+.nav-back{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-decoration:none;padding:6px 12px;border:1px solid var(--border);border-radius:5px;transition:all .2s;}
+.nav-back:hover{color:var(--text);border-color:var(--text-muted);}
+.nav-cta{background:rgba(99,210,180,.1);border:1px solid rgba(99,210,180,.3);color:var(--accent);padding:7px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:all .2s;}
+.nav-cta:hover{background:rgba(99,210,180,.18);}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,.35);border:1px solid rgba(99,210,180,.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
+.main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:36px 40px 100px;}
+
+/* ALERTS */
+.alert-bar{border-radius:8px;padding:10px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;font-family:'DM Mono',monospace;font-size:11px;}
+.alert-bar.red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);}
+.alert-bar.amber{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);}
+.alert-items{display:flex;flex-wrap:wrap;gap:8px;}
+.alert-chip{padding:3px 10px;border-radius:4px;font-size:10px;cursor:pointer;text-decoration:none;}
+.alert-chip.red{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.alert-chip.amber{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.2);}
+
+/* PAGE HEADER */
+.page-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;line-height:1.15;margin-bottom:6px;}
+.page-h1 em{font-style:italic;color:var(--accent);}
+.page-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:28px;}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;}
+.kpi-card.g{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.04);}
+.kpi-card.a{border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.04);}
+.kpi-card.r{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04);}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;line-height:1;}
+.kpi-val.g{color:#22c55e;} .kpi-val.a{color:#f59e0b;} .kpi-val.r{color:var(--danger);}
+.kpi-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+
+/* SECTION */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;margin-top:28px;}
+.section-hd h2{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-soft);}
+.section-hd a{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);text-decoration:none;}
+
+/* PROJECTS TABLE */
+.proj-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px;}
+.proj-table{width:100%;border-collapse:collapse;}
+.proj-table thead th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.proj-table tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s;cursor:pointer;}
+.proj-table tbody tr:last-child{border-bottom:none;}
+.proj-table tbody tr:hover{background:rgba(255,255,255,.03);}
+.proj-table td{padding:12px 14px;font-size:12px;vertical-align:middle;}
+.rag-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;}
+.rag-g{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);}
+.rag-a{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.5);}
+.rag-r{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5);}
+.proj-name-cell{display:flex;align-items:center;gap:10px;}
+.proj-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.prog-bar{height:4px;background:var(--surface3);border-radius:2px;width:80px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;}
+.meth-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);}
+.meth-badge.agile{color:var(--accent);border-color:rgba(99,210,180,.3);background:rgba(99,210,180,.06);}
+.meth-badge.hybride{color:var(--accent2);border-color:rgba(212,175,100,.3);background:rgba(212,175,100,.06);}
+.risk-chip{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;}
+.risk-chip.none{color:var(--text-muted);}
+.risk-chip.has{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.card-head{padding:16px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+.card-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-soft);margin-bottom:2px;}
+.card-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);}
+.card-body{padding:16px 20px 20px;}
+.chart-box{width:100%;height:220px;}
+
+/* TIMELINE */
+.timeline-wrap{padding:16px 20px 20px;}
+.tl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.tl-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tl-bar-wrap{flex:1;height:16px;background:var(--surface2);border-radius:4px;position:relative;}
+.tl-bar{position:absolute;top:0;height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;}
+.tl-bar-label{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;}
+.tl-axis{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:6px;padding-left:140px;}
+
+/* TABS */
+.tab-bar{display:flex;gap:4px;margin-bottom:28px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab-btn{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);padding:10px 18px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* FINANCE */
+.fin-kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px;}
+.fin-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px;}
+.fin-table{width:100%;border-collapse:collapse;}
+.fin-table thead th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:11px 13px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+.fin-table thead th:first-child,.fin-table thead th:nth-child(2){text-align:left;}
+.fin-table tbody tr{border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;transition:background .15s;}
+.fin-table tbody tr:last-child{border-bottom:none;}
+.fin-table tbody tr:hover{background:rgba(255,255,255,.025);}
+.fin-table td{padding:11px 13px;font-size:11px;text-align:right;font-family:'DM Mono',monospace;color:var(--text-soft);}
+.fin-table td:first-child{text-align:left;}
+.fin-table td:nth-child(2){text-align:left;font-family:'Syne',sans-serif;font-size:12px;color:var(--text);}
+.fin-good{color:#22c55e;font-weight:600;}
+.fin-warn{color:#f59e0b;font-weight:600;}
+.fin-bad{color:#ef4444;font-weight:600;}
+.conso-bar{height:5px;background:var(--surface3);border-radius:3px;width:70px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:6px;}
+.conso-fill{display:block;height:100%;border-radius:3px;}
+.derive-list{background:var(--surface);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:16px 20px;margin-bottom:28px;}
+.derive-item{display:flex;align-items:center;gap:14px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:'DM Mono',monospace;font-size:11px;}
+.derive-item:last-child{border-bottom:none;}
+.derive-proj{flex:1;color:var(--text-soft);}
+.derive-ecart{color:#ef4444;font-weight:600;white-space:nowrap;}
+.derive-cause{color:var(--text-muted);font-size:10px;}
+.arb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+.arb-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.arb-card.maintenir{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.03);}
+.arb-card.surveiller{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.03);}
+.arb-card.reallouer{border-color:rgba(99,102,241,.3);background:rgba(99,102,241,.03);}
+.arb-card.stopper{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.03);}
+.arb-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;padding:3px 8px;border-radius:4px;display:inline-block;}
+.arb-card.maintenir .arb-label{color:#22c55e;background:rgba(34,197,94,.1);}
+.arb-card.surveiller .arb-label{color:#f59e0b;background:rgba(245,158,11,.1);}
+.arb-card.reallouer .arb-label{color:#818cf8;background:rgba(99,102,241,.1);}
+.arb-card.stopper .arb-label{color:#ef4444;background:rgba(239,68,68,.1);}
+.arb-montant{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;margin:6px 0 4px;}
+.arb-card.maintenir .arb-montant{color:#22c55e;}
+.arb-card.surveiller .arb-montant{color:#f59e0b;}
+.arb-card.reallouer .arb-montant{color:#818cf8;}
+.arb-card.stopper .arb-montant{color:#ef4444;}
+.arb-detail{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.arb-item{font-size:10px;color:var(--text-soft);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05);line-height:1.5;}
+.arb-empty{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);padding:8px 0;}
+.grid-3-fin{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:18px;margin-bottom:28px;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="pm-hub.html" class="nav-back">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Portefeuille" class="ai-float-btn" title="Centre IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('overview',this)">Portefeuille</button>
+      <button class="tab-btn" onclick="switchTab('finance',this)">Finances</button>
+    </div>
+    <div class="tab-panel active" id="tab-overview">
+      <div id="portfolioRoot"></div>
+    </div>
+    <div class="tab-panel" id="tab-finance">
+      <div id="financeRoot"></div>
+    </div>
+  </main>
+  </div>
+</div>
+<script>
+(function() {
+'use strict';
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtBudget(v) {
+  if (!v && v !== 0) return '—';
+  if (v >= 1000000) return (v/1000000).toFixed(1).replace('.0','') + ' M€';
+  if (v >= 1000) return Math.round(v/1000) + ' k€';
+  return v + ' €';
+}
+function parseBudget(s) { return Number(String(s||0).replace(/\s/g,'').replace(/[^\d.]/g,'')) || 0; }
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+}
+function ragColor(rag) {
+  if (rag === 'green') return '#22c55e';
+  if (rag === 'red')   return '#ef4444';
+  return '#f59e0b';
+}
+function ragClass(rag) { return rag === 'green' ? 'g' : rag === 'red' ? 'r' : 'a'; }
+function methLabel(m) {
+  if (!m) return 'N/A';
+  if (m === 'agile')   return 'Agile';
+  if (m === 'hybride') return 'Hybride';
+  return 'Waterfall';
+}
+
+// ── DATA ─────────────────────────────────────────────────────────
+var today = new Date(); today.setHours(0,0,0,0);
+var allProjects  = PMHUB.getProjects();
+var activeProjs  = allProjects.filter(function(p){ return p.status === 'active'; });
+var allProjs     = allProjects; // for charts
+
+// Enrich each project with computed data
+var enriched = activeProjs.map(function(p) {
+  var raids  = PMHUB.getRaids ? PMHUB.getRaids(p.id) : {};
+  var health = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : { rag: 'amber', score: 50 };
+  var bData = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+  var budgetPlanned  = parseBudget(bData.planned) || parseBudget(p.budget);
+  var budgetConsumedReal = parseBudget(bData.consumed);
+  // Si aucune donnée consommée, estimer via avancement (comme getEVM)
+  var budgetConsumed = budgetConsumedReal > 0 ? budgetConsumedReal : Math.round(budgetPlanned * (p.progress || 0) / 100 * 0.7);
+  var budgetEstimated = budgetConsumedReal === 0 && budgetPlanned > 0 && (p.progress || 0) > 0;
+  var budgetPct  = budgetPlanned > 0 ? Math.round(budgetConsumed / budgetPlanned * 100) : null;
+  var endDate    = p.end ? new Date(p.end) : null;
+  var daysLeft   = endDate ? Math.round((endDate - today) / 86400000) : null;
+  var openRisks  = (raids.risks||[]).filter(function(r){ return r.status !== 'closed'; }).length;
+  var critRisks  = (raids.risks||[]).filter(function(r){ return r.status !== 'closed' && (r.severity === 'critical' || r.severity === 'haute'); }).length;
+  var openIssues = (raids.issues||[]).filter(function(i){ return i.status !== 'closed'; }).length;
+  return {
+    p: p,
+    rag: health.rag || 'amber',
+    score: health.score || 50,
+    budgetPlanned: budgetPlanned,
+    budgetConsumed: budgetConsumed,
+    budgetEstimated: budgetEstimated,
+    budgetPct: budgetPct,
+    daysLeft: daysLeft,
+    openRisks: openRisks,
+    critRisks: critRisks,
+    openIssues: openIssues,
+    raidTotal: (raids.risks||[]).length + (raids.actions||[]).length + (raids.issues||[]).length
+  };
+});
+
+// ── ALERTS ───────────────────────────────────────────────────────
+var alertsRed   = [];
+var alertsAmber = [];
+enriched.forEach(function(e) {
+  var name = e.p.name || e.p.ref;
+  if (e.critRisks > 0)   alertsRed.push(name + ' — ' + e.critRisks + ' risque(s) critique(s)');
+  if (e.daysLeft !== null && e.daysLeft < 0) alertsRed.push(name + ' — ' + Math.abs(e.daysLeft) + 'j de retard');
+  if (e.budgetPct !== null && e.budgetPct > 90) alertsAmber.push(name + ' — Budget ' + e.budgetPct + '% consommé');
+  if (e.openIssues > 0)  alertsAmber.push(name + ' — ' + e.openIssues + ' issue(s) ouverte(s)');
+});
+
+// ── KPIs ─────────────────────────────────────────────────────────
+var totalBudget    = enriched.reduce(function(s,e){ return s + e.budgetPlanned; }, 0);
+var totalConsumed  = enriched.reduce(function(s,e){ return s + e.budgetConsumed; }, 0);
+var budgetGlobal   = totalBudget > 0 ? Math.round(totalConsumed / totalBudget * 100) : 0;
+var healthyCount   = enriched.filter(function(e){ return e.rag === 'green'; }).length;
+var atRiskCount    = enriched.filter(function(e){ return e.rag === 'amber'; }).length;
+var criticalCount  = enriched.filter(function(e){ return e.rag === 'red'; }).length;
+var totalCritRisks = enriched.reduce(function(s,e){ return s + e.critRisks; }, 0);
+
+// Milestones in 30 days
+var milestones30 = 0;
+enriched.forEach(function(e) {
+  var gantt = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(e.p.id) : [];
+  var tasks = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
+  tasks.forEach(function(t) {
+    if (t.type === 'milestone' || t.milestone) {
+      var d = t.end ? new Date(t.end) : null;
+      if (d) { var diff = Math.round((d - today)/86400000); if (diff >= 0 && diff <= 30) milestones30++; }
+    }
+  });
+});
+
+// ── RENDER ───────────────────────────────────────────────────────
+var html = '';
+
+// ALERTS
+if (alertsRed.length) {
+  html += '<div class="alert-bar red"><span style="font-size:16px;flex-shrink:0;">🔴</span><div><div style="font-weight:700;color:var(--danger);margin-bottom:6px;">Alertes critiques</div><div class="alert-items">';
+  alertsRed.forEach(function(a) {
+    html += '<a class="alert-chip red" href="#">' + esc(a) + '</a>';
+  });
+  html += '</div></div></div>';
+}
+if (alertsAmber.length) {
+  html += '<div class="alert-bar amber"><span style="font-size:16px;flex-shrink:0;">⚠️</span><div><div style="font-weight:700;color:#f59e0b;margin-bottom:6px;">Points d\'attention</div><div class="alert-items">';
+  alertsAmber.forEach(function(a) {
+    html += '<a class="alert-chip amber" href="#">' + esc(a) + '</a>';
+  });
+  html += '</div></div></div>';
+}
+
+// PAGE HEADER
+html += '<div class="page-tag">PMO · Portefeuille</div>';
+html += '<h1 class="page-h1">Vue <em>Portefeuille</em></h1>';
+html += '<p class="page-sub">' + activeProjs.length + ' projet(s) actif(s) · Budget global ' + fmtBudget(totalBudget) + ' · Consommé ' + budgetGlobal + '%</p>';
+
+// KPI STRIP
+html += '<div class="kpi-strip">';
+html += '<div class="kpi-card"><div class="kpi-label">Projets actifs</div><div class="kpi-val">' + activeProjs.length + '</div><div class="kpi-sub">/ ' + allProjects.length + ' total</div></div>';
+html += '<div class="kpi-card g"><div class="kpi-label">Santé OK</div><div class="kpi-val g">' + healthyCount + '</div><div class="kpi-sub">projets en vert</div></div>';
+html += '<div class="kpi-card a"><div class="kpi-label">À surveiller</div><div class="kpi-val a">' + atRiskCount + '</div><div class="kpi-sub">projets ambre</div></div>';
+html += '<div class="kpi-card r"><div class="kpi-label">Critiques</div><div class="kpi-val r">' + criticalCount + '</div><div class="kpi-sub">' + totalCritRisks + ' risque(s) crit.</div></div>';
+var budgetKpiCls = budgetGlobal > 90 ? ' r' : budgetGlobal > 70 ? ' a' : ' g';
+html += '<div class="kpi-card' + budgetKpiCls + '"><div class="kpi-label">Budget consommé</div><div class="kpi-val' + budgetKpiCls + '">' + budgetGlobal + '%</div><div class="kpi-sub">' + fmtBudget(totalConsumed) + ' / ' + fmtBudget(totalBudget) + '</div></div>';
+html += '<div class="kpi-card"><div class="kpi-label">Jalons 30j</div><div class="kpi-val">' + milestones30 + '</div><div class="kpi-sub">jalons imminents</div></div>';
+html += '</div>';
+
+// PROJECTS TABLE
+html += '<div class="section-hd"><h2>Projets actifs</h2></div>';
+html += '<div class="proj-table-wrap"><table class="proj-table"><thead><tr>';
+html += '<th></th><th>Projet</th><th>Méthodo</th><th>Phase</th><th>Avancement</th><th>Budget</th><th>Échéance</th><th>Risques</th><th></th>';
+html += '</tr></thead><tbody>';
+
+enriched.forEach(function(e) {
+  var p = e.p;
+  var progColor = (p.progress||0) >= 80 ? '#22c55e' : (p.progress||0) >= 40 ? '#f59e0b' : '#94a3b8';
+  var daysStr = e.daysLeft === null ? '—'
+    : e.daysLeft < 0 ? '<span style="color:var(--danger);">⚠ +' + Math.abs(e.daysLeft) + 'j</span>'
+    : e.daysLeft <= 14 ? '<span style="color:#f59e0b;">' + e.daysLeft + 'j</span>'
+    : e.daysLeft + 'j';
+  var pctColor = e.budgetPct === null ? '' : e.budgetPct > 90 ? 'var(--danger)' : e.budgetPct > 70 ? '#f59e0b' : '#22c55e';
+  var pctLabel = e.budgetPct !== null ? (e.budgetEstimated ? '~' : '') + e.budgetPct + '%' : null;
+  var budgetStr = e.budgetPlanned > 0
+    ? fmtBudget(e.budgetConsumed) + (e.budgetEstimated ? '<span style="font-size:8px;color:var(--text-muted);">\u00a0est.</span>' : '') + ' / ' + fmtBudget(e.budgetPlanned) + (pctLabel ? ' <span style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:600;color:' + pctColor + ';">(' + pctLabel + ')</span>' : '')
+    : '—';
+  var riskStr = e.openRisks > 0
+    ? '<span class="risk-chip has">' + e.openRisks + ' ouvert' + (e.openRisks > 1 ? 's' : '') + (e.critRisks > 0 ? ' · ' + e.critRisks + ' crit.' : '') + '</span>'
+    : '<span class="risk-chip none">—</span>';
+  var methClass = (p.methodology || '').toLowerCase();
+  html += '<tr onclick="window.location.href=\'pm-hub-project.html?project=' + p.id + '\'">';
+  html += '<td><span class="rag-dot rag-' + ragClass(e.rag) + '"></span></td>';
+  html += '<td><div class="proj-name-cell"><div class="proj-icon" style="background:' + (p.color||'var(--accent)') + '18;">' + (p.icon||'📁') + '</div><div><div style="font-weight:600;font-size:12px;">' + esc(p.name||p.ref) + '</div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);">' + esc(p.ref||'') + '</div></div></div></td>';
+  html += '<td><span class="meth-badge ' + methClass + '">' + methLabel(p.methodology) + '</span></td>';
+  html += '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-soft);">' + esc(p.phase || p.currentPhase || '—') + '</td>';
+  html += '<td><div style="display:flex;align-items:center;gap:8px;"><div class="prog-bar"><div class="prog-fill" style="width:' + (p.progress||0) + '%;background:' + progColor + ';"></div></div><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + progColor + ';">' + (p.progress||0) + '%</span></div></td>';
+  html += '<td style="font-family:\'DM Mono\',monospace;font-size:10px;">' + budgetStr + '</td>';
+  html += '<td style="font-family:\'DM Mono\',monospace;font-size:10px;">' + daysStr + '</td>';
+  html += '<td>' + riskStr + '</td>';
+  html += '<td><a href="pm-hub-project.html?project=' + p.id + '" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent);text-decoration:none;" onclick="event.stopPropagation()">Voir →</a></td>';
+  html += '</tr>';
+});
+if (!enriched.length) {
+  html += '<tr><td colspan="9" style="padding:40px;text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);">Aucun projet actif. <a href="pm-hub-wizard.html" style="color:var(--accent);">Créer un projet →</a></td></tr>';
+}
+html += '</tbody></table></div>';
+
+// GRID: TIMELINE | CHARTS
+html += '<div class="grid-2">';
+
+// TIMELINE
+html += '<div class="card"><div class="card-head"><div><div class="card-title">Timeline Portefeuille</div><div class="card-sub">Frise des projets actifs</div></div></div>';
+html += '<div class="timeline-wrap">';
+if (enriched.length) {
+  var allDates = [];
+  enriched.forEach(function(e) {
+    if (e.p.start) allDates.push(new Date(e.p.start).getTime());
+    if (e.p.end)   allDates.push(new Date(e.p.end).getTime());
+  });
+  // Fallback si pas de dates : fenêtre de 18 mois centrée sur aujourd'hui
+  var minTs, maxTs;
+  if (allDates.length >= 2) {
+    minTs = Math.min.apply(null, allDates);
+    maxTs = Math.max.apply(null, allDates);
+  } else {
+    minTs = today.getTime() - 182*86400000;
+    maxTs = today.getTime() + 182*86400000;
+  }
+  // Etendre légèrement pour éviter que les barres soient collées aux bords
+  var padding = (maxTs - minTs) * 0.04;
+  minTs -= padding; maxTs += padding;
+  var span = Math.max(maxTs - minTs, 1);
+  var todayPct = Math.round((today.getTime() - minTs) / span * 100);
+  var fmtY = function(ts) { return new Date(ts).toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}); };
+
+  var todayLine = (todayPct >= 0 && todayPct <= 100)
+    ? '<div style="position:absolute;left:' + todayPct + '%;top:-1px;bottom:-1px;width:2px;background:rgba(212,175,100,.55);border-radius:1px;z-index:2;pointer-events:none;"></div>'
+    : '';
+  enriched.forEach(function(e) {
+    var s   = e.p.start ? new Date(e.p.start).getTime() : minTs + padding;
+    var end = e.p.end   ? new Date(e.p.end).getTime()   : maxTs - padding;
+    if (end <= s) end = s + span * 0.05; // barre minimum visible
+    var left  = Math.max(0, Math.round((s   - minTs) / span * 100));
+    var right = Math.min(100, Math.round((end - minTs) / span * 100));
+    var width = Math.max(3, right - left);
+    var color = ragColor(e.rag);
+    html += '<div class="tl-row">';
+    html += '<div class="tl-label" title="' + esc(e.p.name) + '">' + esc((e.p.name||e.p.ref).slice(0,18)) + '</div>';
+    html += '<div class="tl-bar-wrap">';
+    html += todayLine;
+    html += '<div class="tl-bar" style="left:' + left + '%;width:' + width + '%;background:' + color + '28;border:1px solid ' + color + '66;">';
+    html += '<span class="tl-bar-label" style="color:' + color + ';">' + (e.p.progress||0) + '%</span>';
+    html += '</div></div></div>';
+  });
+  html += '<div class="tl-axis"><span>' + fmtY(minTs + padding) + '</span><span style="color:rgba(212,175,100,.8);">▼ Aujourd\'hui</span><span>' + fmtY(maxTs - padding) + '</span></div>';
+} else {
+  html += '<div style="padding:20px;text-align:center;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);">Aucun projet actif</div>';
+}
+html += '</div></div>';
+
+// CHARTS COL
+html += '<div style="display:flex;flex-direction:column;gap:18px;">';
+// Donut santé
+html += '<div class="card"><div class="card-head"><div><div class="card-title">Santé des projets</div><div class="card-sub">Répartition RAG</div></div></div><div class="card-body"><div id="chartHealth" class="chart-box" style="height:180px;"></div></div></div>';
+// Donut méthodo
+html += '<div class="card"><div class="card-head"><div><div class="card-title">Méthodologies</div><div class="card-sub">Répartition Waterfall / Agile / Hybride</div></div></div><div class="card-body"><div id="chartMethodo" class="chart-box" style="height:160px;"></div></div></div>';
+html += '</div>';
+
+html += '</div>'; // end grid-2
+
+// GRID: Budget bars | Risk matrix
+html += '<div class="grid-2">';
+html += '<div class="card"><div class="card-head"><div><div class="card-title">Budget par projet</div><div class="card-sub">Planifié vs consommé</div></div></div><div class="card-body"><div id="chartBudget" class="chart-box"></div></div></div>';
+html += '<div class="card"><div class="card-head"><div><div class="card-title">Matrice Risques × Budget</div><div class="card-sub">Risques ouverts vs budget planifié · taille = risques critiques</div></div></div><div class="card-body"><div id="chartMatrix" class="chart-box"></div></div></div>';
+html += '</div>';
+
+document.getElementById('portfolioRoot').innerHTML = html;
+
+// ── ECHARTS ──────────────────────────────────────────────────────
+if (typeof echarts === 'undefined') return;
+
+var dark = { textStyle: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } };
+
+// Chart 1 — Santé RAG
+var healthEl = document.getElementById('chartHealth');
+if (healthEl && (healthyCount + atRiskCount + criticalCount) > 0) {
+  healthEl.style.height = '180px';
+  var cH = echarts.init(healthEl);
+  cH.setOption({
+    backgroundColor: 'transparent',
+    color: ['#22c55e','#f59e0b','#ef4444'],
+    legend: { orient: 'vertical', right: '5%', top: 'center', textStyle: { color: '#94a3b8', fontSize: 10 } },
+    series: [{ type: 'pie', radius: ['48%','70%'], center: ['38%','50%'], avoidLabelOverlap: true,
+      label: { show: false },
+      data: [
+        { value: healthyCount,  name: 'Vert — ' + healthyCount },
+        { value: atRiskCount,   name: 'Ambre — ' + atRiskCount },
+        { value: criticalCount, name: 'Rouge — ' + criticalCount }
+      ]
+    }]
+  });
+}
+
+// Chart 2 — Méthodologies
+var methEl = document.getElementById('chartMethodo');
+if (methEl) {
+  methEl.style.height = '160px';
+  var wf  = activeProjs.filter(function(p){ return !p.methodology || p.methodology === 'waterfall'; }).length;
+  var ag  = activeProjs.filter(function(p){ return p.methodology === 'agile'; }).length;
+  var hy  = activeProjs.filter(function(p){ return p.methodology === 'hybride'; }).length;
+  var cM = echarts.init(methEl);
+  cM.setOption({
+    backgroundColor: 'transparent',
+    color: ['#63d2b4','#d4af64','#818cf8'],
+    legend: { orient: 'vertical', right: '5%', top: 'center', textStyle: { color: '#94a3b8', fontSize: 10 } },
+    series: [{ type: 'pie', radius: ['45%','65%'], center: ['38%','50%'],
+      label: { show: false },
+      data: [
+        { value: wf, name: 'Waterfall — ' + wf },
+        { value: ag, name: 'Agile — ' + ag },
+        { value: hy, name: 'Hybride — ' + hy }
+      ].filter(function(d){ return d.value > 0; })
+    }]
+  });
+}
+
+// Chart 3 — Budget bars (planifié vs consommé)
+var budgetEl = document.getElementById('chartBudget');
+if (budgetEl && enriched.length) {
+  budgetEl.style.height = '220px';
+  var names    = enriched.map(function(e){ return (e.p.name||e.p.ref).slice(0,14); });
+  var planned  = enriched.map(function(e){ return Math.round(e.budgetPlanned/1000); });
+  var consumed = enriched.map(function(e){ return Math.round(e.budgetConsumed/1000); });
+  var cB = echarts.init(budgetEl);
+  cB.setOption({
+    backgroundColor: 'transparent',
+    grid: { left: 50, right: 16, top: 20, bottom: 60 },
+    legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 } },
+    xAxis: { type: 'category', data: names, axisLabel: { color: '#94a3b8', rotate: 20, fontSize: 9 }, axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } } },
+    yAxis: { type: 'value', name: 'k€', nameTextStyle: { color: '#94a3b8', fontSize: 9 }, axisLabel: { color: '#94a3b8', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+    series: [
+      { name: 'Planifié', type: 'bar', data: planned,  itemStyle: { color: 'rgba(99,210,180,.25)', borderRadius: [3,3,0,0] }, barGap: '10%' },
+      { name: 'Consommé', type: 'bar', data: consumed, itemStyle: { color: '#63d2b4', borderRadius: [3,3,0,0] } }
+    ]
+  });
+}
+
+// Chart 4 — Risk matrix scatter
+var matrixEl = document.getElementById('chartMatrix');
+if (matrixEl && enriched.length) {
+  matrixEl.style.height = '220px';
+  var scatterData = enriched.map(function(e) {
+    return {
+      value: [e.openRisks, Math.round(e.budgetPlanned/1000), Math.max(8, e.critRisks * 6 + 8)],
+      name: e.p.name || e.p.ref,
+      itemStyle: { color: ragColor(e.rag) }
+    };
+  });
+  var cS = echarts.init(matrixEl);
+  cS.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      formatter: function(params) {
+        return params.data.name + '<br>Risques ouverts : ' + params.data.value[0] + '<br>Budget : ' + params.data.value[1] + ' k€';
+      }
+    },
+    grid: { left: 50, right: 16, top: 20, bottom: 36 },
+    xAxis: { type: 'value', name: 'Risques ouverts', nameLocation: 'middle', nameGap: 24, nameTextStyle: { color: '#94a3b8', fontSize: 9 }, axisLabel: { color: '#94a3b8', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+    yAxis: { type: 'value', name: 'Budget (k€)', nameTextStyle: { color: '#94a3b8', fontSize: 9 }, axisLabel: { color: '#94a3b8', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+    series: [{
+      type: 'scatter',
+      symbolSize: function(d){ return d[2]; },
+      data: scatterData,
+      label: { show: true, formatter: function(p){ return (p.data.name||'').slice(0,10); }, position: 'top', fontSize: 8, color: '#94a3b8' }
+    }]
+  });
+}
+
+})();
+
+// ── TAB SWITCH ────────────────────────────────────────────────────
+window.switchTab = function(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'finance' && !window._finBuilt) { buildFinance(); window._finBuilt = true; }
+};
+
+// ── FINANCE TAB ───────────────────────────────────────────────────
+(function() {
+'use strict';
+
+window.buildFinance = function() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  function parseBudget(s) { return Number(String(s||0).replace(/\s/g,'').replace(/[^\d.]/g,'')) || 0; }
+  function fmtBudget(v) {
+    if (!v && v !== 0) return '—';
+    if (v >= 1000000) return (v/1000000).toFixed(2).replace(/\.?0+$/,'') + ' M€';
+    if (v >= 1000) return Math.round(v/1000) + ' k€';
+    return Math.round(v) + ' €';
+  }
+  function ragCol(rag) { return rag === 'green' ? '#22c55e' : rag === 'red' ? '#ef4444' : '#f59e0b'; }
+  function ragDotCls(rag) { return rag === 'green' ? 'g' : rag === 'red' ? 'r' : 'a'; }
+  function sign(v) { return v > 0 ? '+' : ''; }
+
+  var activeProjs = PMHUB.getProjects().filter(function(p){ return p.status === 'active'; });
+
+  // ── Enrichissement financier portefeuille ──────────────────────
+  var finData = activeProjs.map(function(p) {
+    var bData  = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+    var health = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : { rag: 'amber' };
+    var raids  = PMHUB.getRaids ? PMHUB.getRaids(p.id) : {};
+    var dotation   = parseBudget(bData.planned) || parseBudget(p.budget);
+    var decaisseReal = parseBudget(bData.consumed);
+    var progress   = p.progress || 0;
+    // Décaissé : réel si dispo, sinon estimation via avancement
+    var decaisse = decaisseReal > 0 ? decaisseReal : Math.round(dotation * progress / 100 * 0.75);
+    var isEstime = decaisseReal === 0 && dotation > 0;
+    // Taux de consommation
+    var txConso = dotation > 0 ? Math.round(decaisse / dotation * 100) : 0;
+    // RAE — Reste À Engager
+    var rae = Math.max(0, dotation - decaisse);
+    // PAT — Prévision d'Atterrissage
+    // Si décaissé connu et avancement > 0 : PAT = décaissé / (avancement/100)
+    var pat = dotation;
+    if (decaisse > 0 && progress > 0) pat = Math.round(decaisse / (progress / 100));
+    // Écart prévisionnel PAT vs Dotation (positif = surcoût)
+    var ecartPAT = pat - dotation;
+    // Classification financière
+    var txDeriveFinancier = dotation > 0 ? ecartPAT / dotation : 0;
+    var statutFin = txDeriveFinancier <= 0.02 ? 'maitrise' : txDeriveFinancier <= 0.1 ? 'attention' : 'derive';
+    var critRisks = (raids.risks||[]).filter(function(r){ return r.status !== 'closed' && (r.severity === 'critical' || r.severity === 'haute'); }).length;
+    // Méthodo CAPEX/OPEX estimation
+    var meth = p.methodology || 'waterfall';
+    var capexPct = meth === 'agile' ? 30 : meth === 'hybride' ? 50 : 70;
+    return {
+      p: p, dotation: dotation, decaisse: decaisse, rae: rae, pat: pat, ecartPAT: ecartPAT,
+      txConso: txConso, statutFin: statutFin, isEstime: isEstime, progress: progress,
+      rag: health.rag || 'amber', critRisks: critRisks, capexPct: capexPct, txDerive: txDeriveFinancier
+    };
+  }).filter(function(e){ return e.dotation > 0; });
+
+  // ── KPIs globaux ───────────────────────────────────────────────
+  var enveloppeTotal = finData.reduce(function(s,e){ return s + e.dotation; }, 0);
+  var totalDecaisse  = finData.reduce(function(s,e){ return s + e.decaisse; }, 0);
+  var totalRAE       = finData.reduce(function(s,e){ return s + e.rae; }, 0);
+  var totalPAT       = finData.reduce(function(s,e){ return s + e.pat; }, 0);
+  var ecartGlobal    = totalPAT - enveloppeTotal;
+  var nbDerive       = finData.filter(function(e){ return e.statutFin === 'derive'; }).length;
+  var txConsoGlobal  = enveloppeTotal > 0 ? Math.round(totalDecaisse / enveloppeTotal * 100) : 0;
+
+  // ── Arbitrage budgétaire (4 niveaux) ──────────────────────────
+  var arbMaintenir  = [];
+  var arbSurveiller = [];
+  var arbReallouer  = [];
+  var arbStopper    = [];
+  finData.forEach(function(e) {
+    if (e.rag === 'red' && e.txDerive > 0.1)         arbStopper.push(e);
+    else if (e.txDerive > 0.1)                        arbReallouer.push(e);
+    else if (e.rag === 'amber' || e.txConso > 80)     arbSurveiller.push(e);
+    else                                               arbMaintenir.push(e);
+  });
+
+  // ── Dérives à signaler ─────────────────────────────────────────
+  var derives = finData.filter(function(e){ return e.statutFin !== 'maitrise'; })
+    .sort(function(a,b){ return b.txDerive - a.txDerive; });
+
+  var html = '';
+
+  // HEADER
+  html += '<div class="page-tag">PMO · Pilotage financier portefeuille</div>';
+  html += '<h1 class="page-h1">Synthèse <em>financière</em> portefeuille</h1>';
+  html += '<div class="page-sub">Enveloppe (BAC) · Décaissé (AC) · RAE (ETC) · Prévision d\'Atterrissage — PAT (EAC) · Arbitrage budgétaire</div>';
+
+  // ── 1. KPI STRIP ──────────────────────────────────────────────
+  var ecartCls = ecartGlobal <= 0 ? ' g' : ecartGlobal <= enveloppeTotal * 0.1 ? ' a' : ' r';
+  var deriverCls = nbDerive > 0 ? ' r' : ' g';
+  html += '<div class="fin-kpi">';
+  html += '<div class="kpi-card"><div class="kpi-label">Enveloppe budgétaire <span style="opacity:.5;font-size:8px;">BAC</span></div><div class="kpi-val">' + fmtBudget(enveloppeTotal) + '</div><div class="kpi-sub">' + finData.length + ' projet(s) actif(s)</div></div>';
+  html += '<div class="kpi-card"><div class="kpi-label">Décaissé <span style="opacity:.5;font-size:8px;">AC</span></div><div class="kpi-val">' + fmtBudget(totalDecaisse) + '</div><div class="kpi-sub">' + txConsoGlobal + '% de l\'enveloppe</div></div>';
+  html += '<div class="kpi-card"><div class="kpi-label">Reste à Engager <span style="opacity:.5;font-size:8px;">RAE · ETC</span></div><div class="kpi-val">' + fmtBudget(totalRAE) + '</div><div class="kpi-sub">' + (100 - txConsoGlobal) + '% disponible</div></div>';
+  html += '<div class="kpi-card' + ecartCls + '"><div class="kpi-label">Prévision Atterrissage <span style="opacity:.5;font-size:8px;">PAT · EAC</span></div><div class="kpi-val' + ecartCls + '">' + fmtBudget(totalPAT) + '</div><div class="kpi-sub">' + (ecartGlobal > 0 ? 'Surcoût prévu ' + fmtBudget(ecartGlobal) : ecartGlobal < 0 ? 'Économie ' + fmtBudget(-ecartGlobal) : 'Dans l\'enveloppe') + '</div></div>';
+  html += '<div class="kpi-card' + ecartCls + '"><div class="kpi-label">Écart prévisionnel <span style="opacity:.5;font-size:8px;">VAC</span></div><div class="kpi-val' + ecartCls + '">' + sign(ecartGlobal) + fmtBudget(Math.abs(ecartGlobal)) + '</div><div class="kpi-sub">' + (ecartGlobal > 0 ? 'dépassement prévu' : ecartGlobal < 0 ? 'économie prévue' : 'à l\'équilibre') + '</div></div>';
+  html += '<div class="kpi-card' + deriverCls + '"><div class="kpi-label">Projets en dérive</div><div class="kpi-val' + deriverCls + '">' + nbDerive + '</div><div class="kpi-sub">sur ' + finData.length + ' projets</div></div>';
+  html += '</div>';
+
+  // ── 2. TABLEAU BUDGÉTAIRE ─────────────────────────────────────
+  html += '<div class="section-hd"><h2>Tableau de bord budgétaire par projet</h2></div>';
+  html += '<div class="fin-table-wrap"><table class="fin-table"><thead><tr>';
+  html += '<th></th><th>Projet</th><th>Dotation (BAC)</th><th>Décaissé (AC)</th><th>Taux conso.</th><th>RAE (ETC)</th><th>PAT (EAC)</th><th>Écart PAT (VAC)</th><th>Statut financier</th>';
+  html += '</tr></thead><tbody>';
+  finData.forEach(function(e) {
+    var statCls = e.statutFin === 'maitrise' ? 'fin-good' : e.statutFin === 'attention' ? 'fin-warn' : 'fin-bad';
+    var statLbl = e.statutFin === 'maitrise' ? '✓ Maîtrisé' : e.statutFin === 'attention' ? '⚠ Attention' : '● Dérive';
+    var ecartCls2 = e.ecartPAT <= 0 ? 'fin-good' : e.ecartPAT <= e.dotation*0.05 ? 'fin-warn' : 'fin-bad';
+    var txColor = e.txConso <= 70 ? '#22c55e' : e.txConso <= 90 ? '#f59e0b' : '#ef4444';
+    html += '<tr onclick="window.location=\'pm-hub-project.html?project=' + e.p.id + '\'">';
+    html += '<td><span class="rag-dot rag-' + ragDotCls(e.rag) + '"></span></td>';
+    html += '<td>' + (e.p.name || e.p.ref) + (e.isEstime ? ' <span style="font-size:9px;color:var(--text-muted);">~est.</span>' : '') + '</td>';
+    html += '<td>' + fmtBudget(e.dotation) + '</td>';
+    html += '<td>' + fmtBudget(e.decaisse) + '</td>';
+    html += '<td><span style="color:' + txColor + ';font-weight:600;">' + e.txConso + '%</span><span class="conso-bar"><span class="conso-fill" style="width:' + Math.min(e.txConso,100) + '%;background:' + txColor + ';"></span></span></td>';
+    html += '<td>' + fmtBudget(e.rae) + '</td>';
+    html += '<td>' + fmtBudget(e.pat) + '</td>';
+    html += '<td><span class="' + ecartCls2 + '">' + sign(e.ecartPAT) + fmtBudget(Math.abs(e.ecartPAT)) + '</span></td>';
+    html += '<td><span class="' + statCls + '">' + statLbl + '</span></td>';
+    html += '</tr>';
+  });
+  if (!finData.length) html += '<tr><td colspan="9" style="text-align:center;padding:20px;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);">Aucune donnée budgétaire disponible</td></tr>';
+  html += '</tbody></table></div>';
+
+  // ── 3. CAMEMBERTS + BARRE PAT ─────────────────────────────────
+  html += '<div class="grid-3-fin">';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Répartition de l\'enveloppe</div><div class="card-sub">Par projet</div></div></div><div class="card-body"><div id="chartEnveloppe" class="chart-box" style="height:200px;"></div></div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Statut financier</div><div class="card-sub">Maîtrisé · Attention · Dérive</div></div></div><div class="card-body"><div id="chartStatutFin" class="chart-box" style="height:200px;"></div></div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">CAPEX / OPEX</div><div class="card-sub">Estimation par type de projet</div></div></div><div class="card-body"><div id="chartCapex" class="chart-box" style="height:200px;"></div></div></div>';
+  html += '</div>';
+
+  // ── 4. PRÉVISION D'ATTERRISSAGE (barres) ──────────────────────
+  html += '<div class="card" style="margin-bottom:28px;"><div class="card-head"><div><div class="card-title">Prévision d\'Atterrissage — PAT (EAC) par projet</div><div class="card-sub">Dotation (BAC) · Décaissé (AC) · PAT (EAC) — rouge = dépassement prévu</div></div></div><div class="card-body"><div id="chartPAT" class="chart-box" style="height:220px;"></div></div></div>';
+
+  // ── 5. DÉRIVES ────────────────────────────────────────────────
+  if (derives.length) {
+    html += '<div class="section-hd"><h2>Analyse des dérives financières</h2></div>';
+    html += '<div class="derive-list">';
+    derives.forEach(function(e) {
+      var cause = e.rag === 'red' ? 'risques critiques' : e.txConso > 90 ? 'consommation rapide' : 'dérive de planning';
+      html += '<div class="derive-item">';
+      html += '<span class="rag-dot rag-' + ragDotCls(e.rag) + '"></span>';
+      html += '<span class="derive-proj">' + (e.p.name || e.p.ref) + '</span>';
+      html += '<span class="derive-cause">Cause : ' + cause + '</span>';
+      html += '<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-muted);">PAT ' + fmtBudget(e.pat) + '</span>';
+      html += '<span class="derive-ecart">+' + fmtBudget(e.ecartPAT) + ' (' + Math.round(e.txDerive*100) + '%)</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // ── 6. ARBITRAGE BUDGÉTAIRE ───────────────────────────────────
+  html += '<div class="section-hd"><h2>Arbitrage budgétaire — Recommandations COMEX</h2></div>';
+  html += '<div class="arb-grid">';
+  function renderArb(cls, label, icon, list, montantFn) {
+    var montant = list.reduce(function(s,e){ return s + montantFn(e); }, 0);
+    var r = '<div class="arb-card ' + cls + '">';
+    r += '<div class="arb-label">' + icon + ' ' + label + '</div>';
+    r += '<div class="arb-montant">' + fmtBudget(montant) + '</div>';
+    r += '<div class="arb-detail">' + list.length + ' projet(s) · ' + (montant > 0 ? 'enveloppe concernée' : 'aucun surcoût') + '</div>';
+    if (list.length) {
+      r += '<div class="arb-item">';
+      r += list.map(function(e){ return (e.p.name||e.p.ref) + ' · ' + e.txConso + '% consommé'; }).join('<br>');
+      r += '</div>';
+    } else {
+      r += '<div class="arb-empty">Aucun projet</div>';
+    }
+    r += '</div>';
+    return r;
+  }
+  html += renderArb('maintenir',  'Maintenir',  '✅', arbMaintenir,  function(e){ return e.dotation; });
+  html += renderArb('surveiller', 'Surveiller', '⚠️', arbSurveiller, function(e){ return e.dotation; });
+  html += renderArb('reallouer',  'Réallouer',  '🔄', arbReallouer,  function(e){ return e.ecartPAT; });
+  html += renderArb('stopper',    'Stopper',    '🛑', arbStopper,    function(e){ return e.ecartPAT; });
+  html += '</div>';
+
+  document.getElementById('financeRoot').innerHTML = html;
+
+  if (typeof echarts === 'undefined') return;
+
+  var COLORS_PROJ = ['#63d2b4','#818cf8','#d4af64','#f59e0b','#ef4444','#22c55e','#a78bfa','#38bdf8'];
+
+  // Camembert 1 — Répartition enveloppe par projet
+  var envEl = document.getElementById('chartEnveloppe');
+  if (envEl && finData.length) {
+    envEl.style.height = '200px';
+    var cE = echarts.init(envEl);
+    cE.setOption({
+      backgroundColor: 'transparent',
+      color: COLORS_PROJ,
+      tooltip: { formatter: function(p){ return p.name + '<br>' + fmtBudget(p.value) + ' (' + p.percent + '%)'; } },
+      legend: { show: false },
+      series: [{ type: 'pie', radius: ['45%','70%'], center: ['50%','50%'],
+        label: { show: finData.length <= 4, formatter: function(p){ return p.name.slice(0,10) + '\n' + p.percent + '%'; }, fontSize: 8, color: '#94a3b8' },
+        data: finData.map(function(e,i){ return { value: e.dotation, name: (e.p.name||e.p.ref) }; })
+      }]
+    });
+  }
+
+  // Camembert 2 — Statut financier
+  var statEl = document.getElementById('chartStatutFin');
+  if (statEl) {
+    statEl.style.height = '200px';
+    var nbMait = finData.filter(function(e){ return e.statutFin === 'maitrise'; }).length;
+    var nbAtt  = finData.filter(function(e){ return e.statutFin === 'attention'; }).length;
+    var nbDer  = finData.filter(function(e){ return e.statutFin === 'derive'; }).length;
+    var cStat = echarts.init(statEl);
+    cStat.setOption({
+      backgroundColor: 'transparent',
+      color: ['#22c55e','#f59e0b','#ef4444'],
+      tooltip: { formatter: '{b} : {c} projet(s)' },
+      legend: { orient: 'vertical', right: '5%', top: 'center', textStyle: { color: '#94a3b8', fontSize: 10 } },
+      series: [{ type: 'pie', radius: ['45%','68%'], center: ['38%','50%'],
+        label: { show: false },
+        data: [
+          { value: nbMait, name: 'Maîtrisé — ' + nbMait },
+          { value: nbAtt,  name: 'Attention — ' + nbAtt },
+          { value: nbDer,  name: 'Dérive — ' + nbDer }
+        ].filter(function(d){ return d.value > 0; })
+      }]
+    });
+  }
+
+  // Camembert 3 — CAPEX / OPEX
+  var capEl = document.getElementById('chartCapex');
+  if (capEl && finData.length) {
+    capEl.style.height = '200px';
+    var totalCapex = finData.reduce(function(s,e){ return s + Math.round(e.dotation * e.capexPct / 100); }, 0);
+    var totalOpex  = enveloppeTotal - totalCapex;
+    var cCap = echarts.init(capEl);
+    cCap.setOption({
+      backgroundColor: 'transparent',
+      color: ['#818cf8','#63d2b4'],
+      tooltip: { formatter: function(p){ return p.name + '<br>' + fmtBudget(p.value) + ' (' + p.percent + '%)'; } },
+      legend: { orient: 'vertical', right: '5%', top: 'center', textStyle: { color: '#94a3b8', fontSize: 10 } },
+      series: [{ type: 'pie', radius: ['45%','68%'], center: ['38%','50%'],
+        label: { show: false },
+        data: [
+          { value: totalCapex, name: 'CAPEX — ' + fmtBudget(totalCapex) },
+          { value: totalOpex,  name: 'OPEX — '  + fmtBudget(totalOpex) }
+        ]
+      }]
+    });
+  }
+
+  // Barres PAT — Dotation vs PAT
+  var patEl = document.getElementById('chartPAT');
+  if (patEl && finData.length) {
+    patEl.style.height = '220px';
+    var nms = finData.map(function(e){ return (e.p.name||e.p.ref).slice(0,14); });
+    var cPAT = echarts.init(patEl);
+    cPAT.setOption({
+      backgroundColor: 'transparent',
+      grid: { left: 55, right: 20, top: 24, bottom: 60 },
+      legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 } },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      xAxis: { type: 'category', data: nms, axisLabel: { color: '#94a3b8', rotate: 20, fontSize: 9 }, axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } } },
+      yAxis: { type: 'value', name: 'k€', nameTextStyle: { color: '#94a3b8', fontSize: 9 }, axisLabel: { color: '#94a3b8', fontSize: 9 }, splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } } },
+      series: [
+        { name: 'Dotation', type: 'bar', barGap: '8%', data: finData.map(function(e){ return Math.round(e.dotation/1000); }), itemStyle: { color: 'rgba(99,210,180,.25)', borderRadius: [3,3,0,0] } },
+        { name: 'Décaissé', type: 'bar', data: finData.map(function(e){ return Math.round(e.decaisse/1000); }), itemStyle: { color: '#63d2b4', borderRadius: [3,3,0,0] } },
+        { name: 'PAT',      type: 'bar', data: finData.map(function(e){ return Math.round(e.pat/1000); }),      itemStyle: { color: function(params){ return finData[params.dataIndex].ecartPAT > 0 ? 'rgba(239,68,68,.7)' : 'rgba(245,158,11,.5)'; }, borderRadius: [3,3,0,0] } }
+      ]
+    });
+  }
+};
+})();
+</script>
+<div id="ai-suggestions-bar"></div>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Synthèse Portefeuille',
+  cacheKey: 'portfolio_global',
+  buildPrompt: function() {
+    var projs = PMHUB.getProjects().filter(function(p){return p.status==='active';});
+    var lines = projs.map(function(p){
+      var h = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : {rag:'amber'};
+      var b = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+      var dotation = Number(b.planned)||Number(String(p.budget||0).replace(/[^\d]/g,''))||0;
+      var consomme = Number(b.consumed)||0;
+      var tx = dotation>0 ? Math.round(consomme/dotation*100) : '?';
+      return p.name+' | '+p.progress+'% | RAG:'+h.rag+' | Budget:'+tx+'%';
+    }).join('\n');
+    var green = projs.filter(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return h.rag==='green';}).length;
+    var red = projs.filter(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return h.rag==='red';}).length;
+    return 'PORTEFEUILLE: '+projs.length+' projets actifs | '+green+' verts | '+red+' rouges\n\nDÉTAIL:\n'+lines+'\n\nFais une synthèse portefeuille: 1) Santé globale du portefeuille 2) Projets à risque à arbitrer 3) Recommandations PMO pour la semaine';
+  }
+};
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'pm-hub-portfolio',
+  title: 'IA Portefeuille',
+  icon: '\uD83D\uDCCA',
+  suggestions: [
+    'Sante globale du portefeuille',
+    'Projets a risque a arbitrer',
+    'Recommandations PMO hebdomadaires',
+    'Prevision de delivrance portefeuille'
+  ],
+  buildContext: function() {
+    if (typeof PMHUB === 'undefined') return '';
+    var projs = PMHUB.getProjects().filter(function(p){return p.status==='active';});
+    var lines = projs.map(function(p){
+      var h = PMHUB.getProjectHealth ? PMHUB.getProjectHealth(p.id) : {rag:'amber'};
+      var b = PMHUB.getBudget ? PMHUB.getBudget(p.id) : {};
+      var dotation = Number(b.planned)||Number(String(p.budget||0).replace(/[^\d]/g,''))||0;
+      var consomme = Number(b.consumed)||0;
+      var tx = dotation>0 ? Math.round(consomme/dotation*100) : '?';
+      return p.name+' | '+p.progress+'% | RAG:'+h.rag+' | Budget:'+tx+'%';
+    });
+    var green = projs.filter(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return h.rag==='green';}).length;
+    var red = projs.filter(function(p){var h=PMHUB.getProjectHealth?PMHUB.getProjectHealth(p.id):{rag:'amber'};return h.rag==='red';}).length;
+    return '=== PORTEFEUILLE ===\n'+projs.length+' projets actifs | '+green+' verts | '+red+' rouges\n\n'+lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse le portefeuille et donne: 1) Score de sante global du portefeuille (%) 2) Projets a risque de derapage avec probabilite 3) Prevision de livraison a 3 mois 4) Recommandations PMO prioritaires 5) Arbitrages a soumettre au COMEX';
+  },
+  importPrompt: 'Analyse ce document portefeuille et extrais les projets: nom, avancement, statut RAG, budget prevu, budget consomme. Genere un JSON avec: projects (array of {name, progress, rag, budgetPlanned, budgetConsumed}).',
+  importHandler: function(data) {
+    if (typeof PMHUB === 'undefined' || !data.projects) return;
+    data.projects.forEach(function(imp) {
+      var existing = PMHUB.getProjects().find(function(p){return p.name===imp.name;});
+      if (existing) {
+        existing.progress = imp.progress || existing.progress;
+        existing.status = imp.rag === 'red' ? 'risk' : 'active';
+        PMHUB.saveProject(existing);
+      }
+    });
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Release Calendar</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--transition); }
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); }
+.kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:28px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+.btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; border:none; transition:var(--transition); font-family:var(--font-body); }
+.btn-primary { background:var(--primary); color:#0B0F19; }
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-ghost { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--primary); color:var(--primary); }
+.btn-danger { background:rgba(239,68,68,0.12); color:var(--danger); border:1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background:rgba(239,68,68,0.22); }
+.btn-sm { padding:5px 12px; font-size:12px; }
+.btn-go { background:rgba(34,197,94,0.15); color:var(--success); border:1px solid rgba(34,197,94,0.25); }
+.btn-go:hover { background:rgba(34,197,94,0.25); }
+.btn-nogo { background:rgba(239,68,68,0.15); color:var(--danger); border:1px solid rgba(239,68,68,0.25); }
+.btn-nogo:hover { background:rgba(239,68,68,0.25); }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:12px 16px; border-bottom:1px solid var(--border); font-family:var(--font-mono); }
+.data-table td { padding:13px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text); vertical-align:middle; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tbody tr { transition:var(--transition); }
+.data-table tbody tr:hover { background:var(--surface2); }
+
+.badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; font-family:var(--font-mono); letter-spacing:0.04em; }
+.badge-planned     { background:rgba(156,163,175,0.15); color:#9CA3AF; }
+.badge-ready       { background:rgba(45,212,191,0.15);  color:var(--primary); }
+.badge-deployed    { background:rgba(34,197,94,0.15);   color:var(--success); }
+.badge-rolled_back { background:rgba(239,68,68,0.15);   color:var(--danger); }
+.badge-go          { background:rgba(34,197,94,0.15);   color:var(--success); }
+.badge-no_go       { background:rgba(239,68,68,0.15);   color:var(--danger); }
+.badge-pending     { background:rgba(245,158,11,0.15);  color:var(--warning); }
+
+/* TIMELINE */
+.timeline-wrap { overflow-x:auto; padding-bottom:8px; margin-bottom:28px; }
+.timeline { display:flex; gap:0; position:relative; min-width:max-content; padding:40px 32px 20px; }
+.timeline::before { content:''; position:absolute; left:32px; right:32px; top:50%; height:2px; background:var(--border); z-index:0; top:calc(40px + 28px); }
+.tl-card {
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:center;
+  min-width:160px; max-width:180px;
+  margin-right:24px;
+}
+.tl-dot {
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid var(--bg);
+  margin-bottom:10px; flex-shrink:0;
+  position:relative; z-index:2;
+  box-shadow:0 0 0 3px var(--border);
+}
+.tl-dot-planned     { background:#9CA3AF; }
+.tl-dot-ready       { background:var(--primary); box-shadow:0 0 0 3px rgba(45,212,191,0.25); }
+.tl-dot-deployed    { background:var(--success); box-shadow:0 0 0 3px rgba(34,197,94,0.25); }
+.tl-dot-rolled_back { background:var(--danger); box-shadow:0 0 0 3px rgba(239,68,68,0.25); }
+.tl-info {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px;
+  text-align:center;
+  width:100%;
+  transition:var(--transition);
+}
+.tl-info:hover { border-color:var(--border-active); }
+.tl-name { font-size:12px; font-weight:700; color:var(--text); font-family:var(--font-heading); margin-bottom:4px; }
+.tl-version { font-size:11px; font-family:var(--font-mono); color:var(--primary); margin-bottom:4px; }
+.tl-date { font-size:10px; color:var(--text-muted); }
+.tl-env  { font-size:10px; color:var(--text-soft); margin-top:4px; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; }
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px; width:540px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); transform:translateY(20px); transition:transform 0.25s var(--ease-out); }
+.modal-overlay.active .modal { transform:translateY(0); }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:700; margin-bottom:24px; }
+.form-group { margin-bottom:18px; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.06em; }
+.form-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:10px 14px; font-size:13px; font-family:var(--font-body); outline:none; transition:var(--transition); }
+.form-input:focus { border-color:var(--primary); }
+textarea.form-input { min-height:80px; resize:vertical; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; }
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state-icon { font-size:48px; margin-bottom:16px; }
+.empty-state-title { font-size:16px; font-weight:600; color:var(--text-soft); margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div>
+        <span class="hero-badge">Delivery</span>
+        <h1 class="hero-title">Release Calendar</h1>
+        <p class="hero-sub">Planification et suivi des mises en production</p>
+      </div>
+      <div id="addBtnWrap"></div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- TIMELINE -->
+    <div style="font-family:var(--font-heading);font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">Chronologie des releases</div>
+    <div class="card" style="padding:0;margin-bottom:28px">
+      <div class="timeline-wrap">
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div style="font-family:var(--font-heading);font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">Liste des releases</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table" id="releasesTable">
+        <thead>
+          <tr>
+            <th>Release</th>
+            <th>Version</th>
+            <th>Date</th>
+            <th>Environnement</th>
+            <th>Statut</th>
+            <th>Go/No-Go</th>
+            <th>Items</th>
+            <th id="actionsHeader" style="display:none">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="releasesTbody"></tbody>
+      </table>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouvelle release</div>
+    <form id="releasesForm" autocomplete="off">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input class="form-input" type="text" id="f_name" placeholder="ex: Sprint 12 Release" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Version</label>
+          <input class="form-input" type="text" id="f_version" placeholder="ex: v2.4.1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="date" id="f_date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Environnement</label>
+          <input class="form-input" type="text" id="f_environment" placeholder="ex: Production, Staging">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-input" id="f_status">
+            <option value="planned">Planifiée</option>
+            <option value="ready">Prête</option>
+            <option value="deployed">Déployée</option>
+            <option value="rolled_back">Rollback</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Go / No-Go</label>
+          <select class="form-input" id="f_goNoGo">
+            <option value="pending">En attente</option>
+            <option value="go">Go</option>
+            <option value="no_go">No Go</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Items / Fonctionnalités (une par ligne)</label>
+        <textarea class="form-input" id="f_items" placeholder="Feature A&#10;Bugfix B&#10;Amélioration C"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="f_notes" placeholder="Notes sur la release..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modalCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+  var canWrite = DELHUB.canWrite('releases');
+  var editingId = null;
+
+  var statusLabels = { planned:'Planifiée', ready:'Prête', deployed:'Déployée', rolled_back:'Rollback' };
+  var goNoGoLabels = { go:'Go', no_go:'No Go', pending:'En attente' };
+
+  if (canWrite) {
+    document.getElementById('addBtnWrap').innerHTML = '<button class="btn btn-primary" id="addBtn">+ Nouvelle release</button>';
+    document.getElementById('addBtn').addEventListener('click', openAdd);
+    document.getElementById('actionsHeader').style.display = '';
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  function renderKPIs() {
+    var items = DELHUB.getReleases();
+    var planned = items.filter(function(r) { return r.status === 'planned'; }).length;
+    var ready   = items.filter(function(r) { return r.status === 'ready'; }).length;
+    var deployed = items.filter(function(r) { return r.status === 'deployed'; }).length;
+    var rolled  = items.filter(function(r) { return r.status === 'rolled_back'; }).length;
+    var kpis = [
+      { label:'Planifiées', value: planned, sub:'à venir', color:'var(--text-muted)' },
+      { label:'Prêtes', value: ready, sub:'en attente déploiement', color:'var(--primary)' },
+      { label:'Déployées', value: deployed, sub:'en production', color:'var(--success)' },
+      { label:'Rolled Back', value: rolled, sub:'annulées', color:'var(--danger)' },
+    ];
+    document.getElementById('kpiStrip').innerHTML = kpis.map(function(k) {
+      return '<div class="kpi-card"><div class="kpi-label">'+k.label+'</div><div class="kpi-value" style="color:'+k.color+'">'+k.value+'</div><div class="kpi-sub">'+k.sub+'</div></div>';
+    }).join('');
+  }
+
+  function renderTimeline() {
+    var items = DELHUB.getReleases().slice().sort(function(a,b) {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(a.date) - new Date(b.date);
+    });
+
+    if (!items.length) {
+      document.getElementById('timeline').innerHTML =
+        '<div style="padding:40px;color:var(--text-muted);text-align:center;width:100%">Aucune release planifiée</div>';
+      return;
+    }
+
+    document.getElementById('timeline').innerHTML = items.map(function(r) {
+      var status = r.status || 'planned';
+      return '<div class="tl-card">' +
+        '<div class="tl-dot tl-dot-'+status+'"></div>' +
+        '<div class="tl-info">' +
+          '<div class="tl-name">' + (r.name||'—') + '</div>' +
+          '<div class="tl-version">' + (r.version||'—') + '</div>' +
+          '<div class="tl-date">' + formatDate(r.date) + '</div>' +
+          '<div class="tl-env">' + (r.environment||'—') + '</div>' +
+          '<div style="margin-top:6px"><span class="badge badge-'+(r.goNoGo||'pending')+'">'+( goNoGoLabels[r.goNoGo]||'?')+'</span></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderTable() {
+    var items = DELHUB.getReleases().slice().sort(function(a,b) {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    if (!items.length) {
+      document.getElementById('releasesTbody').innerHTML =
+        '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🚀</div>' +
+        '<div class="empty-state-title">Aucune release</div>' +
+        '<p>Planifiez votre première release.</p></div></td></tr>';
+      return;
+    }
+
+    document.getElementById('releasesTbody').innerHTML = items.map(function(r) {
+      var itemsList = Array.isArray(r.items) ? r.items : (r.items ? r.items.split('\n').filter(Boolean) : []);
+      var goNoGo = r.goNoGo || 'pending';
+      return '<tr>' +
+        '<td><strong>' + (r.name||'—') + '</strong></td>' +
+        '<td style="font-family:var(--font-mono);font-size:12px;color:var(--primary)">' + (r.version||'—') + '</td>' +
+        '<td style="color:var(--text-muted)">' + formatDate(r.date) + '</td>' +
+        '<td style="color:var(--text-muted);font-size:12px">' + (r.environment||'—') + '</td>' +
+        '<td><span class="badge badge-'+(r.status||'planned')+'">'+( statusLabels[r.status]||r.status||'—')+'</span></td>' +
+        '<td>' +
+          '<span class="badge badge-'+goNoGo+'" style="margin-right:6px">'+( goNoGoLabels[goNoGo]||'?')+'</span>' +
+          (canWrite ?
+            '<button class="btn btn-go btn-sm" onclick="REL_PAGE.setGoNoGo('+r.id+',\'go\')" title="Valider Go">✓</button> ' +
+            '<button class="btn btn-nogo btn-sm" onclick="REL_PAGE.setGoNoGo('+r.id+',\'no_go\')" title="No Go">✗</button>'
+          : '') +
+        '</td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + (itemsList.length ? itemsList.slice(0,2).join(', ') + (itemsList.length > 2 ? ' +' + (itemsList.length-2) : '') : '—') + '</td>' +
+        (canWrite ?
+          '<td><div style="display:flex;gap:6px">' +
+            '<button class="btn btn-ghost btn-sm" onclick="REL_PAGE.edit('+r.id+')">Éditer</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="REL_PAGE.del('+r.id+')">Suppr.</button>' +
+          '</div></td>' : '') +
+      '</tr>';
+    }).join('');
+  }
+
+  function openAdd() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Nouvelle release';
+    document.getElementById('releasesForm').reset();
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function openEdit(id) {
+    var item = DELHUB.getReleases().find(function(r) { return r.id === id; });
+    if (!item) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Éditer la release';
+    document.getElementById('f_name').value = item.name || '';
+    document.getElementById('f_version').value = item.version || '';
+    document.getElementById('f_date').value = item.date ? item.date.substring(0,10) : '';
+    document.getElementById('f_environment').value = item.environment || '';
+    document.getElementById('f_status').value = item.status || 'planned';
+    document.getElementById('f_goNoGo').value = item.goNoGo || 'pending';
+    var items = Array.isArray(item.items) ? item.items.join('\n') : (item.items || '');
+    document.getElementById('f_items').value = items;
+    document.getElementById('f_notes').value = item.notes || '';
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    editingId = null;
+  }
+
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+  document.getElementById('releasesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var rawItems = document.getElementById('f_items').value;
+    var itemsList = rawItems.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    var data = {
+      name: document.getElementById('f_name').value.trim(),
+      version: document.getElementById('f_version').value.trim(),
+      date: document.getElementById('f_date').value || null,
+      environment: document.getElementById('f_environment').value.trim(),
+      status: document.getElementById('f_status').value,
+      goNoGo: document.getElementById('f_goNoGo').value,
+      items: itemsList,
+      notes: document.getElementById('f_notes').value.trim(),
+    };
+    if (!data.name) return;
+    if (editingId) { DELHUB.updateRelease(editingId, data); }
+    else { DELHUB.addRelease(data); }
+    closeModal();
+    refresh();
+  });
+
+  window.REL_PAGE = {
+    edit: openEdit,
+    del: function(id) {
+      if (confirm('Supprimer cette release ?')) {
+        DELHUB.deleteRelease(id);
+        refresh();
+      }
+    },
+    setGoNoGo: function(id, value) {
+      DELHUB.updateRelease(id, { goNoGo: value });
+      refresh();
+    }
+  };
+
+  function refresh() {
+    renderKPIs();
+    renderTimeline();
+    renderTable();
+  }
+
+  refresh();
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-releases',
+  title: 'IA Releases',
+  icon: '\uD83D\uDCE6',
+  suggestions: [
+    'Risques sur les prochaines releases',
+    'Analyse Go/No-Go',
+    'Prevision de livraison',
+    'Recommandations de deploiement'
+  ],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var releases = DELHUB.getReleases ? DELHUB.getReleases() : [];
+    var lines = ['=== RELEASES ==='];
+    lines.push('Total: '+releases.length);
+    releases.slice(0,8).forEach(function(r) {
+      lines.push('- '+(r.name||r.version||'?')+' | date: '+(r.date||r.targetDate||'?')+' | statut: '+(r.status||r.goNoGo||'?'));
+    });
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse les releases: 1) Risques sur les prochaines livraisons 2) Readiness Go/No-Go avec criteres 3) Prevision de date realiste 4) Dependencies bloquantes 5) Recommandations de deploiement';
+  },
+  importPrompt: 'Analyse ce document de release et extrais: versions, dates, statuts, features. Genere un JSON avec: releases (array of {name, targetDate, status, features, risks}).',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined' || !data.releases) return;
+    data.releases.forEach(function(r) {
+      if (DELHUB.saveRelease) DELHUB.saveRelease({id:'rel_'+Date.now()+'_'+Math.random().toString(36).substr(2,4), name:r.name, targetDate:r.targetDate, status:r.status||'planned', features:r.features||[]});
+    });
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

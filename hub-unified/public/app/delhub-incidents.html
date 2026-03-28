@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Incidents & Escalades</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:var(--transition); }
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); }
+.kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:28px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+.toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+.toolbar-spacer { flex:1; }
+select, input[type=text] { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:8px 12px; font-size:13px; font-family:var(--font-body); outline:none; transition:var(--transition); }
+select:focus, input[type=text]:focus { border-color:var(--primary); }
+
+.btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; border:none; transition:var(--transition); font-family:var(--font-body); }
+.btn-primary { background:var(--primary); color:#0B0F19; }
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-ghost { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--primary); color:var(--primary); }
+.btn-danger { background:rgba(239,68,68,0.12); color:var(--danger); border:1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background:rgba(239,68,68,0.22); }
+.btn-sm { padding:5px 12px; font-size:12px; }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:12px 16px; border-bottom:1px solid var(--border); font-family:var(--font-mono); }
+.data-table td { padding:13px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text); vertical-align:middle; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tbody tr { transition:var(--transition); }
+.data-table tbody tr:hover { background:var(--surface2); }
+.data-table tbody tr.row-p1 {
+  background: rgba(239,68,68,0.06);
+  border-left: 3px solid var(--danger);
+}
+.data-table tbody tr.row-p1:hover { background:rgba(239,68,68,0.10); }
+
+.badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; font-family:var(--font-mono); letter-spacing:0.04em; }
+.badge-P1 { background:rgba(239,68,68,0.22); color:#FF6B6B; border:1px solid rgba(239,68,68,0.3); }
+.badge-P2 { background:rgba(245,158,11,0.18); color:#FBBF24; border:1px solid rgba(245,158,11,0.3); }
+.badge-P3 { background:rgba(250,204,21,0.15); color:#FDE047; border:1px solid rgba(250,204,21,0.25); }
+.badge-P4 { background:rgba(156,163,175,0.15); color:#9CA3AF; border:1px solid rgba(156,163,175,0.2); }
+.badge-open          { background:rgba(239,68,68,0.15); color:var(--danger); }
+.badge-investigating { background:rgba(245,158,11,0.15); color:var(--warning); }
+.badge-resolved      { background:rgba(34,197,94,0.15); color:var(--success); }
+.badge-closed        { background:rgba(156,163,175,0.12); color:#9CA3AF; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; }
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px; width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); transform:translateY(20px); transition:transform 0.25s var(--ease-out); }
+.modal-overlay.active .modal { transform:translateY(0); }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:700; margin-bottom:24px; }
+.form-group { margin-bottom:18px; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.06em; }
+.form-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:10px 14px; font-size:13px; font-family:var(--font-body); outline:none; transition:var(--transition); }
+.form-input:focus { border-color:var(--primary); }
+textarea.form-input { min-height:70px; resize:vertical; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; }
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state-icon { font-size:48px; margin-bottom:16px; }
+.empty-state-title { font-size:16px; font-weight:600; color:var(--text-soft); margin-bottom:8px; }
+
+.p1-alert-banner { display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:var(--radius-sm); background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:var(--danger); font-size:13px; margin-bottom:20px; font-weight:600; animation: pulse-border 2s infinite; }
+@keyframes pulse-border { 0%,100% { border-color:rgba(239,68,68,0.3); } 50% { border-color:rgba(239,68,68,0.6); } }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <div>
+        <span class="hero-badge">Delivery</span>
+        <h1 class="hero-title">Incidents & Escalades</h1>
+        <p class="hero-sub">Gestion des incidents de service et des escalades clients</p>
+      </div>
+      <div id="addBtnWrap"></div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- P1 ALERT -->
+    <div id="p1Alert"></div>
+
+    <!-- CHART + TABLE -->
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+      <div class="card" style="padding:20px">
+        <div style="font-family:var(--font-heading);font-size:13px;font-weight:700;margin-bottom:12px">Incidents par sévérité</div>
+        <div id="donutChart" style="width:100%;height:200px"></div>
+        <div id="donutLegend" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <div>
+        <div class="toolbar">
+          <select id="filterSeverity">
+            <option value="">Toutes sévérités</option>
+            <option value="P1">P1</option>
+            <option value="P2">P2</option>
+            <option value="P3">P3</option>
+            <option value="P4">P4</option>
+          </select>
+          <select id="filterStatus">
+            <option value="">Tous les statuts</option>
+            <option value="open">Ouvert</option>
+            <option value="investigating">En investigation</option>
+            <option value="resolved">Résolu</option>
+            <option value="closed">Fermé</option>
+          </select>
+          <div class="toolbar-spacer"></div>
+          <span id="countLabel" style="font-size:12px;color:var(--text-muted)"></span>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Sévérité</th>
+                <th>Client</th>
+                <th>Statut</th>
+                <th>Impact</th>
+                <th>Escaladé à</th>
+                <th>Créé le</th>
+                <th id="actionsHeader" style="display:none">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="incidentsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouvel incident</div>
+    <form id="incidentsForm" autocomplete="off">
+      <div class="form-group">
+        <label class="form-label">Titre *</label>
+        <input class="form-input" type="text" id="f_title" placeholder="Description courte de l'incident" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Sévérité</label>
+          <select class="form-input" id="f_severity">
+            <option value="P1">P1 — Critique</option>
+            <option value="P2">P2 — Majeur</option>
+            <option value="P3">P3 — Mineur</option>
+            <option value="P4">P4 — Faible</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-input" id="f_status">
+            <option value="open">Ouvert</option>
+            <option value="investigating">En investigation</option>
+            <option value="resolved">Résolu</option>
+            <option value="closed">Fermé</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client</label>
+          <input class="form-input" type="text" id="f_client" placeholder="Client impacté">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Escaladé à</label>
+          <input class="form-input" type="text" id="f_escalatedTo" placeholder="Nom / équipe escalade">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="f_description" placeholder="Description détaillée de l'incident..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Impact</label>
+        <input class="form-input" type="text" id="f_impact" placeholder="ex: Indisponibilité service X pour client Y">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Résolution</label>
+        <textarea class="form-input" id="f_resolution" placeholder="Actions prises, résolution..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date résolution</label>
+          <input class="form-input" type="datetime-local" id="f_resolvedAt">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modalCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+  var canWrite = DELHUB.canWrite('incidents');
+  var editingId = null;
+
+  var statusLabels = { open:'Ouvert', investigating:'Investigation', resolved:'Résolu', closed:'Fermé' };
+  var sevColors = { P1:'#FF6B6B', P2:'#FBBF24', P3:'#FDE047', P4:'#9CA3AF' };
+
+  if (canWrite) {
+    document.getElementById('addBtnWrap').innerHTML = '<button class="btn btn-primary" id="addBtn">+ Déclarer un incident</button>';
+    document.getElementById('addBtn').addEventListener('click', openAdd);
+    document.getElementById('actionsHeader').style.display = '';
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  function renderKPIs() {
+    var items = DELHUB.getIncidents();
+    var now = new Date();
+    var thirtyDaysAgo = new Date(now - 30*24*3600*1000);
+    var open = items.filter(function(i) { return ['open','investigating'].includes(i.status); }).length;
+    var p1Open = items.filter(function(i) { return i.severity === 'P1' && i.status !== 'closed'; }).length;
+    var invest = items.filter(function(i) { return i.status === 'investigating'; }).length;
+    var resolved30 = items.filter(function(i) { return i.status === 'resolved' && i.resolvedAt && new Date(i.resolvedAt) >= thirtyDaysAgo; }).length;
+    var kpis = [
+      { label:'Incidents ouverts', value: open, sub:'open + investigation', color: open > 0 ? 'var(--danger)' : 'var(--success)' },
+      { label:'P1 actifs', value: p1Open, sub:'critiques non fermés', color: p1Open > 0 ? '#FF6B6B' : 'var(--text)' },
+      { label:'En investigation', value: invest, sub:'en cours d\'analyse', color:'var(--warning)' },
+      { label:'Résolus (30j)', value: resolved30, sub:'derniers 30 jours', color:'var(--success)' },
+    ];
+    document.getElementById('kpiStrip').innerHTML = kpis.map(function(k) {
+      return '<div class="kpi-card"' + (k.color === '#FF6B6B' && p1Open > 0 ? ' style="border-color:rgba(239,68,68,0.35)"' : '') + '>' +
+        '<div class="kpi-label">'+k.label+'</div><div class="kpi-value" style="color:'+k.color+'">'+k.value+'</div><div class="kpi-sub">'+k.sub+'</div></div>';
+    }).join('');
+  }
+
+  function renderP1Alert() {
+    var p1s = DELHUB.getIncidents().filter(function(i) { return i.severity === 'P1' && ['open','investigating'].includes(i.status); });
+    if (!p1s.length) { document.getElementById('p1Alert').innerHTML = ''; return; }
+    document.getElementById('p1Alert').innerHTML =
+      '<div class="p1-alert-banner"><span style="font-size:20px">🚨</span>' +
+      '<span>' + p1s.length + ' incident(s) P1 ACTIF(S) — Action immédiate requise : ' +
+      p1s.map(function(i) { return i.title || 'Sans titre'; }).join(' | ') + '</span></div>';
+  }
+
+  function renderDonut() {
+    if (typeof echarts === 'undefined') return;
+    var items = DELHUB.getIncidents();
+    var counts = { P1:0, P2:0, P3:0, P4:0 };
+    items.forEach(function(i) { if (counts[i.severity] !== undefined) counts[i.severity]++; });
+    var chart = echarts.init(document.getElementById('donutChart'));
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      series: [{
+        type: 'pie', radius: ['42%','68%'],
+        data: [
+          { value: counts.P1, name:'P1', itemStyle:{ color:'#EF4444' } },
+          { value: counts.P2, name:'P2', itemStyle:{ color:'#F59E0B' } },
+          { value: counts.P3, name:'P3', itemStyle:{ color:'#EAB308' } },
+          { value: counts.P4, name:'P4', itemStyle:{ color:'#6B7280' } },
+        ],
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 700, color: '#E5E7EB' } }
+      }]
+    });
+
+    document.getElementById('donutLegend').innerHTML = [
+      { key:'P1', label:'Critique', color:'#EF4444' },
+      { key:'P2', label:'Majeur', color:'#F59E0B' },
+      { key:'P3', label:'Mineur', color:'#EAB308' },
+      { key:'P4', label:'Faible', color:'#6B7280' },
+    ].map(function(s) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">' +
+        '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+s.color+';margin-right:8px"></span>' +
+        s.key + ' — ' + s.label + '</span>' +
+        '<strong style="color:'+s.color+'">' + counts[s.key] + '</strong></div>';
+    }).join('');
+  }
+
+  function renderTable() {
+    var items = DELHUB.getIncidents();
+    var sev = document.getElementById('filterSeverity').value;
+    var status = document.getElementById('filterStatus').value;
+    if (sev) items = items.filter(function(i) { return i.severity === sev; });
+    if (status) items = items.filter(function(i) { return i.status === status; });
+
+    document.getElementById('countLabel').textContent = items.length + ' incident(s)';
+
+    if (!items.length) {
+      document.getElementById('incidentsTbody').innerHTML =
+        '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">✅</div>' +
+        '<div class="empty-state-title">Aucun incident</div>' +
+        '<p>Aucun incident ne correspond aux filtres sélectionnés.</p></div></td></tr>';
+      return;
+    }
+
+    document.getElementById('incidentsTbody').innerHTML = items.map(function(inc) {
+      var isP1Open = inc.severity === 'P1' && ['open','investigating'].includes(inc.status);
+      return '<tr class="'+(isP1Open?'row-p1':'')+'">' +
+        '<td><strong>' + (inc.title||'—') + '</strong></td>' +
+        '<td><span class="badge badge-'+(inc.severity||'P4')+'">'+(inc.severity||'—')+'</span></td>' +
+        '<td style="color:var(--text-muted)">' + (inc.client||'—') + '</td>' +
+        '<td><span class="badge badge-'+(inc.status||'open')+'">'+( statusLabels[inc.status]||inc.status||'—')+'</span></td>' +
+        '<td style="font-size:12px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (inc.impact||'—') + '</td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + (inc.escalatedTo||'—') + '</td>' +
+        '<td style="color:var(--text-muted)">' + formatDate(inc.createdAt) + '</td>' +
+        (canWrite ?
+          '<td><div style="display:flex;gap:6px">' +
+            '<button class="btn btn-ghost btn-sm" onclick="INC_PAGE.edit('+inc.id+')">Éditer</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="INC_PAGE.del('+inc.id+')">Suppr.</button>' +
+          '</div></td>' : '') +
+      '</tr>';
+    }).join('');
+  }
+
+  function openAdd() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Déclarer un incident';
+    document.getElementById('incidentsForm').reset();
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function openEdit(id) {
+    var item = DELHUB.getIncidents().find(function(i) { return i.id === id; });
+    if (!item) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Éditer l\'incident';
+    document.getElementById('f_title').value = item.title || '';
+    document.getElementById('f_severity').value = item.severity || 'P3';
+    document.getElementById('f_status').value = item.status || 'open';
+    document.getElementById('f_client').value = item.client || '';
+    document.getElementById('f_escalatedTo').value = item.escalatedTo || '';
+    document.getElementById('f_description').value = item.description || '';
+    document.getElementById('f_impact').value = item.impact || '';
+    document.getElementById('f_resolution').value = item.resolution || '';
+    document.getElementById('f_resolvedAt').value = item.resolvedAt ? item.resolvedAt.substring(0,16) : '';
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    editingId = null;
+  }
+
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+  document.getElementById('incidentsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var data = {
+      title: document.getElementById('f_title').value.trim(),
+      severity: document.getElementById('f_severity').value,
+      status: document.getElementById('f_status').value,
+      client: document.getElementById('f_client').value.trim(),
+      escalatedTo: document.getElementById('f_escalatedTo').value.trim(),
+      description: document.getElementById('f_description').value.trim(),
+      impact: document.getElementById('f_impact').value.trim(),
+      resolution: document.getElementById('f_resolution').value.trim(),
+      resolvedAt: document.getElementById('f_resolvedAt').value || null,
+    };
+    if (!data.title) return;
+    if (editingId) { DELHUB.updateIncident(editingId, data); }
+    else { DELHUB.addIncident(data); }
+    closeModal();
+    refresh();
+  });
+
+  document.getElementById('filterSeverity').addEventListener('change', renderTable);
+  document.getElementById('filterStatus').addEventListener('change', renderTable);
+
+  window.INC_PAGE = {
+    edit: openEdit,
+    del: function(id) {
+      if (confirm('Supprimer cet incident ?')) {
+        DELHUB.deleteIncident(id);
+        refresh();
+      }
+    }
+  };
+
+  function refresh() {
+    renderKPIs();
+    renderP1Alert();
+    renderDonut();
+    renderTable();
+  }
+
+  refresh();
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-incidents',
+  title: 'IA Incidents & Escalades',
+  icon: '\u{1F6A8}',
+  suggestions: [
+    'Tendance des incidents P1/P2',
+    'Causes racines recurrentes',
+    'Prediction du prochain incident critique',
+    'Plan de prevention incidents'
+  ],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var inc = DELHUB.getIncidents();
+    var open = inc.filter(function(i){ return i.status==='open'||i.status==='investigating'; });
+    var p1 = inc.filter(function(i){ return i.priority==='P1'||i.severity==='critical'; });
+    var lines = ['=== INCIDENTS (' + inc.length + ' total, ' + open.length + ' ouverts, ' + p1.length + ' P1/critiques) ==='];
+    inc.forEach(function(i) {
+      lines.push('- ' + (i.title||i.name||'?') + ': priorite=' + (i.priority||i.severity||'?') + ', statut=' + (i.status||'?') + ', date=' + (i.date||i.createdAt||'?') + ', resolu=' + (i.resolvedAt||'non') + ', cause=' + (i.rootCause||'?'));
+    });
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse mes incidents et donne: 1) Tendance (augmentation/diminution) par severite 2) MTTR moyen et evolution 3) Causes racines les plus frequentes 4) Prediction: probabilite d\'incident P1 dans les 7 prochains jours 5) Impact sur les SLA 6) Top 3 actions preventives recommandees 7) Services/composants les plus fragiles';
+  },
+  importPrompt: 'Analyse ce rapport d\'incidents et extrais: titre, severite, statut, date, cause racine, resolution. Genere un JSON array avec: title, priority, status, date, rootCause, resolution, service.',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined') return;
+    var inc = DELHUB.getIncidents();
+    if (Array.isArray(data)) {
+      data.forEach(function(d) { d.id = 'inc-' + Date.now() + '-' + Math.random().toString(36).substr(2,4); inc.push(d); });
+    }
+    DELHUB.saveIncidents(inc);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

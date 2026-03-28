@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Forecasting Revenue</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+/* ── KPI Strip ── */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:var(--shadow-card-hover); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:22px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+/* ── Hero ── */
+.hero-bar { margin-bottom:24px; }
+.hero-badge {
+  display:inline-block; background:rgba(45,212,191,0.1); color:var(--primary);
+  border:1px solid rgba(45,212,191,0.2); border-radius:20px;
+  padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; font-family:var(--font-mono); margin-bottom:10px;
+}
+.hero-title { font-family:var(--font-heading); font-size:26px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.hero-sub { font-size:13px; color:var(--text-muted); }
+
+/* ── Toolbar ── */
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.toolbar-title { font-family:var(--font-heading); font-size:18px; font-weight:700; color:var(--text); }
+.btn-primary {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:13px; cursor:pointer; transition:var(--transition);
+  font-family:var(--font-heading);
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+
+/* ── Table ── */
+.table-wrapper {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  overflow:hidden; margin-bottom:28px;
+}
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:700px; }
+thead tr { background:var(--surface2); }
+th {
+  padding:11px 16px; text-align:left; font-size:10px; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--text-muted); font-family:var(--font-mono);
+  white-space:nowrap; border-bottom:1px solid var(--border);
+}
+td {
+  padding:13px 16px; font-size:13px; color:var(--text);
+  border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle;
+}
+tr:last-child td { border-bottom:none; }
+tbody tr { transition:var(--transition); }
+tbody tr:hover { background:var(--surface2); }
+
+.mono { font-family:var(--font-mono); }
+.gap-positive { color:var(--success); font-weight:700; }
+.gap-negative { color:var(--danger); font-weight:700; }
+.gap-zero { color:var(--text-muted); }
+
+.period-label {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:12px; font-weight:700;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:3px 10px; color:var(--text);
+}
+
+/* ── Action buttons ── */
+.action-btn {
+  background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text-muted); font-size:12px; padding:4px 10px; cursor:pointer;
+  transition:var(--transition);
+}
+.action-btn:hover { border-color:var(--primary); color:var(--primary); }
+.action-btn.del:hover { border-color:var(--danger); color:var(--danger); }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align:center; padding:60px 24px;
+  color:var(--text-muted); font-size:13px;
+}
+.empty-state-icon { font-size:36px; margin-bottom:12px; }
+.empty-state-title { font-family:var(--font-heading); font-size:16px; font-weight:700; margin-bottom:6px; color:var(--text); }
+
+/* ── Chart ── */
+.chart-section {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:24px; margin-bottom:28px;
+}
+.chart-section h3 { font-family:var(--font-heading); font-size:14px; font-weight:700; margin-bottom:20px; color:var(--text); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(8px);
+  z-index:1000; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:var(--transition);
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:32px; width:520px; max-width:94vw; max-height:88vh; overflow-y:auto;
+  transform:translateY(16px) scale(0.97); transition:var(--transition-smooth);
+  box-shadow:0 32px 80px rgba(0,0,0,0.55);
+}
+.modal-overlay.open .modal { transform:none; }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:800; margin-bottom:24px; color:var(--text); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-full { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-label { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); font-family:var(--font-mono); }
+.form-input, .form-select {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:9px 12px; font-size:13px; font-family:var(--font-body);
+  outline:none; transition:var(--transition);
+}
+.form-input:focus, .form-select:focus {
+  border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,212,191,0.1);
+}
+.form-select option { background:var(--surface2); }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; flex-wrap:wrap; }
+.btn-secondary {
+  padding:9px 18px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text-muted); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-secondary:hover { border-color:var(--border-active); color:var(--text); }
+.btn-danger {
+  padding:9px 18px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
+  border-radius:var(--radius-sm); color:var(--danger); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-danger:hover { background:rgba(239,68,68,0.2); }
+
+/* gap preview */
+.gap-preview-box {
+  background:var(--surface3); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 16px; display:flex; justify-content:space-between; align-items:center;
+}
+.gap-preview-label { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.08em; }
+
+/* readonly notice */
+.readonly-notice {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25);
+  border-radius:var(--radius-sm); padding:10px 16px; font-size:12px; color:var(--warning);
+  margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div class="hero-bar">
+      <div class="hero-badge">Commercial</div>
+      <h1 class="hero-title">📈 Forecasting Revenue</h1>
+      <p class="hero-sub">Pilotez vos prévisions de revenus par période et suivez l'écart avec vos objectifs.</p>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- READONLY NOTICE -->
+    <div class="readonly-notice" id="readonlyNotice" style="display:none">
+      ⚠️ Mode lecture seule — Vous n'avez pas les droits pour modifier les prévisions.
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-section">
+      <h3>Pipeline vs Committed vs Target par période</h3>
+      <div id="chartBar" style="width:100%;height:300px"></div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-title">Prévisions par période</div>
+      <button class="btn-primary" id="btnNewForecast" style="display:none" onclick="openModal()">+ Nouvelle prévision</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Pipeline total</th>
+              <th>Pondéré</th>
+              <th>Committed</th>
+              <th>Target</th>
+              <th>Gap</th>
+              <th id="thActions"></th>
+            </tr>
+          </thead>
+          <tbody id="forecastTableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="empty-state-icon">📈</div>
+        <div class="empty-state-title">Aucune prévision enregistrée</div>
+        <div>Créez votre première prévision de revenus.</div>
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouvelle prévision</div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label class="form-label">Période * (ex: 2026-Q1, 2026-01)</label>
+        <input class="form-input" id="fPeriod" placeholder="2026-Q2">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pipeline total (€)</label>
+        <input class="form-input" id="fPipelineTotal" type="number" min="0" placeholder="0" oninput="calcGap()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pondéré (€)</label>
+        <input class="form-input" id="fWeightedTotal" type="number" min="0" placeholder="0" oninput="calcGap()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Committed (€)</label>
+        <input class="form-input" id="fCommitted" type="number" min="0" placeholder="0" oninput="calcGap()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target / Objectif (€)</label>
+        <input class="form-input" id="fTarget" type="number" min="0" placeholder="0" oninput="calcGap()">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">Gap calculé (Committed − Target)</label>
+        <div class="gap-preview-box">
+          <span class="gap-preview-label">Gap</span>
+          <span id="gapDisplay" style="font-size:20px;font-weight:700;font-family:var(--font-heading)">0 €</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="btnDelete" style="display:none;margin-right:auto" onclick="deleteForecastEntry()">Supprimer</button>
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveForecast()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('forecast');
+  var editingId = null;
+  var chartInstance = null;
+
+  function fmt(n) {
+    return Number(n||0).toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
+  }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // Show/hide UI
+  if (canWrite) {
+    document.getElementById('btnNewForecast').style.display = '';
+    document.getElementById('thActions').textContent = 'Actions';
+  } else {
+    document.getElementById('readonlyNotice').style.display = 'flex';
+  }
+
+  // ── KPI STRIP ──
+  function renderKPIs() {
+    var forecasts = DELHUB.getForecasts();
+    if (forecasts.length === 0) {
+      document.getElementById('kpiStrip').innerHTML = '';
+      return;
+    }
+    var totalPipeline   = forecasts.reduce(function(s,f) { return s + (Number(f.pipelineTotal)||0); }, 0);
+    var totalWeighted   = forecasts.reduce(function(s,f) { return s + (Number(f.weightedTotal)||0); }, 0);
+    var totalCommitted  = forecasts.reduce(function(s,f) { return s + (Number(f.committedRevenue)||0); }, 0);
+    var totalTarget     = forecasts.reduce(function(s,f) { return s + (Number(f.targetRevenue)||0); }, 0);
+    var totalGap        = totalCommitted - totalTarget;
+
+    var kpis = [
+      { label:'Pipeline total',  value:fmt(totalPipeline)  + ' €', sub:forecasts.length + ' période(s)', color:'var(--text)' },
+      { label:'Pondéré',         value:fmt(totalWeighted)  + ' €', sub:'probabilité pondérée', color:'var(--primary)' },
+      { label:'Committed',       value:fmt(totalCommitted) + ' €', sub:'revenus engagés', color:'var(--success)' },
+      { label:'Target',          value:fmt(totalTarget)    + ' €', sub:'objectif total', color:'var(--warning)' },
+      { label:'Gap cumulé',      value:(totalGap >= 0 ? '+' : '') + fmt(totalGap) + ' €', sub:'Committed − Target', color: totalGap >= 0 ? 'var(--success)' : 'var(--danger)' },
+    ];
+    var html = '';
+    kpis.forEach(function(k) {
+      html += '<div class="kpi-card">' +
+        '<div class="kpi-label">' + k.label + '</div>' +
+        '<div class="kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
+        '<div class="kpi-sub">' + k.sub + '</div>' +
+      '</div>';
+    });
+    document.getElementById('kpiStrip').innerHTML = html;
+  }
+
+  // ── CHART ──
+  function renderChart() {
+    var forecasts = DELHUB.getForecasts().slice().reverse(); // chronological
+    var el = document.getElementById('chartBar');
+    if (typeof echarts === 'undefined') return;
+
+    if (!chartInstance) {
+      chartInstance = echarts.init(el);
+      window.addEventListener('resize', function() { chartInstance.resize(); });
+    }
+
+    if (forecasts.length === 0) {
+      chartInstance.clear();
+      return;
+    }
+
+    var periods    = forecasts.map(function(f) { return f.period; });
+    var pipeline   = forecasts.map(function(f) { return Number(f.pipelineTotal)||0; });
+    var committed  = forecasts.map(function(f) { return Number(f.committedRevenue)||0; });
+    var target     = forecasts.map(function(f) { return Number(f.targetRevenue)||0; });
+    var weighted   = forecasts.map(function(f) { return Number(f.weightedTotal)||0; });
+
+    chartInstance.setOption({
+      tooltip: {
+        trigger:'axis',
+        formatter: function(params) {
+          var s = '<b>' + params[0].axisValue + '</b><br/>';
+          params.forEach(function(p) {
+            s += '<span style="color:' + p.color + '">■</span> ' + p.seriesName + ': ' +
+              Number(p.value).toLocaleString('fr-FR') + ' €<br/>';
+          });
+          return s;
+        }
+      },
+      legend: { data:['Pipeline','Pondéré','Committed','Target'], textStyle:{ color:'#9CA3AF', fontSize:11 }, bottom:0 },
+      xAxis: {
+        type:'category', data:periods,
+        axisLabel:{ color:'#9CA3AF', fontSize:10, rotate: periods.length > 5 ? 30 : 0 }
+      },
+      yAxis: {
+        type:'value',
+        axisLabel:{ color:'#9CA3AF', formatter: function(v) { return (v/1000).toFixed(0) + 'k'; } },
+        splitLine:{ lineStyle:{ color:'rgba(255,255,255,0.06)' } }
+      },
+      series: [
+        {
+          name:'Pipeline', type:'bar', data:pipeline, barWidth:'18%',
+          itemStyle:{ color:'rgba(99,102,241,0.7)', borderRadius:[4,4,0,0] }
+        },
+        {
+          name:'Pondéré', type:'bar', data:weighted, barWidth:'18%',
+          itemStyle:{ color:'rgba(139,92,246,0.7)', borderRadius:[4,4,0,0] }
+        },
+        {
+          name:'Committed', type:'bar', data:committed, barWidth:'18%',
+          itemStyle:{ color:'rgba(34,197,94,0.8)', borderRadius:[4,4,0,0] }
+        },
+        {
+          name:'Target', type:'line', data:target,
+          lineStyle:{ color:'#F59E0B', width:2, type:'dashed' },
+          itemStyle:{ color:'#F59E0B' },
+          symbol:'circle', symbolSize:6
+        },
+      ],
+      backgroundColor:'transparent',
+      grid:{ left:60, right:20, top:20, bottom:60 }
+    }, true);
+  }
+
+  // ── TABLE ──
+  function renderTable() {
+    var forecasts = DELHUB.getForecasts();
+    var tbody = document.getElementById('forecastTableBody');
+    var empty = document.getElementById('emptyState');
+
+    if (forecasts.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+
+    var html = '';
+    forecasts.forEach(function(f) {
+      var gap = (Number(f.committedRevenue)||0) - (Number(f.targetRevenue)||0);
+      var gapCls = gap > 0 ? 'gap-positive' : gap < 0 ? 'gap-negative' : 'gap-zero';
+      var gapStr = (gap >= 0 ? '+' : '') + fmt(gap) + ' €';
+
+      html += '<tr>' +
+        '<td><span class="period-label">📅 ' + esc(f.period) + '</span></td>' +
+        '<td class="mono">' + fmt(f.pipelineTotal) + ' €</td>' +
+        '<td class="mono" style="color:#818CF8">' + fmt(f.weightedTotal) + ' €</td>' +
+        '<td class="mono" style="color:var(--success)">' + fmt(f.committedRevenue) + ' €</td>' +
+        '<td class="mono" style="color:var(--warning)">' + fmt(f.targetRevenue) + ' €</td>' +
+        '<td class="mono ' + gapCls + '">' + gapStr + '</td>' +
+        '<td>';
+
+      if (canWrite) {
+        html += '<div style="display:flex;gap:6px">' +
+          '<button class="action-btn" onclick="editForecast(' + f.id + ')">Modifier</button>' +
+          '<button class="action-btn del" onclick="deleteForecastDirect(' + f.id + ')">✕</button>' +
+        '</div>';
+      }
+
+      html += '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  function renderAll() {
+    renderKPIs();
+    renderChart();
+    renderTable();
+  }
+
+  // ── MODAL GAP CALC ──
+  window.calcGap = function() {
+    var committed = parseFloat(document.getElementById('fCommitted').value) || 0;
+    var target    = parseFloat(document.getElementById('fTarget').value) || 0;
+    var gap = committed - target;
+    var el = document.getElementById('gapDisplay');
+    el.textContent = (gap >= 0 ? '+' : '') + fmt(gap) + ' €';
+    el.style.color = gap > 0 ? 'var(--success)' : gap < 0 ? 'var(--danger)' : 'var(--text-muted)';
+  };
+
+  // ── MODAL ──
+  window.openModal = function() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Nouvelle prévision';
+    document.getElementById('fPeriod').value        = '';
+    document.getElementById('fPipelineTotal').value = '';
+    document.getElementById('fWeightedTotal').value = '';
+    document.getElementById('fCommitted').value     = '';
+    document.getElementById('fTarget').value        = '';
+    document.getElementById('btnDelete').style.display = 'none';
+    calcGap();
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.editForecast = function(id) {
+    var forecasts = DELHUB.getForecasts();
+    var f = forecasts.find(function(x) { return x.id === id; });
+    if (!f) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Modifier la prévision';
+    document.getElementById('fPeriod').value        = f.period || '';
+    document.getElementById('fPipelineTotal').value = f.pipelineTotal || '';
+    document.getElementById('fWeightedTotal').value = f.weightedTotal || '';
+    document.getElementById('fCommitted').value     = f.committedRevenue || '';
+    document.getElementById('fTarget').value        = f.targetRevenue || '';
+    document.getElementById('btnDelete').style.display = '';
+    calcGap();
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  };
+
+  window.saveForecast = function() {
+    var period = document.getElementById('fPeriod').value.trim();
+    if (!period) { document.getElementById('fPeriod').focus(); return; }
+    var committed = Number(document.getElementById('fCommitted').value) || 0;
+    var target    = Number(document.getElementById('fTarget').value) || 0;
+    var data = {
+      period:           period,
+      pipelineTotal:    Number(document.getElementById('fPipelineTotal').value) || 0,
+      weightedTotal:    Number(document.getElementById('fWeightedTotal').value) || 0,
+      committedRevenue: committed,
+      targetRevenue:    target,
+      gap:              committed - target,
+    };
+    if (editingId) {
+      DELHUB.updateForecast(editingId, data);
+    } else {
+      DELHUB.addForecast(data);
+    }
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteForecastEntry = function() {
+    if (!editingId) return;
+    if (!confirm('Supprimer cette prévision ?')) return;
+    DELHUB.deleteForecast(editingId);
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteForecastDirect = function(id) {
+    if (!confirm('Supprimer cette prévision ?')) return;
+    DELHUB.deleteForecast(id);
+    renderAll();
+  };
+
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+  // Init
+  renderAll();
+
+  DELHUB.onChange(function(e) {
+    if (e.detail && e.detail.key === DELHUB.KEYS.forecast) renderAll();
+  });
+
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-forecast',
+  title: 'IA Forecasting',
+  icon: '\u{1F4C8}',
+  suggestions: ['Prevision revenue 3 mois', 'Fiabilite des forecasts', 'Ecart forecast vs reel', 'Recommandations pipeline'],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var stats = DELHUB.getCRMStats();
+    return 'CRM: opportunites=' + stats.totalOpportunities + ', pipeline=' + stats.pipelineValue + 'EUR, win rate=' + stats.winRate + '%';
+  },
+  predictions: function() { return 'Analyse les donnees de forecasting et donne: 1) Prevision de revenue a 3 et 6 mois 2) Precision historique des forecasts 3) Deals a risque 4) Recommendations d\'ajustement pipeline.'; }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

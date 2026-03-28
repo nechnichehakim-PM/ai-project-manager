@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — CRM / Prospects</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+/* ── KPI Strip ── */
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; transition:var(--transition);
+}
+.kpi-card:hover { border-color:var(--border-active); transform:translateY(-2px); box-shadow:var(--shadow-card-hover); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+/* ── Toolbar ── */
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+.toolbar-title { font-family:var(--font-heading); font-size:18px; font-weight:700; color:var(--text); }
+.btn-primary {
+  display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+  background:var(--primary); color:#0B0F19; border:none; border-radius:var(--radius-sm);
+  font-weight:700; font-size:13px; cursor:pointer; transition:var(--transition);
+  font-family:var(--font-heading);
+}
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+
+/* ── Kanban Board ── */
+.kanban-wrapper { overflow-x:auto; padding-bottom:8px; }
+.kanban-board {
+  display:flex; gap:16px; min-width:max-content; padding-bottom:8px; align-items:flex-start;
+}
+.kanban-col {
+  width:270px; flex-shrink:0;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+  display:flex; flex-direction:column;
+  min-height:200px;
+}
+.kanban-col.drag-over {
+  border-color:var(--primary); box-shadow:0 0 0 2px rgba(45,212,191,0.18);
+}
+.kanban-col-header {
+  padding:12px 16px; display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.kanban-col-title {
+  font-family:var(--font-heading); font-size:12px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.08em;
+  display:flex; align-items:center; gap:6px;
+}
+.kanban-col-dot { width:8px; height:8px; border-radius:50%; }
+.kanban-col-meta { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); text-align:right; }
+.kanban-col-meta span { display:block; }
+
+.kanban-cards { padding:10px; display:flex; flex-direction:column; gap:8px; min-height:80px; flex:1; }
+
+/* Decision col has 2 sub-sections */
+.kanban-decision-sep {
+  padding:0 10px 6px;
+}
+.kanban-decision-label {
+  font-size:10px; text-transform:uppercase; letter-spacing:0.1em;
+  font-family:var(--font-mono); padding:6px 0 4px;
+  border-top:1px solid var(--border); margin-top:4px;
+}
+.kanban-cards-sub { padding:0 10px; display:flex; flex-direction:column; gap:8px; min-height:40px; }
+
+/* Card */
+.kanban-card {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:12px;
+  cursor:grab; transition:var(--transition);
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.kanban-card:hover {
+  border-color:var(--border-active); transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.25);
+}
+.kanban-card.dragging { opacity:0.5; cursor:grabbing; }
+.kanban-card-company { font-family:var(--font-heading); font-size:13px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.kanban-card-contact { font-size:11px; color:var(--text-muted); margin-bottom:8px; }
+.kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
+.badge-amount {
+  background:rgba(45,212,191,0.12); color:var(--primary); border:1px solid rgba(45,212,191,0.2);
+  border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; font-family:var(--font-mono);
+}
+.badge-proba {
+  font-size:10px; color:var(--text-soft); font-family:var(--font-mono);
+}
+.card-edit-btn {
+  background:none; border:none; cursor:pointer; color:var(--text-muted);
+  font-size:14px; padding:2px 4px; border-radius:4px; transition:var(--transition);
+  display:none;
+}
+.kanban-card:hover .card-edit-btn { display:inline; }
+.card-edit-btn:hover { color:var(--primary); background:rgba(45,212,191,0.1); }
+
+/* Chart section */
+.chart-section { margin-top:28px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; }
+.chart-section h3 { font-family:var(--font-heading); font-size:14px; font-weight:700; margin-bottom:20px; color:var(--text); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(8px);
+  z-index:1000; display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:var(--transition);
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:32px; width:560px; max-width:94vw; max-height:88vh; overflow-y:auto;
+  transform:translateY(16px) scale(0.97); transition:var(--transition-smooth);
+  box-shadow:0 32px 80px rgba(0,0,0,0.55);
+}
+.modal-overlay.open .modal { transform:none; }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:800; margin-bottom:24px; color:var(--text); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-full { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-label { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); font-family:var(--font-mono); }
+.form-input, .form-select, .form-textarea {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:9px 12px; font-size:13px; font-family:var(--font-body);
+  outline:none; transition:var(--transition);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,212,191,0.1);
+}
+.form-select option { background:var(--surface2); }
+.form-textarea { resize:vertical; min-height:80px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; flex-wrap:wrap; }
+.btn-secondary {
+  padding:9px 18px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text-muted); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-secondary:hover { border-color:var(--border-active); color:var(--text); }
+.btn-danger {
+  padding:9px 18px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
+  border-radius:var(--radius-sm); color:var(--danger); font-size:13px;
+  font-family:var(--font-heading); font-weight:600; cursor:pointer; transition:var(--transition);
+}
+.btn-danger:hover { background:rgba(239,68,68,0.2); }
+
+/* hero */
+.hero-bar { margin-bottom:24px; }
+.hero-badge {
+  display:inline-block; background:rgba(45,212,191,0.1); color:var(--primary);
+  border:1px solid rgba(45,212,191,0.2); border-radius:20px;
+  padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; font-family:var(--font-mono); margin-bottom:10px;
+}
+.hero-title { font-family:var(--font-heading); font-size:26px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.hero-sub { font-size:13px; color:var(--text-muted); }
+
+/* readonly notice */
+.readonly-notice {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25);
+  border-radius:var(--radius-sm); padding:10px 16px; font-size:12px; color:var(--warning);
+  margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div class="hero-bar">
+      <div class="hero-badge">Commercial</div>
+      <h1 class="hero-title">🎯 CRM / Prospects</h1>
+      <p class="hero-sub">Gérez votre pipeline commercial avec un board Kanban interactif.</p>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- READONLY NOTICE -->
+    <div class="readonly-notice" id="readonlyNotice" style="display:none">
+      ⚠️ Mode lecture seule — Vous n'avez pas les droits pour modifier le CRM.
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-title">Pipeline Kanban</div>
+      <button class="btn-primary" id="btnNewProspect" style="display:none" onclick="openModal()">+ Nouveau prospect</button>
+    </div>
+
+    <!-- KANBAN -->
+    <div class="kanban-wrapper">
+      <div class="kanban-board" id="kanbanBoard"></div>
+    </div>
+
+    <!-- FUNNEL CHART -->
+    <div class="chart-section">
+      <h3>Entonnoir Pipeline</h3>
+      <div id="chartFunnel" style="width:100%;height:320px"></div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouveau prospect</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Entreprise *</label>
+        <input class="form-input" id="fCompany" placeholder="Acme Corp" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact *</label>
+        <input class="form-input" id="fContact" placeholder="Jean Dupont">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="fEmail" type="email" placeholder="jean@acme.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input class="form-input" id="fPhone" placeholder="+33 6 00 00 00 00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stage *</label>
+        <select class="form-select" id="fStage"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Montant (€)</label>
+        <input class="form-input" id="fAmount" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secteur</label>
+        <input class="form-input" id="fSector" placeholder="Telecom, Finance...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Source</label>
+        <input class="form-input" id="fSource" placeholder="Inbound, Referral...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Probabilité (%)</label>
+        <input class="form-input" id="fProbability" type="number" min="0" max="100" placeholder="50">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="fNotes" placeholder="Contexte, historique..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="btnDelete" style="display:none;margin-right:auto" onclick="deleteEntry()">Supprimer</button>
+      <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveEntry()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('crm');
+  var editingId = null;
+
+  // Stages for kanban (prospect, qualified, proposal, negotiation, then decision = won+lost)
+  var PIPELINE_STAGES = DELHUB.CRM_STAGES.filter(function(s) { return s.id !== 'won' && s.id !== 'lost'; });
+
+  // Populate stage select
+  var stageSelect = document.getElementById('fStage');
+  DELHUB.CRM_STAGES.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.label;
+    stageSelect.appendChild(opt);
+  });
+
+  // Show/hide UI elements based on permissions
+  if (canWrite) {
+    document.getElementById('btnNewProspect').style.display = '';
+  } else {
+    document.getElementById('readonlyNotice').style.display = 'flex';
+  }
+
+  function fmt(n) {
+    return Number(n || 0).toLocaleString('fr-FR');
+  }
+
+  // ── KPI STRIP ──
+  function renderKPIs() {
+    var stats = DELHUB.getCRMStats();
+    var kpiData = [
+      { label:'Pipeline total',        value: fmt(stats.pipelineValue) + ' €', sub: stats.activeOpportunities + ' opportunités actives', color:'var(--primary)' },
+      { label:'Opportunités actives',  value: stats.activeOpportunities, sub: 'sur ' + stats.totalOpportunities + ' au total', color:'var(--primary)' },
+      { label:'Win Rate',              value: stats.winRate + '%', sub: 'deals gagnés / total closés', color: stats.winRate >= 50 ? 'var(--success)' : 'var(--warning)' },
+      { label:'Avg Deal Size',         value: fmt(stats.avgDealSize) + ' €', sub: 'sur opportunités actives', color:'var(--text)' },
+    ];
+    var html = '';
+    kpiData.forEach(function(k) {
+      html += '<div class="kpi-card">' +
+        '<div class="kpi-label">' + k.label + '</div>' +
+        '<div class="kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
+        '<div class="kpi-sub">' + k.sub + '</div>' +
+      '</div>';
+    });
+    document.getElementById('kpiStrip').innerHTML = html;
+  }
+
+  // ── KANBAN ──
+  function renderKanban() {
+    var crm = DELHUB.getCRM();
+    var board = document.getElementById('kanbanBoard');
+    var html = '';
+
+    // Regular pipeline columns
+    PIPELINE_STAGES.forEach(function(stage) {
+      var cards = crm.filter(function(e) { return e.stage === stage.id; });
+      var totalAmt = cards.reduce(function(s,e) { return s + (Number(e.amount)||0); }, 0);
+
+      html += '<div class="kanban-col" data-stage="' + stage.id + '" ' +
+        (canWrite ? 'ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="window._crmDrop(event,this)" ' : '') + '>' +
+        '<div class="kanban-col-header">' +
+          '<div class="kanban-col-title">' +
+            '<div class="kanban-col-dot" style="background:' + stage.color + '"></div>' +
+            stage.label +
+          '</div>' +
+          '<div class="kanban-col-meta"><span>' + cards.length + ' deals</span><span>' + fmt(totalAmt) + ' €</span></div>' +
+        '</div>' +
+        '<div class="kanban-cards" data-stage="' + stage.id + '">';
+
+      cards.forEach(function(entry) {
+        html += buildCard(entry);
+      });
+
+      html += '</div></div>';
+    });
+
+    // Decision column (Won + Lost)
+    var wonCards  = crm.filter(function(e) { return e.stage === 'won'; });
+    var lostCards = crm.filter(function(e) { return e.stage === 'lost'; });
+    var wonAmt  = wonCards.reduce(function(s,e)  { return s + (Number(e.amount)||0); }, 0);
+    var lostAmt = lostCards.reduce(function(s,e) { return s + (Number(e.amount)||0); }, 0);
+
+    html += '<div class="kanban-col" style="width:290px">' +
+      '<div class="kanban-col-header">' +
+        '<div class="kanban-col-title">' +
+          '<div class="kanban-col-dot" style="background:linear-gradient(135deg,#22C55E,#EF4444)"></div>' +
+          'Décision' +
+        '</div>' +
+        '<div class="kanban-col-meta"><span>' + (wonCards.length + lostCards.length) + ' deals</span></div>' +
+      '</div>';
+
+    // Won sub
+    html += '<div class="kanban-decision-sep">' +
+      '<div class="kanban-decision-label" style="color:var(--success)">✅ Gagné — ' + fmt(wonAmt) + ' €</div>' +
+    '</div>' +
+    '<div class="kanban-cards-sub" data-stage="won" ' +
+      (canWrite ? 'ondragover="event.preventDefault();var c=this.closest(\'.kanban-col\');c&&c.classList.add(\'drag-over\')" ondragleave="var c=this.closest(\'.kanban-col\');c&&c.classList.remove(\'drag-over\')" ondrop="window._crmDrop(event,this)" ' : '') + '>';
+    wonCards.forEach(function(entry) { html += buildCard(entry); });
+    html += '</div>';
+
+    // Lost sub
+    html += '<div class="kanban-decision-sep">' +
+      '<div class="kanban-decision-label" style="color:var(--danger)">❌ Perdu — ' + fmt(lostAmt) + ' €</div>' +
+    '</div>' +
+    '<div class="kanban-cards-sub" data-stage="lost" ' +
+      (canWrite ? 'ondragover="event.preventDefault();var c=this.closest(\'.kanban-col\');c&&c.classList.add(\'drag-over\')" ondragleave="var c=this.closest(\'.kanban-col\');c&&c.classList.remove(\'drag-over\')" ondrop="window._crmDrop(event,this)" ' : '') + '>';
+    lostCards.forEach(function(entry) { html += buildCard(entry); });
+    html += '</div></div>';
+
+    board.innerHTML = html;
+
+    // Bind drag events on cards
+    if (canWrite) {
+      board.querySelectorAll('.kanban-card').forEach(function(card) {
+        card.addEventListener('dragstart', function(e) {
+          e.dataTransfer.setData('text/plain', card.dataset.id);
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', function() {
+          card.classList.remove('dragging');
+          board.querySelectorAll('.kanban-col').forEach(function(c) { c.classList.remove('drag-over'); });
+        });
+      });
+    }
+  }
+
+  function buildCard(entry) {
+    var proba = entry.probability ? entry.probability + '%' : '—';
+    var draggable = canWrite ? 'draggable="true"' : '';
+    return '<div class="kanban-card" ' + draggable + ' data-id="' + entry.id + '"' +
+      (canWrite ? ' onclick="window._crmEditCard(' + entry.id + ')"' : '') + '>' +
+      '<div class="kanban-card-company">' + esc(entry.company) + '</div>' +
+      '<div class="kanban-card-contact">' + esc(entry.contact || '') + (entry.sector ? ' · ' + esc(entry.sector) : '') + '</div>' +
+      '<div class="kanban-card-footer">' +
+        '<span class="badge-amount">' + fmt(entry.amount) + ' €</span>' +
+        '<span class="badge-proba">' + proba + '</span>' +
+        (canWrite ? '<button class="card-edit-btn" onclick="event.stopPropagation();window._crmEditCard(' + entry.id + ')" title="Modifier">✏️</button>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function esc(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Drag & Drop
+  window._crmDrop = function(event, targetEl) {
+    event.preventDefault();
+    var id = Number(event.dataTransfer.getData('text/plain'));
+    var stage = targetEl.dataset.stage;
+    if (!id || !stage) return;
+    document.querySelectorAll('.kanban-col').forEach(function(c) { c.classList.remove('drag-over'); });
+    DELHUB.updateCRMEntry(id, { stage: stage });
+    renderAll();
+  };
+
+  // Edit card
+  window._crmEditCard = function(id) {
+    if (!canWrite) return;
+    var entry = DELHUB.getCRMById(id);
+    if (!entry) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Modifier la fiche';
+    document.getElementById('fCompany').value    = entry.company || '';
+    document.getElementById('fContact').value    = entry.contact || '';
+    document.getElementById('fEmail').value      = entry.email || '';
+    document.getElementById('fPhone').value      = entry.phone || '';
+    document.getElementById('fStage').value      = entry.stage || 'prospect';
+    document.getElementById('fAmount').value     = entry.amount || '';
+    document.getElementById('fSector').value     = entry.sector || '';
+    document.getElementById('fSource').value     = entry.source || '';
+    document.getElementById('fProbability').value= entry.probability || '';
+    document.getElementById('fNotes').value      = entry.notes || '';
+    document.getElementById('btnDelete').style.display = '';
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  // ── CHART FUNNEL ──
+  function renderChart() {
+    var stats = DELHUB.getCRMStats();
+    var stages = [
+      { id:'prospect',    label:'Prospect' },
+      { id:'qualified',   label:'Qualifié' },
+      { id:'proposal',    label:'Proposition' },
+      { id:'negotiation', label:'Négociation' },
+      { id:'won',         label:'Gagné' },
+    ];
+    var data = stages.map(function(s) {
+      return { value: stats.byStage[s.id] ? stats.byStage[s.id].amount : 0, name: s.label };
+    });
+
+    if (typeof echarts === 'undefined') return;
+    var chart = echarts.init(document.getElementById('chartFunnel'));
+    chart.setOption({
+      tooltip: {
+        trigger:'item',
+        formatter: function(params) {
+          return params.name + '<br/>' + Number(params.value).toLocaleString('fr-FR') + ' €';
+        }
+      },
+      series: [{
+        type:'funnel',
+        left:'10%', width:'80%', top:20, bottom:20,
+        sort:'descending',
+        gap:4,
+        label: { show:true, color:'var(--text)', fontSize:12, fontFamily:'Inter' },
+        itemStyle: { borderWidth:0 },
+        data: [
+          { value: data[0].value, name: data[0].name, itemStyle:{ color:'#9CA3AF' } },
+          { value: data[1].value, name: data[1].name, itemStyle:{ color:'#6366F1' } },
+          { value: data[2].value, name: data[2].name, itemStyle:{ color:'#F59E0B' } },
+          { value: data[3].value, name: data[3].name, itemStyle:{ color:'#8B5CF6' } },
+          { value: data[4].value, name: data[4].name, itemStyle:{ color:'#22C55E' } },
+        ]
+      }],
+      backgroundColor:'transparent'
+    });
+    window.addEventListener('resize', function() { chart.resize(); });
+  }
+
+  function renderAll() {
+    renderKPIs();
+    renderKanban();
+    renderChart();
+  }
+
+  // ── MODAL ──
+  window.openModal = function() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Nouveau prospect';
+    document.getElementById('fCompany').value     = '';
+    document.getElementById('fContact').value     = '';
+    document.getElementById('fEmail').value       = '';
+    document.getElementById('fPhone').value       = '';
+    document.getElementById('fStage').value       = 'prospect';
+    document.getElementById('fAmount').value      = '';
+    document.getElementById('fSector').value      = '';
+    document.getElementById('fSource').value      = '';
+    document.getElementById('fProbability').value = '';
+    document.getElementById('fNotes').value       = '';
+    document.getElementById('btnDelete').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+
+  window.closeModal = function() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  };
+
+  window.saveEntry = function() {
+    var company = document.getElementById('fCompany').value.trim();
+    if (!company) { document.getElementById('fCompany').focus(); return; }
+    var data = {
+      company:     company,
+      contact:     document.getElementById('fContact').value.trim(),
+      email:       document.getElementById('fEmail').value.trim(),
+      phone:       document.getElementById('fPhone').value.trim(),
+      stage:       document.getElementById('fStage').value,
+      amount:      Number(document.getElementById('fAmount').value) || 0,
+      sector:      document.getElementById('fSector').value.trim(),
+      source:      document.getElementById('fSource').value.trim(),
+      probability: Number(document.getElementById('fProbability').value) || 0,
+      notes:       document.getElementById('fNotes').value.trim(),
+    };
+    if (editingId) {
+      DELHUB.updateCRMEntry(editingId, data);
+    } else {
+      DELHUB.addCRMEntry(data);
+    }
+    closeModal();
+    renderAll();
+  };
+
+  window.deleteEntry = function() {
+    if (!editingId) return;
+    if (!confirm('Supprimer cette fiche ?')) return;
+    DELHUB.deleteCRMEntry(editingId);
+    closeModal();
+    renderAll();
+  };
+
+  // Keyboard close
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+  // Init
+  renderAll();
+
+  // Listen for data changes from other tabs
+  DELHUB.onChange(function(e) {
+    if (e.detail && e.detail.key === DELHUB.KEYS.crm) renderAll();
+  });
+
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-crm',
+  title: 'IA CRM & Pipeline',
+  icon: '\u{1F3AF}',
+  suggestions: [
+    'Forecast win rate ce trimestre',
+    'Opportunites a risque de perte',
+    'Top deals a closer en priorite',
+    'Analyse pipeline par stade'
+  ],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    var stats = DELHUB.getCRMStats();
+    var lines = ['=== CRM STATS ===', 'Opportunites: ' + stats.totalOpportunities + ', Pipeline: ' + stats.pipelineValue + 'EUR, Win rate: ' + stats.winRate + '%'];
+    try {
+      var opps = DELHUB.getOpportunities();
+      lines.push('\n=== OPPORTUNITES (' + opps.length + ') ===');
+      opps.forEach(function(o) {
+        lines.push('- ' + (o.name||o.company||'?') + ': valeur=' + (o.value||0) + 'EUR, stade=' + (o.stage||'?') + ', proba=' + (o.probability||'?') + '%, contact=' + (o.contact||'?') + ', date_close=' + (o.closeDate||'?'));
+      });
+    } catch(e) {}
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse mon pipeline CRM et donne: 1) Prevision de revenue pour les 3 prochains mois 2) Win rate predit par stade 3) Top 5 deals les plus probables a closer 4) Opportunites a risque de perte (signaux faibles) 5) Recommandations d\'actions commerciales 6) Valeur pipeline ponderee vs objectif';
+  },
+  importPrompt: 'Analyse ce document commercial et extrais les opportunites: nom, entreprise, valeur, stade, probabilite, contact, date de closing prevue. Genere un JSON array avec les champs: name, company, value, stage, probability, contact, closeDate, status.',
+  importHandler: function(data) {
+    if (typeof DELHUB === 'undefined') return;
+    var opps = DELHUB.getOpportunities();
+    if (Array.isArray(data)) {
+      data.forEach(function(d) { d.id = 'opp-' + Date.now() + '-' + Math.random().toString(36).substr(2,4); opps.push(d); });
+    } else if (data && data.name) {
+      data.id = 'opp-' + Date.now(); opps.push(data);
+    }
+    DELHUB.saveOpportunities(opps);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

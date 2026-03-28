@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Sprints & Métriques Agile</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;}
+.nav-links{display:flex;gap:6px;align-items:center;}
+.nav-links a{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;padding:7px 13px;border-radius:5px;transition:all .2s;}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.layout{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);margin-top:65px;overflow:hidden;}
+.main-col{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main{flex:1;min-height:0;overflow-y:auto;padding:40px 48px 100px;position:relative;z-index:1;}
+
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1.05;letter-spacing:-0.02em;margin-bottom:10px;}
+.page-h1 em{font-style:italic;color:var(--accent2);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:28px;}
+
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.sprint-selector{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:8px 14px;border-radius:6px;cursor:pointer;outline:none;transition:border-color .2s;}
+.sprint-selector:focus{border-color:var(--accent);}
+.spacer{flex:1;}
+.btn-new-sprint{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--border);color:var(--text-soft);padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-new-sprint:hover{border-color:var(--accent);color:var(--accent);}
+.btn-complete-sprint{display:flex;align-items:center;gap:7px;background:rgba(99,210,180,0.08);border:1px solid rgba(99,210,180,0.3);color:var(--accent);padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-complete-sprint:hover{background:rgba(99,210,180,0.15);}
+.btn-reopen-sprint{display:flex;align-items:center;gap:7px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.35);color:#f59e0b;padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-reopen-sprint:hover{background:rgba(251,191,36,0.15);}
+.btn-delete-sprint{display:flex;align-items:center;gap:7px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.28);color:var(--danger);padding:8px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-delete-sprint:hover{background:rgba(239,68,68,0.13);}
+
+/* GRID LAYOUTS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
+.grid-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+
+/* KPI CARDS */
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.g::before{background:var(--accent);}
+.kpi.b::before{background:var(--accent3);}
+.kpi.y::before{background:var(--accent2);}
+.kpi.p::before{background:#a78bfa;}
+.kpi-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;line-height:1;}
+.kpi.g .kpi-val{color:var(--accent);}
+.kpi.b .kpi-val{color:var(--accent3);}
+.kpi.y .kpi-val{color:var(--accent2);}
+.kpi.p .kpi-val{color:#a78bfa;}
+.kpi-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:5px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border);}
+.card-title{font-size:13px;font-weight:700;}
+.card-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);}
+.card-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 9px;border-radius:3px;border:1px solid;}
+.card-body{padding:20px 22px;}
+
+/* SPRINT HEADER */
+.sprint-header{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:20px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;}
+.sprint-info{}
+.sprint-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:400;margin-bottom:4px;}
+.sprint-goal{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);margin-bottom:14px;}
+.sprint-dates{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:14px;}
+.sprint-prog-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.sprint-prog-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .6s ease;}
+.sprint-prog-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);display:flex;justify-content:space-between;}
+.sprint-stats{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.sprint-counter{text-align:center;}
+.sprint-counter-val{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:600;color:var(--accent2);line-height:1;}
+.sprint-counter-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+.sprint-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.sprint-chip{font-family:'DM Mono',monospace;font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);color:var(--text-soft);}
+
+/* BURNDOWN CHART */
+.burndown-wrap{position:relative;}
+.burndown-svg{width:100%;height:200px;}
+.burndown-legend{display:flex;gap:20px;margin-top:12px;}
+.bd-legend-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-soft);}
+.bd-legend-dot{width:12px;height:2px;border-radius:1px;}
+
+/* VELOCITY CHART */
+.velocity-bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:4px;}
+.vel-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.vel-bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s ease;min-height:4px;position:relative;}
+.vel-bar.active-sprint{opacity:0.5;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.05) 4px,rgba(255,255,255,0.05) 8px);}
+.vel-bar:hover::after{content:attr(data-val)' pts';position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-family:'DM Mono',monospace;font-size:9px;color:var(--text);white-space:nowrap;background:var(--surface2);padding:2px 6px;border-radius:3px;}
+.vel-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);text-align:center;white-space:nowrap;}
+.vel-avg-line{position:absolute;width:100%;border-top:1px dashed rgba(212,175,100,0.5);pointer-events:none;}
+
+/* BACKLOG TABLE */
+.backlog-table{width:100%;border-collapse:collapse;}
+.backlog-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);padding:9px 12px;border-bottom:1px solid var(--border);text-align:left;}
+.backlog-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,0.03);font-family:'DM Mono',monospace;font-size:11px;}
+.backlog-table tr:hover td{background:rgba(255,255,255,0.015);}
+.story-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;}
+.story-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:2px;}
+.pts-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 4px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;font-weight:700;}
+.pts-badge.estimated{color:var(--text-muted);border-style:dashed;}
+.status-chip{font-family:'DM Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;}
+.status-chip.done{color:var(--accent);border-color:rgba(99,210,180,0.3);background:rgba(99,210,180,0.07);}
+.status-chip.inprogress{color:var(--accent2);border-color:rgba(212,175,100,0.3);background:rgba(212,175,100,0.07);}
+.status-chip.todo{color:var(--text-muted);border-color:var(--border);}
+.priority-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;}
+
+/* DOD */
+.dod-list{display:flex;flex-direction:column;gap:8px;}
+.dod-item{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-soft);}
+.dod-check{width:16px;height:16px;border-radius:3px;border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;}
+.dod-check.checked{background:rgba(99,210,180,0.1);border-color:var(--accent);color:var(--accent);}
+
+/* EMPTY */
+.empty-block{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);padding:20px 0;text-align:center;}
+
+/* FORMULAIRE INLINE NOUVEAU SPRINT */
+.sprint-form{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:20px 24px;margin-bottom:24px;display:none;}
+.sprint-form.open{display:block;}
+.sprint-form-title{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+.sprint-form-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;align-items:end;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.form-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;border-radius:6px;outline:none;transition:border-color .2s;width:100%;}
+.form-input:focus{border-color:var(--accent);}
+.sprint-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:7px 16px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;}
+.btn-save{background:var(--accent);border:none;color:#060a0d;padding:7px 18px;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;}
+
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:24px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 8px 28px rgba(99,210,180,0.35);border:1px solid rgba(99,210,180,0.4);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="pm-hub.html" class="nav-back" title="Retour">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<a href="pm-hub-ai.html?from=Agile" class="ai-float-btn" title="Assistant IA">🤖</a>
+
+
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+
+    <div class="page-tag">Planification Agile</div>
+    <h1 class="page-h1">Sprints & <em>Métriques</em></h1>
+    <p class="page-sub" id="pageSubtitle">Vue agile du projet — burndown, vélocité, backlog et artefacts Scrum.</p>
+
+    <div class="top-bar">
+      <select class="sprint-selector" id="projectBarSelect" onchange="onProjectBarChange()" style="min-width:240px;"></select>
+      <select class="sprint-selector" id="sprintSelector" onchange="onSprintChange()"></select>
+      <div class="spacer"></div>
+      <button class="btn-complete-sprint" id="btnComplete" onclick="completeSprint()" style="display:none;">✓ Clôturer</button>
+      <button class="btn-reopen-sprint" id="btnReopen" onclick="reopenSprint()" style="display:none;">↩ Réouvrir</button>
+      <button class="btn-delete-sprint" id="btnDelete" onclick="deleteSprint()" style="display:none;">🗑 Supprimer</button>
+      <button class="btn-new-sprint" onclick="openModal()">+ Nouveau sprint</button>
+    </div>
+
+    <!-- FORMULAIRE INLINE NOUVEAU SPRINT -->
+    <div class="sprint-form" id="sprintForm">
+      <div class="sprint-form-title">+ Nouveau sprint</div>
+      <div class="sprint-form-grid">
+        <div class="form-field">
+          <div class="form-label">Nom</div>
+          <input class="form-input" id="mSprintName" placeholder="Sprint X">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Début</div>
+          <input class="form-input" type="date" id="mSprintStart">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Fin</div>
+          <input class="form-input" type="date" id="mSprintEnd">
+        </div>
+        <div class="form-field">
+          <div class="form-label">Capacité (pts)</div>
+          <input class="form-input" type="number" id="mSprintCap" placeholder="20">
+        </div>
+      </div>
+      <div class="form-field" style="margin-top:10px;">
+        <div class="form-label">Objectif</div>
+        <input class="form-input" id="mSprintGoal" placeholder="Objectif du sprint…">
+      </div>
+      <div class="sprint-form-actions">
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-save" onclick="saveSprint()">Créer le sprint</button>
+      </div>
+    </div>
+
+    <div id="agileRoot"></div>
+
+  </main>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────
+var projectId    = null;
+var sprintData   = null;
+var activeSprint = null;
+var selectedSprintId = null;
+
+// ── STORAGE ───────────────────────────────────────────────────────
+function sprintKey() { return 'pmhub_sprints_' + projectId; }
+function loadSprintData() {
+  try { return JSON.parse(localStorage.getItem(sprintKey())) || null; } catch(e) { return null; }
+}
+function saveSprintData(d) {
+  localStorage.setItem(sprintKey(), JSON.stringify(d));
+}
+
+// ── PROJECT SELECTOR ──────────────────────────────────────────────
+function buildProjectSelector() {
+  var allProjects = PMHUB.getProjects();
+  var agileProjects = allProjects.filter(function(p) {
+    return p.methodology === 'agile' || p.methodology === 'hybride';
+  });
+  var sel = document.getElementById('projectBarSelect');
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (!agileProjects.length) {
+    sel.innerHTML = '<option>Aucun projet Agile/Hybride</option>';
+    return;
+  }
+  agileProjects.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.icon||'📁') + ' ' + p.name + ' · ' + (p.methodology === 'agile' ? 'Scrum' : 'Hybride');
+    sel.appendChild(opt);
+  });
+  // Priorité au ?project= URL, sinon premier projet Agile
+  var urlId = new URLSearchParams(window.location.search).get('project');
+  var match = urlId && agileProjects.find(function(p){ return String(p.id) === String(urlId); });
+  if (match) sel.value = match.id;
+  else sel.value = agileProjects[0].id;
+  projectId = String(sel.value);
+}
+
+function onProjectBarChange() {
+  var sel = document.getElementById('projectBarSelect');
+  projectId = String(sel.value);
+  sprintData = null;
+  activeSprint = null;
+  // Update URL sans reload
+  var url = new URL(window.location.href);
+  url.searchParams.set('project', projectId);
+  history.replaceState(null, '', url);
+  loadAndRender();
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+(function init() {
+  buildProjectSelector();
+  loadAndRender();
+})();
+
+function loadAndRender() {
+  var project = PMHUB.getProjectById(projectId);
+  if (!project) {
+    document.getElementById('agileRoot').innerHTML = '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--text-muted);padding:60px 0;text-align:center;">Aucun projet Agile trouvé. Créez un projet avec la méthodologie Scrum ou Hybride.</div>';
+    return;
+  }
+  document.getElementById('pageSubtitle').textContent = '📁 ' + project.name + ' · Vue Scrum/Agile — burndown, vélocité, backlog et artefacts.';
+
+  sprintData = loadSprintData();
+  if (!sprintData || !sprintData.sprints || !sprintData.sprints.length) {
+    sprintData = buildDefaultSprintData(project);
+    saveSprintData(sprintData);
+  }
+
+  populateSprintSelector();
+  onSprintChange();
+}
+
+// ── BUILD DEFAULT SPRINTS FROM TASKS ─────────────────────────────
+function buildDefaultSprintData(project) {
+  var gantt  = PMHUB.getGanttTasks(projectId);
+  var tasks  = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
+  var config = PMHUB.getTemplate(projectId, 'sprints_config') || {};
+  var durationDays = parseInt(config.duration) || 14;
+  var velocityTarget = 20;
+
+  // Sort tasks by start date
+  var sorted = tasks.filter(function(t){ return t.type !== 'milestone'; })
+    .sort(function(a,b){ return new Date(a.start||a.end) - new Date(b.start||b.end); });
+
+  // Group into sprint-sized chunks based on time windows from project start
+  var sprints = [];
+  if (sorted.length) {
+    var firstDate = new Date(sorted[0].start || sorted[0].end);
+    var lastDate  = new Date(sorted[sorted.length-1].end);
+    var current   = new Date(firstDate);
+    var sprintNum = 1;
+    var today     = new Date(); today.setHours(0,0,0,0);
+
+    while (current <= lastDate && sprintNum <= 12) {
+      var sprintStart = new Date(current);
+      var sprintEnd   = new Date(current);
+      sprintEnd.setDate(sprintEnd.getDate() + durationDays - 1);
+
+      // Tasks in this sprint window
+      var sprintTasks = sorted.filter(function(t) {
+        var te = new Date(t.end); te.setHours(0,0,0,0);
+        var ts = new Date(t.start || t.end); ts.setHours(0,0,0,0);
+        return ts >= sprintStart && ts <= sprintEnd;
+      });
+
+      var pts = sprintTasks.reduce(function(acc, t){ return acc + (t.storyPoints || defaultPoints(t)); }, 0);
+      var donePts = sprintTasks.filter(function(t){ return t.progress >= 100 || t.kanbanStatus === 'done'; })
+                               .reduce(function(acc,t){ return acc + (t.storyPoints || defaultPoints(t)); }, 0);
+
+      var status;
+      if (sprintEnd < today) status = 'closed';
+      else if (sprintStart <= today) status = 'active';
+      else status = 'planned';
+
+      sprints.push({
+        id: sprintNum,
+        name: 'Sprint ' + sprintNum,
+        goal: sprintTasks.length ? 'Livrer : ' + sprintTasks.slice(0,2).map(function(t){ return t.name; }).join(', ') : 'Sprint ' + sprintNum,
+        start: sprintStart.toISOString().slice(0,10),
+        end:   sprintEnd.toISOString().slice(0,10),
+        capacity: Math.max(velocityTarget, pts),
+        completed: status === 'closed' ? donePts : (status === 'active' ? donePts : null),
+        taskIds: sprintTasks.map(function(t){ return t.id; }),
+        status: status
+      });
+      sprintNum++;
+      current.setDate(current.getDate() + durationDays);
+    }
+  }
+
+  if (!sprints.length) {
+    // Fallback: create one active sprint from today
+    var today2 = new Date(); today2.setHours(0,0,0,0);
+    var end2 = new Date(today2); end2.setDate(end2.getDate() + durationDays - 1);
+    sprints.push({ id:1, name:'Sprint 1', goal:'Premier sprint', start:today2.toISOString().slice(0,10), end:end2.toISOString().slice(0,10), capacity:20, completed:null, taskIds:[], status:'active' });
+  }
+
+  return { config: { duration: durationDays, velocity_target: velocityTarget }, sprints: sprints };
+}
+
+function defaultPoints(task) {
+  // Derive story points from task complexity/duration heuristic
+  if (!task.start || !task.end) return 3;
+  var days = Math.round((new Date(task.end) - new Date(task.start)) / 86400000);
+  if (days <= 2) return 2;
+  if (days <= 5) return 3;
+  if (days <= 10) return 5;
+  if (days <= 20) return 8;
+  return 13;
+}
+
+// ── SPRINT SELECTOR ───────────────────────────────────────────────
+// Normalise tous les IDs en entiers pour éviter les bugs string vs number
+function normIds() {
+  sprintData.sprints.forEach(function(s) { s.id = parseInt(s.id) || s.id; });
+}
+
+function populateSprintSelector() {
+  normIds();
+  var sel = document.getElementById('sprintSelector');
+  sel.innerHTML = '';
+  sprintData.sprints.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = String(s.id);
+    opt.textContent = s.name + ' · ' + (s.status === 'active' ? '🟢 En cours' : s.status === 'planned' ? '⏳ Planifié' : '✅ Clôturé');
+    sel.appendChild(opt);
+  });
+  // Default: sprint actif, sinon dernier
+  var active = sprintData.sprints.find(function(s){ return s.status === 'active'; });
+  sel.value = active ? String(active.id) : String(sprintData.sprints[sprintData.sprints.length-1].id);
+  selectedSprintId = parseInt(sel.value);
+}
+
+function onSprintChange() {
+  selectedSprintId = parseInt(document.getElementById('sprintSelector').value);
+  activeSprint = sprintData.sprints.find(function(s){ return parseInt(s.id) === selectedSprintId; });
+  var btnComplete = document.getElementById('btnComplete');
+  var btnReopen   = document.getElementById('btnReopen');
+  var btnDelete   = document.getElementById('btnDelete');
+  if (!activeSprint) { btnComplete.style.display = btnReopen.style.display = btnDelete.style.display = 'none'; renderAll(); return; }
+  btnComplete.style.display = activeSprint.status === 'active'  ? '' : 'none';
+  btnReopen.style.display   = activeSprint.status === 'closed'  ? '' : 'none';
+  btnDelete.style.display   = activeSprint.status !== 'active'  ? '' : 'none';
+  renderAll();
+}
+
+// ── COMPLETE SPRINT ───────────────────────────────────────────────
+function completeSprint() {
+  if (!activeSprint || activeSprint.status !== 'active') return;
+  if (!confirm('Clôturer "' + activeSprint.name + '" ? Cette action est irréversible.')) return;
+  activeSprint.completed = calcDonePoints(activeSprint);
+  activeSprint.status = 'closed';
+  saveSprintData(sprintData);
+  var sid = String(activeSprint.id);
+  populateSprintSelector();
+  document.getElementById('sprintSelector').value = sid;
+  onSprintChange();
+}
+
+// ── REOPEN SPRINT ─────────────────────────────────────────────────
+function reopenSprint() {
+  if (!activeSprint || activeSprint.status !== 'closed') return;
+  // Vérifier qu'il n'y a pas déjà un sprint actif
+  var hasActive = sprintData.sprints.some(function(s){ return s.status === 'active'; });
+  if (hasActive && !confirm('Un sprint est déjà actif. Réouvrir "' + activeSprint.name + '" quand même ?')) return;
+  activeSprint.status = 'active';
+  activeSprint.completed = null;
+  saveSprintData(sprintData);
+  var sid = String(activeSprint.id);
+  populateSprintSelector();
+  document.getElementById('sprintSelector').value = sid;
+  onSprintChange();
+}
+
+// ── DELETE SPRINT ─────────────────────────────────────────────────
+function deleteSprint() {
+  if (!activeSprint || activeSprint.status === 'active') return;
+  if (!confirm('Supprimer "' + activeSprint.name + '" ? Cette action est irréversible.')) return;
+  sprintData.sprints = sprintData.sprints.filter(function(s){ return parseInt(s.id) !== selectedSprintId; });
+  if (!sprintData.sprints.length) {
+    // Créer un sprint vide si on supprime le dernier
+    sprintData.sprints.push({ id:1, name:'Sprint 1', goal:'', start: new Date().toISOString().slice(0,10), end: new Date(Date.now()+13*86400000).toISOString().slice(0,10), capacity:20, completed:null, taskIds:[], status:'planned' });
+  }
+  saveSprintData(sprintData);
+  populateSprintSelector();
+  onSprintChange();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function calcDonePoints(sprint) {
+  var gantt = PMHUB.getGanttTasks(projectId);
+  var tasks = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
+  var sprintTasks = sprint.taskIds && sprint.taskIds.length
+    ? tasks.filter(function(t){ return sprint.taskIds.indexOf(t.id) !== -1; })
+    : tasks.filter(function(t){ var ts = new Date(t.start||t.end); var se = new Date(sprint.start); var ee = new Date(sprint.end); return ts >= se && ts <= ee; });
+  return sprintTasks.filter(function(t){ return t.progress >= 100 || t.kanbanStatus === 'done'; })
+                    .reduce(function(acc,t){ return acc + (t.storyPoints || defaultPoints(t)); }, 0);
+}
+
+function getSprintTasks(sprint) {
+  var gantt = PMHUB.getGanttTasks(projectId);
+  var tasks = Array.isArray(gantt) ? gantt : (gantt && Array.isArray(gantt.tasks) ? gantt.tasks : []);
+  if (sprint.taskIds && sprint.taskIds.length) {
+    return tasks.filter(function(t){ return sprint.taskIds.indexOf(t.id) !== -1; });
+  }
+  return tasks.filter(function(t){
+    if (t.type === 'milestone') return false;
+    var ts = new Date(t.start||t.end); ts.setHours(0,0,0,0);
+    var se = new Date(sprint.start); se.setHours(0,0,0,0);
+    var ee = new Date(sprint.end); ee.setHours(0,0,0,0);
+    return ts >= se && ts <= ee;
+  });
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  return new Date(str).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function priorityColor(p) {
+  if (!p) return 'var(--text-muted)';
+  p = p.toLowerCase();
+  if (p === 'haute' || p === 'high' || p === 'critique' || p === 'critical') return 'var(--danger)';
+  if (p === 'moyenne' || p === 'medium') return 'var(--accent2)';
+  return 'var(--text-muted)';
+}
+
+// ── HELPERS HTML ─────────────────────────────────────────────────
+function sprintStatusBadge(s) {
+  if (s === 'active')  return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--accent);background:rgba(99,210,180,0.1);padding:2px 10px;border-radius:4px;border:1px solid rgba(99,210,180,0.3);">EN COURS</span>';
+  if (s === 'planned') return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text-muted);background:var(--surface2);padding:2px 10px;border-radius:4px;">PLANIFIÉ</span>';
+  return ' <span style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text-muted);">CLÔTURÉ</span>';
+}
+
+function ptsDisplay(t) {
+  if (t.storyPoints) return '<span class="pts-badge">'+t.storyPoints+'</span>';
+  return '<span class="pts-badge estimated" title="Estimé depuis la durée">~'+defaultPoints(t)+'</span>';
+}
+
+function renderSprintBacklogTable(tasks, canEdit) {
+  if (!tasks.length) return '<div class="empty-block">Aucune story — <a href="#" onclick="document.getElementById(\'sprintForm\').scrollIntoView();return false;" style="color:var(--accent);">assignez des tâches depuis le Product Backlog</a>.</div>';
+  var rows = tasks.map(function(t) {
+    var st = (t.kanbanStatus==='done'||t.progress>=100) ? 'done'
+           : (t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100)) ? 'inprogress' : 'todo';
+    var stLabel = st==='done' ? 'Terminé' : st==='inprogress' ? 'En cours' : 'À faire';
+    var removeBtn = canEdit
+      ? '<button onclick="removeFromSprint('+JSON.stringify(t.id)+')" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;" title="Retirer du sprint">✕</button>'
+      : '';
+    return '<tr>'
+      + '<td><div class="story-title">'+escHtml(t.name||'—')+'</div></td>'
+      + '<td>'+ptsDisplay(t)+'</td>'
+      + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
+      + '<td><span class="status-chip '+st+'">'+stLabel+'</span></td>'
+      + '<td>'+removeBtn+'</td>'
+      + '</tr>';
+  }).join('');
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderProductBacklogTable(tasks) {
+  if (!tasks.length) return '<div class="empty-block">Toutes les stories sont assignées à un sprint.</div>';
+  var rows = tasks.map(function(t) {
+    var prio = t.priority || 'medium';
+    var prioLabel = prio==='high'||prio==='haute'||prio==='critique' ? '🔴' : prio==='medium'||prio==='moyenne' ? '🟡' : '🟢';
+    return '<tr>'
+      + '<td><div class="story-title">'+escHtml(t.name||'—')+'</div></td>'
+      + '<td>'+ptsDisplay(t)+'</td>'
+      + '<td style="color:var(--text-soft);font-family:\'DM Mono\',monospace;font-size:11px;">'+escHtml(t.owner||'—')+'</td>'
+      + '<td><span style="font-size:12px;">'+prioLabel+'</span></td>'
+      + '<td><button onclick="addToSprint('+JSON.stringify(t.id)+')" style="background:rgba(99,210,180,.1);border:1px solid rgba(99,210,180,.3);color:var(--accent);cursor:pointer;font-family:\'DM Mono\',monospace;font-size:10px;padding:3px 10px;border-radius:4px;" title="Ajouter au sprint actif">+ Sprint</button></td>'
+      + '</tr>';
+  }).join('');
+  return '<table class="backlog-table"><thead><tr><th>Story</th><th>Pts</th><th>Owner</th><th>Prio</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// ── SPRINT PLANNING ───────────────────────────────────────────────
+function addToSprint(taskId) {
+  if (!activeSprint || activeSprint.status === 'closed') return;
+  // Passer en mode taskIds explicite : seed depuis date-range si vide
+  if (!activeSprint.taskIds || !activeSprint.taskIds.length) {
+    var current = getSprintTasks(activeSprint);
+    activeSprint.taskIds = current.map(function(t){ return t.id; });
+  }
+  if (activeSprint.taskIds.indexOf(taskId) === -1) {
+    activeSprint.taskIds.push(taskId);
+    saveSprintData(sprintData);
+  }
+  renderAll();
+}
+
+function removeFromSprint(taskId) {
+  if (!activeSprint || activeSprint.status === 'closed') return;
+  // Passer en mode taskIds explicite si besoin
+  if (!activeSprint.taskIds || !activeSprint.taskIds.length) {
+    var current = getSprintTasks(activeSprint);
+    activeSprint.taskIds = current.map(function(t){ return t.id; });
+  }
+  activeSprint.taskIds = activeSprint.taskIds.filter(function(id){ return id !== taskId; });
+  saveSprintData(sprintData);
+  renderAll();
+}
+
+function renderDodList(dodItems, done) {
+  return dodItems.map(function(item) {
+    return '<div class="dod-item">'
+      + '<div class="dod-check'+(done?' checked':'')+'">'+(done?'✓':'')+'</div>'
+      + escHtml(item)
+      + '</div>';
+  }).join('');
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────
+function renderAll() {
+  if (!activeSprint) return;
+  var sprint = activeSprint;
+  var tasks  = getSprintTasks(sprint);
+
+  // Fix: getGanttTasks retourne un tableau directement (pas {tasks:[...]})
+  var ganttRaw = PMHUB.getGanttTasks(projectId);
+  var allTasks = Array.isArray(ganttRaw) ? ganttRaw : (ganttRaw && Array.isArray(ganttRaw.tasks) ? ganttRaw.tasks : []);
+
+  var totalPts = tasks.reduce(function(a,t){ return a+(t.storyPoints||defaultPoints(t)); }, 0);
+  var donePts  = sprint.status === 'closed' ? (sprint.completed || 0)
+               : tasks.filter(function(t){ return t.progress>=100||t.kanbanStatus==='done'; })
+                      .reduce(function(a,t){ return a+(t.storyPoints||defaultPoints(t)); }, 0);
+  var inProg = tasks.filter(function(t){ return t.kanbanStatus==='in_progress'||(t.progress>0&&t.progress<100); }).length;
+  var todo   = tasks.filter(function(t){ return t.kanbanStatus==='todo'||(!t.kanbanStatus&&(t.progress||0)===0); }).length;
+
+  var today   = new Date(); today.setHours(0,0,0,0);
+  var spEnd   = new Date(sprint.end);   spEnd.setHours(0,0,0,0);
+  var spStart = new Date(sprint.start); spStart.setHours(0,0,0,0);
+  var totalDays = Math.max(1, Math.round((spEnd - spStart) / 86400000) + 1);
+  var daysGone  = Math.max(0, Math.min(totalDays, Math.round((today - spStart) / 86400000)));
+  var daysLeft  = Math.max(0, Math.round((spEnd - today) / 86400000));
+  var pctTime   = Math.round(daysGone / totalDays * 100);
+  var pctDone   = totalPts > 0 ? Math.round(donePts / totalPts * 100) : 0;
+
+  var closedSprints = sprintData.sprints.filter(function(s){ return s.status === 'closed'; });
+  var avgVelocity = closedSprints.length
+    ? Math.round(closedSprints.reduce(function(a,s){ return a+(s.completed||0); }, 0) / closedSprints.length)
+    : (sprintData.config.velocity_target || 20);
+
+  var dod = PMHUB.getTemplate(projectId, 'definition_of_done');
+  var dodItems = (dod && dod.items && dod.items.length) ? dod.items
+    : ['Tests unitaires ≥ 80% coverage','Code review approuvé','Tests fonctionnels passants','Documentation à jour','Démo Sprint Review réalisée'];
+
+  var assignedIds = sprintData.sprints.reduce(function(acc,s){ return acc.concat(s.taskIds||[]); }, []);
+  var backlogTasks = allTasks.filter(function(t){
+    return t.type !== 'milestone' && assignedIds.indexOf(t.id) === -1 && (t.kanbanStatus === 'todo' || !t.kanbanStatus);
+  });
+
+  var html = '';
+
+  // SPRINT HEADER
+  html += '<div class="sprint-header">';
+  html += '<div class="sprint-info">';
+  html += '<div class="sprint-name">'+escHtml(sprint.name)+sprintStatusBadge(sprint.status)+'</div>';
+  html += '<div class="sprint-goal">'+escHtml(sprint.goal||'Objectif du sprint non défini')+'</div>';
+  html += '<div class="sprint-dates">📅 '+fmtDate(sprint.start)+' → '+fmtDate(sprint.end)+'</div>';
+  html += '<div class="sprint-prog-track"><div class="sprint-prog-fill" style="width:'+pctDone+'%;"></div></div>';
+  html += '<div class="sprint-prog-label"><span>'+donePts+' pts terminés / '+totalPts+' pts total</span><span>'+pctDone+'%</span></div>';
+  html += '</div>';
+  html += '<div class="sprint-stats">';
+  html += '<div class="sprint-counter"><div class="sprint-counter-val">'+(sprint.status==='closed'?'✓':daysLeft)+'</div>';
+  html += '<div class="sprint-counter-label">'+(sprint.status==='closed'?'Clôturé':'Jours restants')+'</div></div>';
+  html += '<div class="sprint-badges">';
+  html += '<span class="sprint-chip">⏱ '+totalDays+'j sprint</span>';
+  html += '<span class="sprint-chip">🎯 '+(sprint.capacity||totalPts)+' pts cible</span>';
+  html += '<span class="sprint-chip">📊 '+pctTime+'% temps écoulé</span>';
+  html += '</div></div></div>';
+
+  // KPIs
+  html += '<div class="grid-kpi">';
+  html += '<div class="kpi g"><div class="kpi-label">Points terminés</div><div class="kpi-val">'+donePts+'</div><div class="kpi-sub">/ '+totalPts+' pts sprint</div></div>';
+  html += '<div class="kpi y"><div class="kpi-label">En cours</div><div class="kpi-val">'+inProg+'</div><div class="kpi-sub">stories actives</div></div>';
+  html += '<div class="kpi b"><div class="kpi-label">À faire</div><div class="kpi-val">'+todo+'</div><div class="kpi-sub">stories restantes</div></div>';
+  html += '<div class="kpi p"><div class="kpi-label">Vélocité moy.</div><div class="kpi-val">'+avgVelocity+'</div><div class="kpi-sub">pts · '+closedSprints.length+' sprint(s)</div></div>';
+  html += '</div>';
+
+  // BURNDOWN + VELOCITY
+  html += '<div class="grid-2">';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Burndown Chart</div><div class="card-sub">'+escHtml(sprint.name)+' — points restants</div></div>';
+  html += '<span class="card-badge" style="color:var(--accent);border-color:rgba(99,210,180,0.3);">'+escHtml(sprint.status==='active'?'Sprint actif':sprint.status==='planned'?'Planifié':'Clôturé')+'</span></div>';
+  html += '<div class="card-body">'+renderBurndownSVG(sprint, tasks, totalPts, daysGone, totalDays);
+  html += '<div class="burndown-legend">';
+  html += '<div class="bd-legend-item"><div class="bd-legend-dot" style="background:var(--accent);"></div>Réel</div>';
+  html += '<div class="bd-legend-item"><div class="bd-legend-dot" style="background:rgba(212,175,100,0.5);"></div>Idéal</div>';
+  html += '</div></div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Vélocité</div><div class="card-sub">Story points terminés par sprint</div></div>';
+  html += '<span class="card-badge" style="color:var(--accent2);border-color:rgba(212,175,100,0.3);">Moy. '+avgVelocity+' pts</span></div>';
+  html += '<div class="card-body">'+renderVelocityChart()+'</div></div>';
+  html += '</div>';
+
+  var canEdit = sprint.status !== 'closed';
+
+  // SPRINT BACKLOG + DOD
+  html += '<div class="grid-2" style="margin-bottom:20px;">';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Backlog du sprint</div><div class="card-sub">'+tasks.length+' stories · '+totalPts+' pts</div></div></div>';
+  html += '<div class="card-body" style="padding:0;">'+renderSprintBacklogTable(tasks, canEdit)+'</div></div>';
+  html += '<div class="card"><div class="card-head"><div><div class="card-title">Definition of Done</div><div class="card-sub">Critères de complétion</div></div></div>';
+  html += '<div class="card-body"><div class="dod-list">'+renderDodList(dodItems, donePts >= totalPts * 0.8)+'</div></div></div>';
+  html += '</div>';
+
+  // PRODUCT BACKLOG (uniquement si sprint non clôturé)
+  if (canEdit) {
+    html += '<div class="card"><div class="card-head"><div><div class="card-title">Product Backlog</div>';
+    html += '<div class="card-sub">'+backlogTasks.length+' tâches non assignées — cliquez "+ Sprint" pour les ajouter</div></div>';
+    html += '<a href="pm-hub-kanban.html?project='+projectId+'" style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent);text-decoration:none;flex-shrink:0;" title="Éditer les story points sur le Kanban">✏ Éditer sur Kanban</a>';
+    html += '</div><div class="card-body" style="padding:0;">'+renderProductBacklogTable(backlogTasks)+'</div></div>';
+  }
+
+  document.getElementById('agileRoot').innerHTML = html;
+}
+
+// ── BURNDOWN SVG ──────────────────────────────────────────────────
+function renderBurndownSVG(sprint, tasks, totalPts, daysGone, totalDays) {
+  var W = 400, H = 180, PL = 36, PR = 12, PT = 10, PB = 28;
+  var w = W - PL - PR, h = H - PT - PB;
+
+  // Ideal line: totalPts → 0 over totalDays
+  var idealX1 = PL, idealY1 = PT;
+  var idealX2 = PL + w, idealY2 = PT + h;
+
+  // Real: derive daily burndown from task completion data
+  // We approximate: for each day, how many pts were "done"
+  var today = new Date(); today.setHours(0,0,0,0);
+  var spStart = new Date(sprint.start); spStart.setHours(0,0,0,0);
+
+  // Build actual burn points day by day
+  var realPoints = []; // array of {day, remaining}
+  var remaining = totalPts;
+  realPoints.push({ day: 0, remaining: remaining });
+
+  for (var d = 1; d <= Math.min(daysGone, totalDays); d++) {
+    var dayDate = new Date(spStart);
+    dayDate.setDate(dayDate.getDate() + d);
+    // Pts done on this day: tasks with end date == this day and progress==100
+    var ptsDoneToday = tasks.filter(function(t) {
+      if (!t.end) return false;
+      var te = new Date(t.end); te.setHours(0,0,0,0);
+      return te.getTime() === dayDate.getTime() && (t.progress >= 100 || t.kanbanStatus === 'done');
+    }).reduce(function(acc,t){ return acc + (t.storyPoints||defaultPoints(t)); }, 0);
+    remaining = Math.max(0, remaining - ptsDoneToday);
+    realPoints.push({ day: d, remaining: remaining });
+  }
+
+  var xScale = function(day) { return PL + (day / totalDays) * w; };
+  var yScale = function(pts) { return PT + h - (pts / Math.max(totalPts, 1)) * h; };
+
+  // Real path
+  var realPath = realPoints.map(function(p, i) {
+    return (i===0?'M':'L') + xScale(p.day).toFixed(1) + ' ' + yScale(p.remaining).toFixed(1);
+  }).join(' ');
+
+  // Axis labels (protection contre totalDays/totalPts = 0 → boucle infinie)
+  var xLabels = '';
+  var step = Math.max(1, Math.ceil(totalDays / 5));
+  for (var i = 0; i <= totalDays; i += step) {
+    var x = xScale(i);
+    xLabels += '<text x="'+x.toFixed(0)+'" y="'+(H-6)+'" text-anchor="middle" font-family="DM Mono" font-size="8" fill="var(--text-muted)">J'+i+'</text>';
+  }
+  var yLabels = '';
+  var ystep = Math.max(1, Math.ceil(totalPts / 4));
+  for (var j = 0; j <= totalPts; j += ystep) {
+    var y = yScale(j);
+    yLabels += '<text x="'+(PL-4)+'" y="'+(y+3).toFixed(0)+'" text-anchor="end" font-family="DM Mono" font-size="8" fill="var(--text-muted)">'+j+'</text>';
+  }
+
+  return '<svg viewBox="0 0 '+W+' '+H+'" class="burndown-svg">'
+    + '<line x1="'+PL+'" y1="'+PT+'" x2="'+PL+'" y2="'+(PT+h)+'" stroke="var(--border)" stroke-width="1"/>'
+    + '<line x1="'+PL+'" y1="'+(PT+h)+'" x2="'+(PL+w)+'" y2="'+(PT+h)+'" stroke="var(--border)" stroke-width="1"/>'
+    + xLabels + yLabels
+    + '<line x1="'+idealX1+'" y1="'+idealY1+'" x2="'+idealX2+'" y2="'+idealY2+'" stroke="rgba(212,175,100,0.35)" stroke-width="1.5" stroke-dasharray="5,4"/>'
+    + (realPoints.length > 1 ? '<path d="'+realPath+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' : '')
+    + (realPoints.length > 0 ? '<circle cx="'+xScale(realPoints[realPoints.length-1].day).toFixed(1)+'" cy="'+yScale(realPoints[realPoints.length-1].remaining).toFixed(1)+'" r="4" fill="var(--accent)"/>' : '')
+    + '</svg>';
+}
+
+// ── VELOCITY CHART ────────────────────────────────────────────────
+function renderVelocityChart() {
+  var allSprints = sprintData.sprints;
+  if (!allSprints.length) return '<div class="empty-block">Aucun sprint.</div>';
+
+  var maxPts = Math.max.apply(null, allSprints.map(function(s){ return Math.max(s.capacity||0, s.completed||0); })) || 1;
+  var maxH = 100;
+  var avgVel = 0;
+  var closedCount = allSprints.filter(function(s){ return s.status==='closed'; }).length;
+  if (closedCount) {
+    var sum = allSprints.filter(function(s){ return s.status==='closed'; }).reduce(function(a,s){ return a+(s.completed||0); }, 0);
+    avgVel = sum / closedCount;
+  }
+
+  var bars = allSprints.map(function(s) {
+    var pts = s.status === 'closed' ? (s.completed || 0) : (s.capacity || 0);
+    var h = Math.max(4, Math.round((pts / maxPts) * maxH));
+    var color = s.status === 'closed' ? 'var(--accent)' : s.status === 'active' ? 'var(--accent3)' : 'var(--surface3)';
+    var extra = s.status === 'active' ? ' active-sprint' : '';
+    return '<div class="vel-col"><div class="vel-bar'+extra+'" style="height:'+h+'px;background:'+color+';" data-val="'+pts+'"></div><div class="vel-label">'+s.name.replace('Sprint ','S')+'</div></div>';
+  }).join('');
+
+  var avgPct = avgVel > 0 ? Math.round((avgVel / maxPts) * maxH) : 0;
+
+  return '<div style="position:relative;">'
+    + '<div class="velocity-bars">' + bars + '</div>'
+    + (avgPct > 0 ? '<div class="vel-avg-line" style="bottom:'+(avgPct+4)+'px;"></div>' : '')
+    + '</div>'
+    + '<div style="margin-top:8px;font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted);">'
+    + '— Cible vélocité : <span style="color:var(--accent2);">'+(sprintData.config.velocity_target||20)+' pts</span>'
+    + (closedCount ? ' · Moy. réelle : <span style="color:var(--accent);">'+Math.round(avgVel)+' pts</span>' : '')
+    + '</div>';
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function openModal() {
+  try {
+    if (!sprintData || !sprintData.sprints) {
+      if (projectId) loadAndRender();
+      if (!sprintData || !sprintData.sprints) {
+        alert('Sélectionnez d\'abord un projet Agile ou Hybride.');
+        return;
+      }
+    }
+    var today = new Date().toISOString().slice(0,10);
+    var last = sprintData.sprints[sprintData.sprints.length-1];
+    var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
+    var nextNum = maxId + 1;
+    // Détecter le préfixe utilisé par les sprints existants
+    var sprintPrefix = 'Sprint';
+    if (sprintData.sprints.length > 0) {
+      var firstName = sprintData.sprints[0].name || '';
+      var m = firstName.match(/^([A-ZÀ-Ÿa-zà-ÿ]+\s*[A-ZÀ-Ÿa-zà-ÿ]*)\s*\d/);
+      if (m) sprintPrefix = m[1].trim();
+    }
+    var startDate = today;
+    if (last && last.end) {
+      var d = new Date(last.end); d.setDate(d.getDate()+1);
+      startDate = d.toISOString().slice(0,10);
+    }
+    var dur = (sprintData.config && sprintData.config.duration) ? sprintData.config.duration : 14;
+    var endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + dur - 1);
+
+    document.getElementById('mSprintName').value  = sprintPrefix + ' ' + nextNum;
+    document.getElementById('mSprintGoal').value  = '';
+    document.getElementById('mSprintStart').value = startDate;
+    document.getElementById('mSprintEnd').value   = endDate.toISOString().slice(0,10);
+    document.getElementById('mSprintCap').value   = (sprintData.config && sprintData.config.velocity_target) || 20;
+
+    var form = document.getElementById('sprintForm');
+    form.classList.add('open');
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(function(){ var el = document.getElementById('mSprintName'); if(el) el.focus(); }, 100);
+  } catch(e) {
+    alert('Erreur openModal : ' + e.message);
+  }
+}
+function closeModal() {
+  document.getElementById('sprintForm').classList.remove('open');
+}
+function saveSprint() {
+  try {
+    var nameVal  = document.getElementById('mSprintName').value.trim();
+    var startVal = document.getElementById('mSprintStart').value;
+    var endVal   = document.getElementById('mSprintEnd').value;
+    if (!startVal || !endVal) { alert('Les dates sont obligatoires.'); return; }
+    var today = new Date(); today.setHours(0,0,0,0);
+    var start = new Date(startVal); start.setHours(0,0,0,0);
+    var end   = new Date(endVal);   end.setHours(0,0,0,0);
+    if (end < start) { alert('La date de fin doit être après la date de début.'); return; }
+    var status = end < today ? 'closed' : start <= today ? 'active' : 'planned';
+    var maxId = sprintData.sprints.reduce(function(m,s){ return Math.max(m, parseInt(s.id)||0); }, 0);
+    var newId = maxId + 1;
+    var newSprint = {
+      id:        newId,
+      name:      nameVal || ('Sprint ' + newId),
+      goal:      document.getElementById('mSprintGoal').value,
+      start:     startVal,
+      end:       endVal,
+      capacity:  parseInt(document.getElementById('mSprintCap').value) || 20,
+      completed: status === 'closed' ? 0 : null,
+      taskIds:   [],
+      status:    status
+    };
+    sprintData.sprints.push(newSprint);
+    saveSprintData(sprintData);
+    closeModal();
+    populateSprintSelector();
+    var sel = document.getElementById('sprintSelector');
+    sel.value = String(newId);
+    selectedSprintId = newId;
+    activeSprint = newSprint;
+    document.getElementById('btnComplete').style.display = status === 'active' ? '' : 'none';
+    document.getElementById('btnReopen').style.display   = status === 'closed' ? '' : 'none';
+    document.getElementById('btnDelete').style.display   = status !== 'active' ? '' : 'none';
+    renderAll();
+  } catch(e) {
+    alert('Erreur saveSprint : ' + e.message);
+  }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Fermer le formulaire avec Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+<div id="ai-suggestions-bar"></div>
+<script src="pmhub-ai-suggestions.js"></script>
+</body>
+</html>

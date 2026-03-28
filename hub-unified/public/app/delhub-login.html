@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub — Connexion</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow);
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.login-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+.login-logo-text {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.login-logo-version {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.login-title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.login-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 28px;
+}
+.login-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+  background: transparent;
+}
+.login-tab.active {
+  background: var(--surface3);
+  color: var(--text);
+}
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+.form-select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+}
+.form-select option { background: var(--surface); color: var(--text); }
+.btn-primary {
+  width: 100%;
+  background: var(--primary);
+  color: #0B0F19;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all var(--transition);
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.login-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--danger);
+  margin-top: 12px;
+  display: none;
+}
+.login-success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--success);
+  margin-top: 12px;
+  display: none;
+}
+.login-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+.role-selector {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 16px;
+  display: none;
+}
+.role-selector-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+.role-option:hover { border-color: var(--primary); background: rgba(45, 212, 191, 0.05); }
+.role-option.selected { border-color: var(--primary); background: rgba(45, 212, 191, 0.1); }
+.role-option-icon { font-size: 18px; }
+.role-option-label { font-weight: 600; }
+.role-option-desc { font-size: 0.75rem; color: var(--text-muted); }
+.orb { position:fixed; border-radius:50%; filter:blur(130px); pointer-events:none; z-index:0; }
+.orb-1 { width:500px; height:500px; background:rgba(45,212,191,0.05); top:-150px; right:-100px; }
+.orb-2 { width:400px; height:400px; background:rgba(16,185,129,0.04); bottom:50px; left:-100px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="login-logo-dot"></div>
+      <div>
+        <div class="login-logo-text">Hub Platform</div>
+        <div class="login-logo-version">v1.0 · Delivery & Business</div>
+      </div>
+    </div>
+
+    <div class="login-title" id="loginTitle">Connexion</div>
+    <div class="login-subtitle" id="loginSubtitle">Accédez à votre espace de pilotage</div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tabLogin" onclick="switchTab('login')">Connexion</button>
+      <button class="login-tab" id="tabSignup" onclick="switchTab('signup')">Créer un compte</button>
+    </div>
+
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="loginEmail" placeholder="vous@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" id="btnLogin" onclick="doLogin()">Se connecter</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+
+    <div id="signupForm" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="signupEmail" placeholder="vous@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="signupPassword" placeholder="Minimum 6 caractères" autocomplete="new-password">
+      </div>
+
+      <!-- Role selector for signup -->
+      <div class="form-group">
+        <label class="form-label">Votre rôle</label>
+        <select class="form-select" id="signupRole">
+          <option value="pm">Chef de Projet</option>
+          <option value="delivery">Delivery Manager</option>
+          <option value="business">Business Manager</option>
+          <option value="sales">Sales / Commercial</option>
+          <option value="head">Head / C-Level</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="btnSignup" onclick="doSignup()">Créer mon compte</button>
+      <div class="login-error" id="signupError"></div>
+      <div class="login-success" id="signupSuccess"></div>
+    </div>
+
+    <div class="login-footer">Hub Platform · Abdelhakim Nechniche · PMP® · PRINCE2 7th</div>
+  </div>
+</div>
+
+<script>
+  var _sbClient = null;
+
+  function getClient() {
+    if (!_sbClient) {
+      _sbClient = window.supabase.createClient(
+        'https://fznbkseaycjgmnxgrhiq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bmJrc2VheWNqZ21ueGdyaGlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDI4NDQsImV4cCI6MjA4OTUxODg0NH0.Tf88eFwXR5gp6xkZDzSASdESRm1i8HYUspezF5jLnkw',
+        { auth: { persistSession: true, autoRefreshToken: true } }
+      );
+    }
+    return _sbClient;
+  }
+
+  // Check if already logged in → redirect based on role
+  getClient().auth.getSession().then(function (r) {
+    if (r.data.session) {
+      redirectByRole();
+    }
+  });
+
+  function redirectByRole() {
+    var profile = {};
+    try { profile = JSON.parse(localStorage.getItem('delhub_profile') || '{}'); } catch(e) {}
+    var role = profile.role || '';
+
+    if (role === 'pm') {
+      window.location.href = '../hub/pm-hub.html';
+    } else if (role) {
+      window.location.href = 'delhub-dashboard.html';
+    } else {
+      // No role set yet — show role selector
+      window.location.href = 'delhub-dashboard.html';
+    }
+  }
+
+  function switchTab(tab) {
+    var isLogin = tab === 'login';
+    document.getElementById('tabLogin').classList.toggle('active', isLogin);
+    document.getElementById('tabSignup').classList.toggle('active', !isLogin);
+    document.getElementById('loginForm').style.display   = isLogin ? '' : 'none';
+    document.getElementById('signupForm').style.display  = isLogin ? 'none' : '';
+    document.getElementById('loginTitle').textContent    = isLogin ? 'Connexion' : 'Créer un compte';
+    document.getElementById('loginSubtitle').textContent = isLogin
+      ? 'Accédez à votre espace de pilotage'
+      : 'Commencez à piloter votre activité';
+  }
+
+  function showError(id, msg) {
+    var el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function clearMessages() {
+    ['loginError', 'signupError', 'signupSuccess'].forEach(function (id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  function doLogin() {
+    clearMessages();
+    var email    = document.getElementById('loginEmail').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    var btn      = document.getElementById('btnLogin');
+    if (!email || !password) { showError('loginError', 'Veuillez remplir tous les champs.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Connexion…';
+
+    getClient().auth.signInWithPassword({ email: email, password: password })
+      .then(function (r) {
+        if (r.error) throw r.error;
+
+        // Load profile from cloud to get role
+        return getClient()
+          .from('pmhub_data')
+          .select('value')
+          .eq('user_id', r.data.user.id)
+          .eq('key', 'delhub_profile')
+          .single()
+          .then(function(profileRes) {
+            if (profileRes.data && profileRes.data.value) {
+              localStorage.setItem('delhub_profile', JSON.stringify(profileRes.data.value));
+            }
+            redirectByRole();
+          })
+          .catch(function() {
+            // No profile in cloud yet — redirect to dashboard (will use default role)
+            redirectByRole();
+          });
+      })
+      .catch(function (err) {
+        showError('loginError', err.message || 'Identifiants incorrects.');
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
+      });
+  }
+
+  function doSignup() {
+    clearMessages();
+    var email    = document.getElementById('signupEmail').value.trim();
+    var password = document.getElementById('signupPassword').value;
+    var role     = document.getElementById('signupRole').value;
+    var btn      = document.getElementById('btnSignup');
+    if (!email || !password) { showError('signupError', 'Veuillez remplir tous les champs.'); return; }
+    if (password.length < 6)  { showError('signupError', 'Le mot de passe doit contenir au moins 6 caractères.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Création…';
+
+    getClient().auth.signUp({ email: email, password: password })
+      .then(function (r) {
+        if (r.error) throw r.error;
+
+        // Save role to profile
+        var profile = { name: email.split('@')[0], email: email, role: role, org: '' };
+        localStorage.setItem('delhub_profile', JSON.stringify(profile));
+
+        // If user is confirmed immediately, save to cloud
+        if (r.data.user && !r.data.user.email_confirmed_at) {
+          var success = document.getElementById('signupSuccess');
+          success.textContent = 'Compte créé ! Vérifiez votre email pour confirmer, puis connectez-vous.';
+          success.style.display = 'block';
+        } else {
+          // Auto-confirmed, save to cloud and redirect
+          getClient().from('pmhub_data').upsert({
+            user_id: r.data.user.id,
+            key: 'delhub_profile',
+            value: profile,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,key' });
+          redirectByRole();
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Créer mon compte';
+      })
+      .catch(function (err) {
+        showError('signupError', err.message || 'Erreur lors de la création du compte.');
+        btn.disabled = false;
+        btn.textContent = 'Créer mon compte';
+      });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var isLoginVisible = document.getElementById('loginForm').style.display !== 'none';
+    if (isLoginVisible) doLogin(); else doSignup();
+  });
+</script>
+</body>
+</html>

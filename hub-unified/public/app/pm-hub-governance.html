@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Gouvernance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;opacity:.35;}
+nav{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;margin-top:0;}
+.main-col{display:flex;flex-direction:column;overflow:hidden;height:100%;min-height:0;}
+
+/* ── TOP BAR ─────────────────────────────────────────── */
+.gov-bar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
+.gov-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;min-width:240px;outline:none;cursor:pointer;}
+.gov-bar select:focus{border-color:var(--accent);}
+.gov-badge{font-family:'DM Mono',monospace;font-size:9px;padding:3px 9px;border-radius:20px;}
+
+/* ── KPI STRIP ───────────────────────────────────────── */
+.gov-kpis{display:flex;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;}
+.gkpi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 6px;border-right:1px solid var(--border);cursor:default;transition:background .15s;min-width:0;}
+.gkpi:last-child{border-right:none;}
+.gkpi:hover{background:var(--surface2);}
+.gkpi-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;line-height:1;white-space:nowrap;}
+.gkpi-lbl{font-family:'DM Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-top:2px;text-align:center;}
+
+/* ── SCROLL ──────────────────────────────────────────── */
+.gov-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;padding-bottom:90px;min-height:0;}
+.gov-scroll::-webkit-scrollbar{width:5px;}
+.gov-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+
+/* ── TABS ────────────────────────────────────────────── */
+.tabs-row{display:flex;gap:3px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+.gtab{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .2s;margin-bottom:-1px;white-space:nowrap;}
+.gtab:hover{color:var(--text);}
+.gtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.gtab-count{display:inline-block;font-size:8px;padding:1px 5px;border-radius:8px;margin-left:5px;vertical-align:middle;}
+
+/* ── SECTION HEADER ──────────────────────────────────── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sec-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);}
+.sec-btn{display:flex;align-items:center;gap:5px;background:var(--accent);color:#060a0d;padding:6px 13px;border-radius:5px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:none;cursor:pointer;transition:opacity .2s;}
+.sec-btn:hover{opacity:.85;}
+.sec-btn.secondary{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.sec-btn.secondary:hover{border-color:var(--accent);color:var(--text);}
+
+/* ── TABLES ──────────────────────────────────────────── */
+.gov-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:20px;}
+.gov-table{width:100%;border-collapse:collapse;min-width:700px;}
+.gov-table th{font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:left;white-space:nowrap;}
+.gov-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;vertical-align:top;}
+.gov-table tr:last-child td{border-bottom:none;}
+.gov-table tr:hover td{background:var(--surface2);}
+
+/* Committee types */
+.com-type{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:.06em;white-space:nowrap;}
+.com-copil{background:rgba(124,58,237,.12);color:#a78bfa;border:1px solid rgba(124,58,237,.25);}
+.com-coproj{background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);}
+.com-revue{background:rgba(245,158,11,.1);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.com-kickoff{background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.2);}
+.com-cloture{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+/* Status badges */
+.st-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:3px;white-space:nowrap;cursor:pointer;}
+.st-planifie{background:rgba(122,184,232,.1);color:var(--accent3);border:1px solid rgba(122,184,232,.2);}
+.st-tenu{background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.15);}
+.st-annule{background:rgba(239,68,68,.09);color:var(--danger);border:1px solid rgba(239,68,68,.18);}
+.st-open{background:rgba(239,68,68,.08);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+.st-progress{background:rgba(122,184,232,.08);color:var(--accent3);border:1px solid rgba(122,184,232,.2);}
+.st-watch{background:rgba(245,158,11,.08);color:var(--accent2);border:1px solid rgba(245,158,11,.2);}
+.st-closed{background:rgba(34,197,94,.06);color:var(--accent);border:1px solid rgba(99,210,180,.15);}
+/* Inline edit */
+.g-input{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:100%;min-width:50px;}
+.g-textarea{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;resize:vertical;width:100%;min-height:44px;}
+.g-select{background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;cursor:pointer;width:100%;}
+.g-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-size:10px;transition:all .15s;flex-shrink:0;}
+.g-btn:hover{border-color:var(--accent);color:var(--accent);}
+.g-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.g-btn.save{background:var(--accent);border-color:var(--accent);color:#060a0d;font-weight:700;}
+.g-btns{display:flex;gap:4px;}
+/* Overdue */
+.g-date-late{color:var(--danger);}
+.g-overdue{font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.12);color:var(--danger);margin-left:5px;}
+
+/* ── RACI MATRIX ─────────────────────────────────────── */
+.raci-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:16px;}
+.raci-table{border-collapse:collapse;}
+.raci-table th{font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:8px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--surface2);text-align:center;white-space:nowrap;}
+.raci-table th.del-col{text-align:left;min-width:180px;position:sticky;left:0;z-index:2;background:var(--surface2);}
+.raci-table td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;}
+.raci-table td:last-child,.raci-table th:last-child{border-right:none;}
+.raci-table tr:last-child td{border-bottom:none;}
+.raci-del-cell{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;padding:9px 12px;min-width:180px;position:sticky;left:0;background:var(--surface);z-index:1;}
+.raci-del-cell:hover{background:var(--surface2);}
+.raci-cell{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;user-select:none;}
+.raci-cell:hover{background:var(--surface2);}
+.raci-R{background:rgba(34,197,94,.15)!important;color:var(--success);font-weight:700;}
+.raci-A{background:rgba(99,210,180,.15)!important;color:var(--accent);font-weight:700;}
+.raci-C{background:rgba(245,158,11,.12)!important;color:var(--accent2);font-weight:700;}
+.raci-I{background:rgba(122,184,232,.12)!important;color:var(--accent3);font-weight:700;}
+.raci-cell-label{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.05em;}
+.raci-empty{color:var(--surface3);font-size:16px;}
+.raci-res-id{font-family:'DM Mono',monospace;font-size:9px;}
+.raci-res-name{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-muted);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.raci-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;}
+.raci-leg-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text-soft);}
+.raci-leg-badge{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.add-del-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);}
+.add-del-input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;flex:1;transition:border-color .2s;}
+.add-del-input:focus{border-color:var(--accent);}
+.add-del-btn{background:var(--accent);color:#060a0d;padding:6px 12px;border-radius:5px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface2);border:1px solid rgba(99,210,180,.3);border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:11px;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.ai-float-btn{position:fixed;bottom:28px;right:28px;z-index:350;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4cbda0);color:#060a0d;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 24px rgba(99,210,180,.3);transition:transform .2s;}
+.ai-float-btn:hover{transform:scale(1.08);}
+.empty-state{text-align:center;padding:48px 20px;font-family:'DM Mono',monospace;color:var(--text-muted);font-size:11px;line-height:1.8;}
+@media print{nav,.gov-bar,.gov-kpis,.tabs-row,.sec-btn,.ai-float-btn{display:none!important;}.main-col{height:auto;overflow:visible;}.gov-scroll{overflow:visible;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="pm-hub.html" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="window.print()" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);background:transparent;border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;">🖨 Imprimer</button>
+    <a href="pm-hub-settings.html" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;border-radius:5px;" title="Paramètres">⚙</a>
+  </div>
+</nav>
+
+<a href="pm-hub-ai.html?from=Gouvernance" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="toast" id="toast"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+
+    <!-- TOP BAR -->
+    <div class="gov-bar">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0;">Projet :</span>
+      <select id="projectSelect" onchange="switchProject(parseInt(this.value))"></select>
+      <span class="gov-badge" id="projectBadge"></span>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="gov-kpis">
+      <div class="gkpi"><span class="gkpi-val" id="k_com" style="color:#a78bfa">—</span><span class="gkpi-lbl">Comités</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_tenus" style="color:var(--success)">—</span><span class="gkpi-lbl">Tenus</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_dec" style="color:var(--accent)">—</span><span class="gkpi-lbl">Décisions</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_act" style="color:var(--accent2)">—</span><span class="gkpi-lbl">Actions ouvertes</span></div>
+      <div class="gkpi"><span class="gkpi-val" id="k_late" style="color:var(--danger)">—</span><span class="gkpi-lbl">En retard</span></div>
+    </div>
+
+    <!-- SCROLL -->
+    <div class="gov-scroll" id="govScroll">
+
+      <!-- TABS -->
+      <div class="tabs-row">
+        <div class="gtab active" id="tab-comites"   onclick="setTab('comites')">Comités<span class="gtab-count" id="tc-comites" style="background:rgba(124,58,237,.12);color:#a78bfa;"></span></div>
+        <div class="gtab"        id="tab-decisions" onclick="setTab('decisions')">Décisions<span class="gtab-count" id="tc-decisions" style="background:rgba(99,210,180,.1);color:var(--accent);"></span></div>
+        <div class="gtab"        id="tab-actions"   onclick="setTab('actions')">Actions<span class="gtab-count" id="tc-actions" style="background:rgba(245,158,11,.1);color:var(--accent2);"></span></div>
+        <div class="gtab"        id="tab-raci"        onclick="setTab('raci')">RACI</div>
+        <div class="gtab"        id="tab-changements" onclick="setTab('changements')">Changements<span class="gtab-count" id="tc-changements" style="background:rgba(239,68,68,.1);color:var(--danger);"></span></div>
+        <div class="gtab"        id="tab-hypotheses"  onclick="setTab('hypotheses')">Hypothèses<span class="gtab-count" id="tc-hypotheses" style="background:rgba(245,158,11,.08);color:var(--accent2);"></span></div>
+        <div class="gtab"        id="tab-lessons"     onclick="setTab('lessons')">Leçons apprises</div>
+      </div>
+
+      <!-- TAB CONTENT -->
+      <div id="tabContent"></div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+var currentProject = null;
+var currentTab = 'comites';
+
+var COM_TYPES  = ['COPIL','COPROJ','Revue technique','Revue qualité','Kick-off','Clôture','Autre'];
+var COM_STATUS = { planifie:'Planifié', tenu:'Tenu', annule:'Annulé' };
+var COM_CYCLE  = { planifie:'tenu', tenu:'annule', annule:'planifie' };
+var ACT_CYCLE  = { open:'progress', progress:'watch', watch:'closed', closed:'open' };
+var DEC_CYCLE  = { open:'closed', closed:'open' };
+
+var SEED_COMMITTEES = [
+  { id:1, type:'Kick-off',        date:'2026-01-05', participants:'CdP, MOA, DSI, Équipe', agenda:'Lancement officiel — objectifs, planning, organisation', cr:'Charte signée. Planning approuvé. Équipe constituée.',      status:'tenu'     },
+  { id:2, type:'COPIL',           date:'2026-02-12', participants:'Direction, CdP, MOA',   agenda:'Point avancement M1-M2 — jalons, budget, risques',       cr:'Avancement conforme. Risque RR-001 escaladé à la direction.', status:'tenu'     },
+  { id:3, type:'COPROJ',          date:'2026-03-18', participants:'CdP, Équipe technique', agenda:'Revue technique phase 2 — architecture, déploiement',     cr:'',                                                           status:'planifie' },
+  { id:4, type:'COPIL',           date:'2026-04-15', participants:'Direction, CdP, MOA',   agenda:'Bilan Q1 — arbitrages budget et périmètre',               cr:'',                                                           status:'planifie' },
+];
+var CR_TYPES   = ['Périmètre','Délai','Budget','Qualité','Risque','Ressources','Autre'];
+var CR_DEC     = { pending:'En attente', approved:'Approuvé', rejected:'Refusé', deferred:'Différé' };
+var CR_DEC_CYC = { pending:'approved', approved:'rejected', rejected:'deferred', deferred:'pending' };
+var CR_ST      = { draft:'Brouillon', submitted:'Soumis', in_review:'En revue', implemented:'Implémenté', cancelled:'Annulé' };
+var CR_ST_CYC  = { draft:'submitted', submitted:'in_review', in_review:'implemented', implemented:'cancelled', cancelled:'draft' };
+var HYP_CATS   = ['Technique','Budget','Planning','Équipe','Externe','Qualité','Autre'];
+var HYP_ST     = { valid:'Valide', invalid:'Invalidée', unknown:'À vérifier' };
+var HYP_ST_CYC = { valid:'invalid', invalid:'unknown', unknown:'valid' };
+var LL_CATS    = ['Risque','Planning','Équipe','Technique','Budget','Communication','Gouvernance','Autre'];
+
+var SEED_CHANGES = [
+  { id:'CR-001', title:'Extension périmètre — module reporting', type:'Périmètre', desc:'Le client demande l\'ajout d\'un module de reporting avancé non prévu initialement dans la charte projet.', requestor:'MOA', date:'2026-02-15', impact:'+15 j, +8 000 €', priority:'high', decision:'approved', status:'implemented' },
+  { id:'CR-002', title:'Report jalon V2 de 2 semaines', type:'Délai', desc:'Retard fournisseur sur les licences logicielles. Report du jalon V2 rendu nécessaire.', requestor:'CdP', date:'2026-03-10', impact:'+14 j calendaires, pas d\'impact budget', priority:'medium', decision:'approved', status:'implemented' },
+  { id:'CR-003', title:'Réduction budget infra de 10%', type:'Budget', desc:'Direction demande une optimisation budgétaire suite à la révision annuelle des dépenses IT.', requestor:'Direction', date:'2026-03-20', impact:'Scope infra à réviser, risque qualité élevé', priority:'high', decision:'pending', status:'submitted' },
+];
+var SEED_ASSUMPTIONS = [
+  { id:'H-001', desc:'Les ressources clés seront disponibles à 80% pendant toute la durée du projet', owner:'CdP', category:'Équipe', status:'valid', impact:'Retard planning +20-30% si invalidée', verifiedDate:'2026-01-05' },
+  { id:'H-002', desc:'Le budget alloué couvre l\'intégralité du périmètre défini dans la charte', owner:'MOA', category:'Budget', status:'valid', impact:'Demande de changement CR nécessaire si invalidée', verifiedDate:'2026-01-05' },
+  { id:'H-003', desc:'L\'environnement de production sera disponible 4 semaines avant la mise en service', owner:'DSI', category:'Technique', status:'unknown', impact:'Décalage des tests d\'acceptance et de la date de mise en production', verifiedDate:'' },
+];
+var SEED_LESSONS = [
+  { id:'LL-001', category:'Planning', phase:'Initialisation', desc:'Le découpage en lots ≤10 jours a facilité le suivi et réduit l\'incertitude', impact:'Vélocité +15% vs projets similaires', recommendation:'Appliquer systématiquement la décomposition WBS en lots courts', owner:'CdP', date:'2026-02-20' },
+  { id:'LL-002', category:'Risque', phase:'Exécution', desc:'Absence de clause contractuelle sur les délais fournisseur — retard non anticipé', impact:'Retard de 2 semaines sur jalon V2', recommendation:'Inclure systématiquement des SLA fournisseurs dans les contrats', owner:'CdP', date:'2026-03-10' },
+];
+
+var SEED_RACI_ROWS = [
+  { id:1, label:'Initialisation & Cadrage'    },
+  { id:2, label:'Planification détaillée'     },
+  { id:3, label:'Développement / Exécution'   },
+  { id:4, label:'Tests & Validation'          },
+  { id:5, label:'Déploiement & Mise en prod.' },
+  { id:6, label:'Clôture & REX'               },
+];
+
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+function getCommittees() {
+  try { var r = JSON.parse(localStorage.getItem('pmhub_committees_' + currentProject)); return r || JSON.parse(JSON.stringify(SEED_COMMITTEES)); }
+  catch(e) { return JSON.parse(JSON.stringify(SEED_COMMITTEES)); }
+}
+function saveCommittees(d) { localStorage.setItem('pmhub_committees_' + currentProject, JSON.stringify(d)); }
+
+function getRaciData() {
+  try { var r = JSON.parse(localStorage.getItem('pmhub_raci_' + currentProject)); return r || { rows: JSON.parse(JSON.stringify(SEED_RACI_ROWS)), cells: {} }; }
+  catch(e) { return { rows: JSON.parse(JSON.stringify(SEED_RACI_ROWS)), cells: {} }; }
+}
+function saveRaci(d) { localStorage.setItem('pmhub_raci_' + currentProject, JSON.stringify(d)); }
+
+function getRaidData() {
+  return (typeof PMHUB !== 'undefined') ? PMHUB.getRaids(currentProject) : { actions:[], decisions:[] };
+}
+function saveRaidData(d) { if (typeof PMHUB !== 'undefined') PMHUB.saveRaids(currentProject, d); }
+
+function getChanges() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_changes_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_CHANGES)); } catch(e) { return JSON.parse(JSON.stringify(SEED_CHANGES)); }
+}
+function saveChanges(d) { localStorage.setItem('pmhub_changes_'+currentProject, JSON.stringify(d)); }
+function getAssumptions() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_assumptions_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_ASSUMPTIONS)); } catch(e) { return JSON.parse(JSON.stringify(SEED_ASSUMPTIONS)); }
+}
+function saveAssumptions(d) { localStorage.setItem('pmhub_assumptions_'+currentProject, JSON.stringify(d)); }
+function getLessons() {
+  try { var r=JSON.parse(localStorage.getItem('pmhub_lessons_'+currentProject)); return r||JSON.parse(JSON.stringify(SEED_LESSONS)); } catch(e) { return JSON.parse(JSON.stringify(SEED_LESSONS)); }
+}
+function saveLessons(d) { localStorage.setItem('pmhub_lessons_'+currentProject, JSON.stringify(d)); }
+
+function getResources() {
+  return (typeof PMHUB !== 'undefined' && PMHUB.getResources) ? PMHUB.getResources() : [];
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d || d === '—') return '—';
+  var ms = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  var p = d.split('-');
+  return parseInt(p[2]) + ' ' + ms[parseInt(p[1])-1] + ' ' + p[0];
+}
+function isOverdue(item) {
+  if (!item.due || item.due === '—') return false;
+  return new Date(item.due) < new Date() && item.status !== 'closed' && item.status !== 'obsolete';
+}
+function daysLate(item) { return Math.round((new Date() - new Date(item.due)) / 86400000); }
+function comTypeClass(t) {
+  var m = { COPIL:'com-copil', COPROJ:'com-coproj', 'Revue technique':'com-revue', 'Revue qualité':'com-revue', 'Kick-off':'com-kickoff', Clôture:'com-cloture' };
+  return m[t] || 'com-revue';
+}
+function statusLabel(s) { var m={open:'Ouvert',progress:'En cours',watch:'Surveillance',closed:'Clôturé'}; return m[s]||s; }
+function statusClass(s) { var m={open:'st-open',progress:'st-progress',watch:'st-watch',closed:'st-closed'}; return m[s]||'st-open'; }
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(function() { t.classList.remove('show'); }, 2400);
+}
+
+// ══════════════════════════════════════════════════════
+// KPIs
+// ══════════════════════════════════════════════════════
+function updateKPIs() {
+  var coms  = getCommittees();
+  var raid  = getRaidData();
+  var acts  = raid.actions  || [];
+  var decs  = raid.decisions || [];
+  var tenus = coms.filter(function(c) { return c.status === 'tenu'; }).length;
+  var openA = acts.filter(function(a) { return a.status !== 'closed'; }).length;
+  var late  = acts.filter(function(a) { return isOverdue(a); }).length;
+  document.getElementById('k_com').textContent   = coms.length;
+  document.getElementById('k_tenus').textContent = tenus;
+  document.getElementById('k_dec').textContent   = decs.length;
+  document.getElementById('k_act').textContent   = openA;
+  document.getElementById('k_late').textContent  = late;
+  document.getElementById('k_late').style.color  = late > 0 ? 'var(--danger)' : 'var(--success)';
+  document.getElementById('tc-comites').textContent   = coms.length;
+  document.getElementById('tc-decisions').textContent = decs.length;
+  document.getElementById('tc-actions').textContent   = openA;
+  var crPending = getChanges().filter(function(c){return c.decision==='pending';}).length;
+  var hypUnk    = getAssumptions().filter(function(h){return h.status==='unknown'||h.status==='invalid';}).length;
+  var tcCR  = document.getElementById('tc-changements'); if(tcCR)  tcCR.textContent  = crPending  || '';
+  var tcHyp = document.getElementById('tc-hypotheses');  if(tcHyp) tcHyp.textContent = hypUnk     || '';
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 1 — COMITÉS
+// ══════════════════════════════════════════════════════
+function renderComites() {
+  var coms = getCommittees();
+  var rows = coms.map(function(c) { return buildComRow(c); }).join('');
+  var html =
+    '<div class="sec-hdr"><span class="sec-title">Registre des comités</span><button class="sec-btn" onclick="addCom()">＋ Ajouter</button></div>' +
+    '<div class="gov-table-wrap"><table class="gov-table">' +
+    '<thead><tr><th style="width:105px">Type</th><th style="width:110px">Date</th><th style="min-width:140px">Participants</th><th style="min-width:200px">Ordre du jour</th><th style="min-width:200px">Compte-rendu</th><th style="width:90px">Statut</th><th style="width:70px"></th></tr></thead>' +
+    '<tbody id="comTbody">' + rows + '</tbody>' +
+    '</table></div>';
+  return html;
+}
+
+function buildComRow(c) {
+  var stClass = { planifie:'st-planifie', tenu:'st-tenu', annule:'st-annule' }[c.status] || 'st-planifie';
+  var stLbl   = COM_STATUS[c.status] || c.status;
+  return '<tr data-comid="' + c.id + '">' +
+    '<td><span class="com-type ' + comTypeClass(c.type) + '">' + c.type + '</span></td>' +
+    '<td style="white-space:nowrap;">' + fmtDate(c.date) + '</td>' +
+    '<td style="font-size:10px;color:var(--text-soft);">' + (c.participants||'—').replace(/</g,'&lt;') + '</td>' +
+    '<td style="font-size:10px;">' + (c.agenda||'—').replace(/</g,'&lt;') + '</td>' +
+    '<td style="font-size:10px;color:var(--text-muted);">' + (c.cr ? c.cr.replace(/</g,'&lt;').slice(0,120) + (c.cr.length>120?'…':'') : '<span style="color:var(--surface3)">Non renseigné</span>') + '</td>' +
+    '<td><span class="st-badge ' + stClass + '" onclick="cycleCom(' + c.id + ')" title="Clic pour changer">' + stLbl + '</span></td>' +
+    '<td><div class="g-btns"><button class="g-btn" onclick="editCom(' + c.id + ')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteCom(' + c.id + ')" title="Supprimer">🗑️</button></div></td>' +
+  '</tr>';
+}
+
+function editCom(id) {
+  var coms = getCommittees();
+  var c    = coms.find(function(x) { return x.id === id; });
+  if (!c) return;
+  var row  = document.querySelector('tr[data-comid="' + id + '"]');
+  if (!row) return;
+  row.innerHTML =
+    '<td><select class="g-select" id="ec_type">' + COM_TYPES.map(function(t) { return '<option' + (c.type===t?' selected':'') + '>' + t + '</option>'; }).join('') + '</select></td>' +
+    '<td><input class="g-input" id="ec_date" type="date" value="' + (c.date||'') + '"></td>' +
+    '<td><input class="g-input" id="ec_part" value="' + (c.participants||'').replace(/"/g,'&quot;') + '" placeholder="CdP, MOA…"></td>' +
+    '<td><textarea class="g-textarea" id="ec_agenda">' + (c.agenda||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ec_cr">' + (c.cr||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="ec_status">' +
+      Object.keys(COM_STATUS).map(function(k) { return '<option value="' + k + '"' + (c.status===k?' selected':'') + '>' + COM_STATUS[k] + '</option>'; }).join('') +
+    '</select></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveCom(' + id + ')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveCom(id) {
+  var coms = getCommittees();
+  var idx  = coms.findIndex(function(x) { return x.id === id; });
+  if (idx === -1) return;
+  coms[idx].type         = document.getElementById('ec_type')?.value || coms[idx].type;
+  coms[idx].date         = document.getElementById('ec_date')?.value || '';
+  coms[idx].participants = document.getElementById('ec_part')?.value.trim() || '';
+  coms[idx].agenda       = document.getElementById('ec_agenda')?.value.trim() || '';
+  coms[idx].cr           = document.getElementById('ec_cr')?.value.trim() || '';
+  coms[idx].status       = document.getElementById('ec_status')?.value || 'planifie';
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Comité mis à jour');
+}
+
+function addCom() {
+  var coms = getCommittees();
+  var today = new Date().toISOString().split('T')[0];
+  coms.push({ id: Date.now(), type:'COPIL', date:today, participants:'', agenda:'', cr:'', status:'planifie' });
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  editCom(coms[coms.length-1].id);
+}
+
+function deleteCom(id) {
+  if (!confirm('Supprimer ce comité ?')) return;
+  var coms = getCommittees().filter(function(c) { return c.id !== id; });
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Comité supprimé');
+}
+
+function cycleCom(id) {
+  var coms = getCommittees();
+  var c    = coms.find(function(x) { return x.id === id; });
+  if (!c) return;
+  c.status = COM_CYCLE[c.status] || 'planifie';
+  saveCommittees(coms);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 2 — DÉCISIONS
+// ══════════════════════════════════════════════════════
+function renderDecisions() {
+  var raid = getRaidData();
+  var decs = raid.decisions || [];
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des décisions</span><button class="sec-btn" onclick="addDec()">＋ Ajouter</button></div>';
+  if (!decs.length) return html + '<div class="empty-state">📋<br>Aucune décision enregistrée.<br>Cliquez sur "＋ Ajouter" pour saisir une décision.</div>';
+  var rows = decs.map(function(d) {
+    var od = isOverdue(d);
+    return '<tr data-decid="' + d.id + '">' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (d.desc||'').replace(/</g,'&lt;') + '</div>' +
+        (d.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + d.mitigation.replace(/</g,'&lt;').slice(0,100) + '</div>' : '') +
+      '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (d.owner||'—') + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(d.status) + '" onclick="cycleDec(\'' + d.id + '\')" title="Clic pour changer">' + statusLabel(d.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od ? '⚠ ' : '') + fmtDate(d.due) + (od ? '<span class="g-overdue">+'+daysLate(d)+'j</span>' : '') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editDec(\'' + d.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteDec(\'' + d.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Contexte</th><th style="width:130px">Décideur</th><th style="width:110px">Statut</th><th style="width:110px">Échéance</th><th style="width:70px"></th></tr></thead><tbody id="decTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addDec() {
+  var raid = getRaidData();
+  if (!raid.decisions) raid.decisions = [];
+  var today = new Date().toISOString().split('T')[0];
+  var newId = 'D' + Date.now();
+  raid.decisions.push({ id: newId, desc:'Nouvelle décision', owner:'', status:'open', due: today, mitigation:'' });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  editDec(newId);
+}
+
+function editDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!d) return;
+  var row  = document.querySelector('tr[data-decid="' + id + '"]');
+  if (!row) return;
+  row.innerHTML =
+    '<td><input class="g-input" id="ed_desc" value="' + (d.desc||'').replace(/"/g,'&quot;') + '" placeholder="Description…" style="margin-bottom:4px;"><input class="g-input" id="ed_mit" value="' + (d.mitigation||'').replace(/"/g,'&quot;') + '" placeholder="Contexte / justification…"></td>' +
+    '<td><input class="g-input" id="ed_owner" value="' + (d.owner||'').replace(/"/g,'&quot;') + '" placeholder="Décideur…"></td>' +
+    '<td><select class="g-select" id="ed_status"><option value="open"' + (d.status==='open'?' selected':'') + '>Ouvert</option><option value="progress"' + (d.status==='progress'?' selected':'') + '>En cours</option><option value="closed"' + (d.status==='closed'?' selected':'') + '>Clôturé</option></select></td>' +
+    '<td><input class="g-input" id="ed_due" type="date" value="' + (d.due||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveDec(\'' + id + '\')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!d) return;
+  d.desc       = document.getElementById('ed_desc')?.value.trim()  || '';
+  d.mitigation = document.getElementById('ed_mit')?.value.trim()   || '';
+  d.owner      = document.getElementById('ed_owner')?.value.trim() || '';
+  d.status     = document.getElementById('ed_status')?.value || 'open';
+  d.due        = document.getElementById('ed_due')?.value    || '';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Décision mise à jour');
+}
+
+function deleteDec(id) {
+  if (!confirm('Supprimer cette décision ?')) return;
+  var raid = getRaidData();
+  raid.decisions = (raid.decisions||[]).filter(function(x) { return String(x.id) !== String(id); });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Décision supprimée');
+}
+
+function cycleDec(id) {
+  var raid = getRaidData();
+  var d    = (raid.decisions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!d) return;
+  d.status = DEC_CYCLE[d.status] || 'open';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 3 — ACTIONS
+// ══════════════════════════════════════════════════════
+var SEV_OPTS = ['low','medium','high','critical'];
+function renderActions() {
+  var raid  = getRaidData();
+  var items = (raid.actions || []).slice().sort(function(a,b) {
+    var aOD = isOverdue(a) ? 0 : 1;
+    var bOD = isOverdue(b) ? 0 : 1;
+    return aOD - bOD;
+  });
+  var html = '<div class="sec-hdr"><span class="sec-title">Actions de gouvernance</span><button class="sec-btn" onclick="addAct()">＋ Ajouter</button></div>';
+  if (!items.length) return html + '<div class="empty-state">✅<br>Aucune action en cours.<br>Cliquez sur "＋ Ajouter" pour créer une action.</div>';
+  var rows = items.map(function(a) {
+    var od  = isOverdue(a);
+    var sev = a.severity || 'medium';
+    var sevColor = { critical:'var(--danger)', high:'#f09090', medium:'var(--accent2)', low:'var(--success)' }[sev] || 'var(--accent2)';
+    return '<tr data-actid="' + a.id + '" style="' + (a.status==='closed'?'opacity:.5;':'') + '">' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (a.desc||'').replace(/</g,'&lt;') + '</div>' +
+        (a.mitigation ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">→ ' + a.mitigation.replace(/</g,'&lt;').slice(0,80) + '</div>' : '') +
+      '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + sevColor + ';">' + (sev.charAt(0).toUpperCase()+sev.slice(1)) + '</span></td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:10px;background:rgba(99,210,180,.08);color:var(--accent);padding:3px 9px;border-radius:3px;border:1px solid rgba(99,210,180,.15);">' + (a.owner||'—') + '</span></td>' +
+      '<td><span class="st-badge ' + statusClass(a.status) + '" onclick="cycleAct(\'' + a.id + '\')" title="Clic pour changer">' + statusLabel(a.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (od?'var(--danger)':'var(--text-muted)') + ';">' + (od?'⚠ ':'') + fmtDate(a.due) + (od?'<span class="g-overdue">+'+daysLate(a)+'j</span>':'') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editAct(\'' + a.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteAct(\'' + a.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th>Description / Plan</th><th style="width:90px">Priorité</th><th style="width:120px">Responsable</th><th style="width:110px">Statut</th><th style="width:110px">Échéance</th><th style="width:70px"></th></tr></thead><tbody id="actTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addAct() {
+  var raid = getRaidData();
+  if (!raid.actions) raid.actions = [];
+  var today = new Date().toISOString().split('T')[0];
+  var newId = 'A' + Date.now();
+  raid.actions.push({ id: newId, desc:'Nouvelle action', owner:'', status:'open', severity:'medium', due: today, mitigation:'' });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  editAct(newId);
+}
+
+function editAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!a) return;
+  var row  = document.querySelector('tr[data-actid="' + id + '"]');
+  if (!row) return;
+  var sevOpts = SEV_OPTS.map(function(s) { return '<option value="' + s + '"' + (a.severity===s?' selected':'') + '>' + s.charAt(0).toUpperCase()+s.slice(1) + '</option>'; }).join('');
+  var stOpts  = ['open','progress','watch','closed'].map(function(s) { return '<option value="' + s + '"' + (a.status===s?' selected':'') + '>' + statusLabel(s) + '</option>'; }).join('');
+  row.innerHTML =
+    '<td><input class="g-input" id="ea_desc" value="' + (a.desc||'').replace(/"/g,'&quot;') + '" placeholder="Description…" style="margin-bottom:4px;"><input class="g-input" id="ea_mit" value="' + (a.mitigation||'').replace(/"/g,'&quot;') + '" placeholder="Plan d\'action…"></td>' +
+    '<td><select class="g-select" id="ea_sev">' + sevOpts + '</select></td>' +
+    '<td><input class="g-input" id="ea_owner" value="' + (a.owner||'').replace(/"/g,'&quot;') + '" placeholder="Responsable…"></td>' +
+    '<td><select class="g-select" id="ea_status">' + stOpts + '</select></td>' +
+    '<td><input class="g-input" id="ea_due" type="date" value="' + (a.due||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveAct(\'' + id + '\')" title="Enregistrer">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!a) return;
+  a.desc       = document.getElementById('ea_desc')?.value.trim()  || '';
+  a.mitigation = document.getElementById('ea_mit')?.value.trim()   || '';
+  a.owner      = document.getElementById('ea_owner')?.value.trim() || '';
+  a.severity   = document.getElementById('ea_sev')?.value    || 'medium';
+  a.status     = document.getElementById('ea_status')?.value || 'open';
+  a.due        = document.getElementById('ea_due')?.value    || '';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Action mise à jour');
+}
+
+function deleteAct(id) {
+  if (!confirm('Supprimer cette action ?')) return;
+  var raid = getRaidData();
+  raid.actions = (raid.actions||[]).filter(function(x) { return String(x.id) !== String(id); });
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Action supprimée');
+}
+
+function cycleAct(id) {
+  var raid = getRaidData();
+  var a    = (raid.actions||[]).find(function(x) { return String(x.id) === String(id); });
+  if (!a) return;
+  a.status = ACT_CYCLE[a.status] || 'open';
+  saveRaidData(raid);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 4 — RACI
+// ══════════════════════════════════════════════════════
+var RACI_CYCLE = { '':'R', R:'A', A:'C', C:'I', I:'' };
+var RACI_COLORS = {
+  R: { bg:'rgba(34,197,94,.15)',  color:'var(--success)' },
+  A: { bg:'rgba(99,210,180,.15)', color:'var(--accent)'  },
+  C: { bg:'rgba(245,158,11,.12)', color:'var(--accent2)' },
+  I: { bg:'rgba(122,184,232,.12)',color:'var(--accent3)' },
+};
+
+function renderRaci() {
+  var data = getRaciData();
+  var res  = getResources();
+  if (!res.length) {
+    return '<div class="empty-state">👥<br>Aucun membre d\'équipe défini.<br>Ajoutez des ressources sur la page Ressources pour construire le RACI.</div>';
+  }
+
+  var legend =
+    '<div class="raci-legend">' +
+    '<span style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--text-muted);margin-right:4px;">Cliquer sur une cellule pour assigner :</span>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(34,197,94,.15);color:var(--success);">R</div>Responsable — exécute</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(99,210,180,.15);color:var(--accent);">A</div>Accountable — valide &amp; rend compte</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(245,158,11,.12);color:var(--accent2);">C</div>Consulté — donne son avis</div>' +
+    '<div class="raci-leg-item"><div class="raci-leg-badge" style="background:rgba(122,184,232,.12);color:var(--accent3);">I</div>Informé — reçoit l\'information</div>' +
+    '</div>';
+
+  var thead = '<thead><tr><th class="del-col">Livrable / Phase</th>' +
+    res.map(function(r) {
+      return '<th><div class="raci-res-id" style="color:' + (r.color||'var(--accent)') + ';">' + (r.id||'?') + '</div><div class="raci-res-name">' + (r.name||'').split(' ')[0] + '</div></th>';
+    }).join('') +
+    '</tr></thead>';
+
+  var tbody = data.rows.map(function(row) {
+    var cells = res.map(function(r) {
+      var key = row.id + '_' + r.id;
+      var val = data.cells[key] || '';
+      var style = val ? 'background:' + RACI_COLORS[val].bg + ';' : '';
+      var color = val ? RACI_COLORS[val].color : '';
+      return '<td style="' + style + '">' +
+        '<div class="raci-cell" onclick="toggleRaci(' + row.id + ',\'' + r.id + '\')" title="' + (r.name||r.id) + '">' +
+          (val ? '<span class="raci-cell-label" style="color:' + color + ';">' + val + '</span>' : '<span class="raci-empty">·</span>') +
+        '</div>' +
+      '</td>';
+    }).join('');
+    return '<tr>' +
+      '<td style="padding:0;"><div class="raci-del-cell">' + row.label.replace(/</g,'&lt;') + '</div></td>' +
+      cells +
+    '</tr>';
+  }).join('');
+
+  var addRow =
+    '<div class="add-del-row">' +
+      '<input class="add-del-input" id="newDelInput" placeholder="Nouveau livrable ou phase…" onkeydown="if(event.key===\'Enter\')addRaciRow()">' +
+      '<button class="add-del-btn" onclick="addRaciRow()">＋ Ajouter</button>' +
+    '</div>';
+
+  return legend +
+    '<div class="sec-hdr"><span class="sec-title">Matrice RACI — ' + data.rows.length + ' livrables · ' + res.length + ' membres</span>' +
+    '<button class="sec-btn secondary" onclick="resetRaci()">↺ Réinitialiser</button></div>' +
+    '<div class="raci-wrap"><table class="raci-table">' + thead + '<tbody>' + tbody + '</tbody></table>' + addRow + '</div>';
+}
+
+function toggleRaci(rowId, resId) {
+  var data = getRaciData();
+  var key  = rowId + '_' + resId;
+  var cur  = data.cells[key] || '';
+  var next = RACI_CYCLE[cur];
+  if (next === '') { delete data.cells[key]; }
+  else { data.cells[key] = next; }
+  saveRaci(data);
+  renderCurrent();
+}
+
+function addRaciRow() {
+  var inp   = document.getElementById('newDelInput');
+  var label = inp ? inp.value.trim() : '';
+  if (!label) return;
+  var data  = getRaciData();
+  var maxId = data.rows.reduce(function(m, r) { return Math.max(m, r.id||0); }, 0);
+  data.rows.push({ id: maxId + 1, label: label });
+  saveRaci(data);
+  renderCurrent();
+  showToast('✓ Livrable ajouté');
+}
+
+function resetRaci() {
+  if (!confirm('Réinitialiser la matrice RACI (supprimer toutes les assignations) ?')) return;
+  var data = getRaciData();
+  data.cells = {};
+  saveRaci(data);
+  renderCurrent();
+  showToast('↺ RACI réinitialisé');
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 5 — CHANGEMENTS (Change Request Register)
+// ══════════════════════════════════════════════════════
+function crDecClass(d) { return {pending:'st-watch',approved:'st-tenu',rejected:'st-annule',deferred:'st-progress'}[d]||'st-watch'; }
+function crStClass(s)  { return {draft:'st-progress',submitted:'st-planifie',in_review:'st-watch',implemented:'st-tenu',cancelled:'st-annule'}[s]||'st-planifie'; }
+function crPrioColor(p){ return {critical:'var(--danger)',high:'#f09090',medium:'var(--accent2)',low:'var(--success)'}[p]||'var(--accent2)'; }
+
+function renderChangements() {
+  var crs  = getChanges();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des demandes de changement</span><button class="sec-btn" onclick="addCR()">＋ Ajouter CR</button></div>';
+  if (!crs.length) return html + '<div class="empty-state">🔄<br>Aucune demande de changement.<br>Cliquez sur "＋ Ajouter CR" pour créer la première demande.</div>';
+  var rows = crs.map(function(cr) {
+    return '<tr data-crid="' + cr.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent3);white-space:nowrap;font-weight:700;">' + cr.id + '</td>' +
+      '<td><div style="font-family:\'Syne\',sans-serif;font-size:11px;font-weight:600;">' + (cr.title||'').replace(/</g,'&lt;') + '</div>' +
+        (cr.desc ? '<div style="font-size:9px;color:var(--text-muted);margin-top:3px;">' + cr.desc.replace(/</g,'&lt;').slice(0,100) + (cr.desc.length>100?'…':'') + '</div>' : '') +
+      '</td>' +
+      '<td><span class="com-type com-revue" style="font-size:8px;">' + (cr.type||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + crPrioColor(cr.priority) + ';">' + (cr.priority||'medium').charAt(0).toUpperCase() + (cr.priority||'medium').slice(1) + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (cr.requestor||'—') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + fmtDate(cr.date) + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-soft);">' + (cr.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td><span class="st-badge ' + crDecClass(cr.decision) + '" onclick="cycleCRDec(\'' + cr.id + '\')" title="Clic pour changer">' + (CR_DEC[cr.decision]||cr.decision) + '</span></td>' +
+      '<td><span class="st-badge ' + crStClass(cr.status) + '" onclick="cycleCRSt(\'' + cr.id + '\')" title="Clic pour changer">' + (CR_ST[cr.status]||cr.status) + '</span></td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editCR(\'' + cr.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteCR(\'' + cr.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:70px">Réf.</th><th style="min-width:180px">Titre / Description</th><th style="width:90px">Type</th><th style="width:80px">Priorité</th><th style="width:100px">Demandeur</th><th style="width:90px">Date</th><th style="min-width:130px">Impact</th><th style="width:100px">Décision CCB</th><th style="width:100px">Statut</th><th style="width:70px"></th></tr></thead><tbody id="crTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addCR() {
+  var crs   = getChanges();
+  var maxN  = crs.reduce(function(m,c){ var n=parseInt((c.id||'').replace('CR-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'CR-' + String(maxN+1).padStart(3,'0');
+  crs.push({ id:newId, title:'Nouvelle demande', type:'Périmètre', desc:'', requestor:'', date:new Date().toISOString().split('T')[0], impact:'', priority:'medium', decision:'pending', status:'draft' });
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+  editCR(newId);
+}
+
+function editCR(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  var row = document.querySelector('tr[data-crid="' + id + '"]');
+  if (!row) return;
+  var typeOpts  = CR_TYPES.map(function(t){ return '<option'+(cr.type===t?' selected':'')+'>'+t+'</option>'; }).join('');
+  var prioOpts  = ['low','medium','high','critical'].map(function(p){ return '<option value="'+p+'"'+(cr.priority===p?' selected':'')+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>'; }).join('');
+  var decOpts   = Object.keys(CR_DEC).map(function(k){ return '<option value="'+k+'"'+(cr.decision===k?' selected':'')+'>'+CR_DEC[k]+'</option>'; }).join('');
+  var stOpts    = Object.keys(CR_ST).map(function(k){ return '<option value="'+k+'"'+(cr.status===k?' selected':'')+'>'+CR_ST[k]+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent3);">' + cr.id + '</td>' +
+    '<td><input class="g-input" id="ecr_title" value="' + (cr.title||'').replace(/"/g,'&quot;') + '" placeholder="Titre…" style="margin-bottom:4px;"><textarea class="g-textarea" id="ecr_desc" rows="2">' + (cr.desc||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="ecr_type">' + typeOpts + '</select></td>' +
+    '<td><select class="g-select" id="ecr_prio">' + prioOpts + '</select></td>' +
+    '<td><input class="g-input" id="ecr_req" value="' + (cr.requestor||'').replace(/"/g,'&quot;') + '" placeholder="Demandeur…"></td>' +
+    '<td><input class="g-input" id="ecr_date" type="date" value="' + (cr.date||'') + '"></td>' +
+    '<td><input class="g-input" id="ecr_impact" value="' + (cr.impact||'').replace(/"/g,'&quot;') + '" placeholder="Impact coût/délai…"></td>' +
+    '<td><select class="g-select" id="ecr_dec">' + decOpts + '</select></td>' +
+    '<td><select class="g-select" id="ecr_st">' + stOpts + '</select></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveCR(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveCR(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.title     = document.getElementById('ecr_title')?.value.trim()  || '';
+  cr.desc      = document.getElementById('ecr_desc')?.value.trim()   || '';
+  cr.type      = document.getElementById('ecr_type')?.value          || 'Autre';
+  cr.priority  = document.getElementById('ecr_prio')?.value          || 'medium';
+  cr.requestor = document.getElementById('ecr_req')?.value.trim()    || '';
+  cr.date      = document.getElementById('ecr_date')?.value          || '';
+  cr.impact    = document.getElementById('ecr_impact')?.value.trim() || '';
+  cr.decision  = document.getElementById('ecr_dec')?.value           || 'pending';
+  cr.status    = document.getElementById('ecr_st')?.value            || 'draft';
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Changement enregistré');
+}
+
+function deleteCR(id) {
+  if (!confirm('Supprimer cette demande de changement ?')) return;
+  saveChanges(getChanges().filter(function(x){ return x.id!==id; }));
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 CR supprimé');
+}
+
+function cycleCRDec(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.decision = CR_DEC_CYC[cr.decision] || 'pending';
+  saveChanges(crs);
+  updateKPIs();
+  renderCurrent();
+}
+
+function cycleCRSt(id) {
+  var crs = getChanges();
+  var cr  = crs.find(function(x){ return x.id===id; });
+  if (!cr) return;
+  cr.status = CR_ST_CYC[cr.status] || 'draft';
+  saveChanges(crs);
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 6 — HYPOTHÈSES (Assumptions Log)
+// ══════════════════════════════════════════════════════
+function hypStClass(s){ return {valid:'st-tenu',invalid:'st-annule',unknown:'st-watch'}[s]||'st-watch'; }
+
+function renderHypotheses() {
+  var hyps = getAssumptions();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des hypothèses</span><button class="sec-btn" onclick="addHyp()">＋ Ajouter</button></div>';
+  if (!hyps.length) return html + '<div class="empty-state">🔎<br>Aucune hypothèse enregistrée.<br>Cliquez sur "＋ Ajouter" pour documenter les hypothèses du projet.</div>';
+  var rows = hyps.map(function(h) {
+    return '<tr data-hypid="' + h.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent2);white-space:nowrap;font-weight:700;">' + h.id + '</td>' +
+      '<td><div style="font-size:12px;font-weight:600;">' + (h.desc||'').replace(/</g,'&lt;') + '</div></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:9px;"><span style="background:var(--surface2);padding:2px 7px;border-radius:3px;border:1px solid var(--border);">' + (h.category||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (h.owner||'—') + '</td>' +
+      '<td><span class="st-badge ' + hypStClass(h.status) + '" onclick="cycleHyp(\'' + h.id + '\')" title="Clic pour changer">' + (HYP_ST[h.status]||h.status) + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (h.status==='invalid'?'var(--danger)':'var(--text-muted)') + ';">' + (h.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (h.verifiedDate ? fmtDate(h.verifiedDate) : '<span style="color:var(--surface3)">Non vérifié</span>') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editHyp(\'' + h.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteHyp(\'' + h.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:65px">Réf.</th><th style="min-width:200px">Description</th><th style="width:100px">Catégorie</th><th style="width:110px">Propriétaire</th><th style="width:95px">Statut</th><th style="min-width:150px">Impact si invalidée</th><th style="width:100px">Vérifiée le</th><th style="width:70px"></th></tr></thead><tbody id="hypTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addHyp() {
+  var hyps  = getAssumptions();
+  var maxN  = hyps.reduce(function(m,h){ var n=parseInt((h.id||'').replace('H-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'H-' + String(maxN+1).padStart(3,'0');
+  hyps.push({ id:newId, desc:'Nouvelle hypothèse', owner:'', category:'Technique', status:'unknown', impact:'', verifiedDate:'' });
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+  editHyp(newId);
+}
+
+function editHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  var row  = document.querySelector('tr[data-hypid="' + id + '"]');
+  if (!row) return;
+  var catOpts = HYP_CATS.map(function(c){ return '<option'+(h.category===c?' selected':'')+'>'+c+'</option>'; }).join('');
+  var stOpts  = Object.keys(HYP_ST).map(function(k){ return '<option value="'+k+'"'+(h.status===k?' selected':'')+'>'+HYP_ST[k]+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--accent2);">' + h.id + '</td>' +
+    '<td><textarea class="g-textarea" id="eh_desc" rows="2">' + (h.desc||'') + '</textarea></td>' +
+    '<td><select class="g-select" id="eh_cat">' + catOpts + '</select></td>' +
+    '<td><input class="g-input" id="eh_owner" value="' + (h.owner||'').replace(/"/g,'&quot;') + '" placeholder="Propriétaire…"></td>' +
+    '<td><select class="g-select" id="eh_st">' + stOpts + '</select></td>' +
+    '<td><input class="g-input" id="eh_impact" value="' + (h.impact||'').replace(/"/g,'&quot;') + '" placeholder="Impact si invalidée…"></td>' +
+    '<td><input class="g-input" id="eh_date" type="date" value="' + (h.verifiedDate||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveHyp(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  h.desc         = document.getElementById('eh_desc')?.value.trim()   || '';
+  h.category     = document.getElementById('eh_cat')?.value           || 'Autre';
+  h.owner        = document.getElementById('eh_owner')?.value.trim()  || '';
+  h.status       = document.getElementById('eh_st')?.value            || 'unknown';
+  h.impact       = document.getElementById('eh_impact')?.value.trim() || '';
+  h.verifiedDate = document.getElementById('eh_date')?.value          || '';
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+  showToast('✓ Hypothèse mise à jour');
+}
+
+function deleteHyp(id) {
+  if (!confirm('Supprimer cette hypothèse ?')) return;
+  saveAssumptions(getAssumptions().filter(function(x){ return x.id!==id; }));
+  updateKPIs();
+  renderCurrent();
+  showToast('🗑 Hypothèse supprimée');
+}
+
+function cycleHyp(id) {
+  var hyps = getAssumptions();
+  var h    = hyps.find(function(x){ return x.id===id; });
+  if (!h) return;
+  h.status = HYP_ST_CYC[h.status] || 'unknown';
+  saveAssumptions(hyps);
+  updateKPIs();
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// TAB 7 — LEÇONS APPRISES (Lessons Learned Register)
+// ══════════════════════════════════════════════════════
+function renderLessons() {
+  var lls  = getLessons();
+  var html = '<div class="sec-hdr"><span class="sec-title">Registre des leçons apprises</span><button class="sec-btn" onclick="addLL()">＋ Ajouter</button></div>';
+  if (!lls.length) return html + '<div class="empty-state">💡<br>Aucune leçon apprise enregistrée.<br>Cliquez sur "＋ Ajouter" pour capturer les enseignements du projet.</div>';
+  var catColors = { Risque:'var(--danger)', Planning:'var(--accent3)', Équipe:'#a78bfa', Technique:'var(--accent2)', Budget:'var(--accent)', Communication:'#f09090', Gouvernance:'var(--success)', Autre:'var(--text-muted)' };
+  var rows = lls.map(function(ll) {
+    var catColor = catColors[ll.category] || 'var(--text-muted)';
+    return '<tr data-llid="' + ll.id + '">' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--success);white-space:nowrap;font-weight:700;">' + ll.id + '</td>' +
+      '<td><span style="font-family:\'DM Mono\',monospace;font-size:8px;padding:2px 8px;border-radius:3px;background:' + catColor + '22;color:' + catColor + ';border:1px solid ' + catColor + '44;">' + (ll.category||'Autre') + '</span></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.phase||'—') + '</td>' +
+      '<td><div style="font-size:11px;font-weight:600;">' + (ll.desc||'').replace(/</g,'&lt;') + '</div></td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-soft);">' + (ll.impact||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-size:11px;color:var(--accent3);">' + (ll.recommendation||'—').replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.owner||'—') + '</td>' +
+      '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--text-muted);">' + (ll.date ? fmtDate(ll.date) : '—') + '</td>' +
+      '<td><div class="g-btns"><button class="g-btn" onclick="editLL(\'' + ll.id + '\')" title="Éditer">✏️</button><button class="g-btn del" onclick="deleteLL(\'' + ll.id + '\')" title="Supprimer">🗑️</button></div></td>' +
+    '</tr>';
+  }).join('');
+  html += '<div class="gov-table-wrap"><table class="gov-table"><thead><tr><th style="width:65px">Réf.</th><th style="width:105px">Catégorie</th><th style="width:100px">Phase</th><th style="min-width:160px">Description</th><th style="min-width:130px">Impact observé</th><th style="min-width:160px">Recommandation</th><th style="width:100px">Contributeur</th><th style="width:90px">Date</th><th style="width:70px"></th></tr></thead><tbody id="llTbody">' + rows + '</tbody></table></div>';
+  return html;
+}
+
+function addLL() {
+  var lls   = getLessons();
+  var maxN  = lls.reduce(function(m,l){ var n=parseInt((l.id||'').replace('LL-',''),10); return isNaN(n)?m:Math.max(m,n); }, 0);
+  var newId = 'LL-' + String(maxN+1).padStart(3,'0');
+  lls.push({ id:newId, category:'Autre', phase:'', desc:'Nouvelle leçon', impact:'', recommendation:'', owner:'', date:new Date().toISOString().split('T')[0] });
+  saveLessons(lls);
+  renderCurrent();
+  editLL(newId);
+}
+
+function editLL(id) {
+  var lls = getLessons();
+  var ll  = lls.find(function(x){ return x.id===id; });
+  if (!ll) return;
+  var row = document.querySelector('tr[data-llid="' + id + '"]');
+  if (!row) return;
+  var catOpts = LL_CATS.map(function(c){ return '<option'+(ll.category===c?' selected':'')+'>'+c+'</option>'; }).join('');
+  row.innerHTML =
+    '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--success);">' + ll.id + '</td>' +
+    '<td><select class="g-select" id="ell_cat">' + catOpts + '</select></td>' +
+    '<td><input class="g-input" id="ell_phase" value="' + (ll.phase||'').replace(/"/g,'&quot;') + '" placeholder="Phase…"></td>' +
+    '<td><textarea class="g-textarea" id="ell_desc" rows="2">' + (ll.desc||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ell_impact" rows="2">' + (ll.impact||'') + '</textarea></td>' +
+    '<td><textarea class="g-textarea" id="ell_reco" rows="2">' + (ll.recommendation||'') + '</textarea></td>' +
+    '<td><input class="g-input" id="ell_owner" value="' + (ll.owner||'').replace(/"/g,'&quot;') + '" placeholder="Contributeur…"></td>' +
+    '<td><input class="g-input" id="ell_date" type="date" value="' + (ll.date||'') + '"></td>' +
+    '<td><div class="g-btns"><button class="g-btn save" onclick="saveLL(\'' + id + '\')" title="Sauver">💾</button><button class="g-btn" onclick="renderCurrent()" title="Annuler">✕</button></div></td>';
+}
+
+function saveLL(id) {
+  var lls = getLessons();
+  var ll  = lls.find(function(x){ return x.id===id; });
+  if (!ll) return;
+  ll.category       = document.getElementById('ell_cat')?.value            || 'Autre';
+  ll.phase          = document.getElementById('ell_phase')?.value.trim()   || '';
+  ll.desc           = document.getElementById('ell_desc')?.value.trim()    || '';
+  ll.impact         = document.getElementById('ell_impact')?.value.trim()  || '';
+  ll.recommendation = document.getElementById('ell_reco')?.value.trim()    || '';
+  ll.owner          = document.getElementById('ell_owner')?.value.trim()   || '';
+  ll.date           = document.getElementById('ell_date')?.value           || '';
+  saveLessons(lls);
+  renderCurrent();
+  showToast('✓ Leçon apprise enregistrée');
+}
+
+function deleteLL(id) {
+  if (!confirm('Supprimer cette leçon apprise ?')) return;
+  saveLessons(getLessons().filter(function(x){ return x.id!==id; }));
+  renderCurrent();
+  showToast('🗑 Leçon supprimée');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER DISPATCH
+// ══════════════════════════════════════════════════════
+function renderCurrent() {
+  updateKPIs();
+  var tc = document.getElementById('tabContent');
+  if (!tc) return;
+  if      (currentTab === 'comites')      tc.innerHTML = renderComites();
+  else if (currentTab === 'decisions')   tc.innerHTML = renderDecisions();
+  else if (currentTab === 'actions')     tc.innerHTML = renderActions();
+  else if (currentTab === 'raci')        tc.innerHTML = renderRaci();
+  else if (currentTab === 'changements') tc.innerHTML = renderChangements();
+  else if (currentTab === 'hypotheses')  tc.innerHTML = renderHypotheses();
+  else if (currentTab === 'lessons')     tc.innerHTML = renderLessons();
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.gtab').forEach(function(t) { t.classList.remove('active'); });
+  var el = document.getElementById('tab-' + tab);
+  if (el) el.classList.add('active');
+  renderCurrent();
+}
+
+// ══════════════════════════════════════════════════════
+// PROJECT SWITCH
+// ══════════════════════════════════════════════════════
+function loadProjects() {
+  var projects = typeof PMHUB !== 'undefined' ? PMHUB.getProjects() : [];
+  var sel = document.getElementById('projectSelect');
+  sel.innerHTML = '';
+  if (!projects.length) { sel.innerHTML = '<option>Aucun projet</option>'; return; }
+  var paramId = typeof PMHUB !== 'undefined' ? PMHUB.getParam('project') : null;
+  projects.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.ref ? p.ref + ' — ' : '') + p.name;
+    if (String(p.id) === String(paramId)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  switchProject(parseInt(sel.value));
+}
+
+function switchProject(id) {
+  currentProject = id;
+  var p = typeof PMHUB !== 'undefined' ? PMHUB.getProjectById(id) : null;
+  var badge = document.getElementById('projectBadge');
+  if (p && badge) {
+    var labels = {active:'En cours',risk:'À risque',hold:'En attente',closed:'Clôturé'};
+    var bg     = {active:'rgba(99,210,180,.1)',risk:'rgba(239,68,68,.12)',hold:'rgba(245,158,11,.1)',closed:'rgba(107,120,133,.1)'};
+    var clr    = {active:'var(--accent)',risk:'var(--danger)',hold:'var(--accent2)',closed:'var(--text-muted)'};
+    badge.textContent  = labels[p.status] || p.status;
+    badge.style.cssText = 'background:' + (bg[p.status]||'transparent') + ';color:' + (clr[p.status]||'var(--text-muted)') + ';border:1px solid ' + (clr[p.status]||'var(--border)') + '44;font-family:\'DM Mono\',monospace;font-size:9px;padding:3px 9px;border-radius:20px;';
+  }
+  var ab = document.getElementById('aiFloatBtn');
+  if (ab) ab.href = 'pm-hub-ai.html?from=Gouvernance&project=' + id;
+  renderCurrent();
+}
+
+// ── BOOT ──
+if (typeof PMHUB !== 'undefined') {
+  loadProjects();
+} else {
+  document.getElementById('projectSelect').innerHTML = '<option>Chargez le hub</option>';
+}
+</script>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Analyse Gouvernance',
+  cacheKey: 'governance_' + (new URLSearchParams(location.search).get('project')||''),
+  buildPrompt: function() {
+    var pid = new URLSearchParams(location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    var p = PMHUB.getProjectById(pid);
+    var raids = PMHUB.getRaids(pid);
+    var changes = (raids.changes||[]);
+    var assumptions = (raids.assumptions||[]);
+    var decisions = (raids.decisions||[]).filter(function(d){return d.status!=='closed';});
+    var openChanges = changes.filter(function(c){return c.status!=='approved'&&c.status!=='rejected';}).length;
+    return 'Projet: '+(p?p.name:'N/A')+'\nChangements en attente: '+openChanges+'\nDécisions ouvertes: '+decisions.length+'\nHypothèses: '+assumptions.length+'\n\nDonnées décisions:\n'+decisions.slice(0,4).map(function(d){return '- '+(d.title||d.desc||'?');}).join('\n')+'\n\nAnalyse la gouvernance et donne: 1) Décisions en attente prioritaires 2) Changements à arbitrer 3) Points de gouvernance à adresser';
+  }
+};
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'pm-hub-governance',
+  title: 'IA Gouvernance',
+  icon: '\uD83C\uDFDB\uFE0F',
+  suggestions: [
+    'Decisions en attente prioritaires',
+    'Changements a arbitrer',
+    'Points de gouvernance critiques',
+    'Recommandations comite de pilotage'
+  ],
+  buildContext: function() {
+    if (typeof PMHUB === 'undefined') return '';
+    var pid = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    var p = pid && PMHUB.getProjectById ? PMHUB.getProjectById(pid) : null;
+    var raids = PMHUB.getRaids(pid);
+    var changes = (raids.changes||[]);
+    var assumptions = (raids.assumptions||[]);
+    var decisions = (raids.decisions||[]).filter(function(d){return d.status!=='closed';});
+    var openChanges = changes.filter(function(c){return c.status!=='approved'&&c.status!=='rejected';}).length;
+    var lines = ['=== GOUVERNANCE ==='];
+    lines.push('Projet: '+(p?p.name:'N/A'));
+    lines.push('Changements en attente: '+openChanges+', Decisions ouvertes: '+decisions.length+', Hypotheses: '+assumptions.length);
+    if (decisions.length) { lines.push('\nDECISIONS OUVERTES:'); decisions.slice(0,4).forEach(function(d){lines.push('- '+(d.title||d.desc||'?'));}); }
+    return lines.join('\n');
+  },
+  predictions: function() {
+    return 'Analyse la gouvernance du projet et donne: 1) Decisions en attente prioritaires avec impact si retardees 2) Changements a arbitrer en urgence 3) Hypotheses a risque a valider 4) Recommandations pour le prochain comite de pilotage 5) Points de gouvernance critiques';
+  },
+  importPrompt: 'Analyse ce compte-rendu de comite et extrais: decisions prises, actions a suivre, changements demandes. Genere un JSON avec: decisions (array of {title, description, status, priority}), changes (array of {title, description, impact, status}).',
+  importHandler: function(data) {
+    if (typeof PMHUB === 'undefined') return;
+    var pid = new URLSearchParams(window.location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    if (!pid) return;
+    var raids = PMHUB.getRaids(pid);
+    if (data.decisions) {
+      raids.decisions = raids.decisions || [];
+      data.decisions.forEach(function(d) { raids.decisions.push({id:'d_'+Date.now()+'_'+Math.random().toString(36).substr(2,4), title:d.title, desc:d.description, status:d.status||'open', priority:d.priority||'medium', date:new Date().toISOString().split('T')[0]}); });
+    }
+    if (data.changes) {
+      raids.changes = raids.changes || [];
+      data.changes.forEach(function(c) { raids.changes.push({id:'c_'+Date.now()+'_'+Math.random().toString(36).substr(2,4), title:c.title, desc:c.description, impact:c.impact||'medium', status:c.status||'pending', date:new Date().toISOString().split('T')[0]}); });
+    }
+    PMHUB.saveRaids(pid, raids);
+  }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

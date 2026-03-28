@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Projets de Démonstration</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="hub-data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#060a0d;--surface:#0d1219;--surface2:#111822;--border:rgba(255,255,255,0.07);--text:#e8edf2;--text-muted:#5a6a7a;--text-soft:#8a9aaa;--accent:#63d2b4;--accent2:#e8c97a;--accent3:#7ab8e8;--danger:#e07070;--success:#63d2b4;--warning:#e8c97a;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;padding-bottom:60px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,100,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,100,0.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid var(--border);background:rgba(6,10,13,0.92);backdrop-filter:blur(24px);position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
+.nav-back{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-decoration:none;transition:color .2s;}
+.nav-back:hover{color:var(--accent);}
+.container{max-width:1100px;margin:0 auto;padding:48px 32px;position:relative;z-index:1;}
+.page-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.page-tag::before{content:'';width:20px;height:1px;background:var(--accent);}
+.page-h1{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;line-height:1.1;margin-bottom:10px;}
+.page-h1 em{font-style:italic;color:var(--accent);}
+.page-sub{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:40px;max-width:600px;}
+/* Actions bar */
+.actions-bar{display:flex;gap:12px;margin-bottom:44px;flex-wrap:wrap;align-items:center;}
+.btn-load{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#060a0d;padding:13px 28px;border-radius:8px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s;letter-spacing:.04em;}
+.btn-load:hover{background:#7fe0c8;transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,210,180,.3);}
+.btn-delete{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--danger);padding:13px 24px;border-radius:8px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;border:1px solid rgba(224,112,112,.3);cursor:pointer;transition:all .2s;}
+.btn-delete:hover{background:rgba(224,112,112,.08);border-color:var(--danger);}
+.btn-goto{display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--accent3);padding:13px 20px;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;border:1px solid rgba(122,184,232,.2);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn-goto:hover{background:rgba(122,184,232,.06);border-color:var(--accent3);}
+/* Status message */
+#statusMsg{font-family:'DM Mono',monospace;font-size:12px;padding:14px 20px;border-radius:8px;display:none;margin-bottom:24px;}
+#statusMsg.ok{background:rgba(99,210,180,.08);border:1px solid rgba(99,210,180,.25);color:var(--accent);}
+#statusMsg.err{background:rgba(224,112,112,.08);border:1px solid rgba(224,112,112,.25);color:var(--danger);}
+/* Project cards */
+.proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:40px;}
+@media(max-width:900px){.proj-grid{grid-template-columns:1fr;}}
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;position:relative;overflow:hidden;transition:border-color .2s;}
+.proj-card:hover{border-color:rgba(255,255,255,.15);}
+.proj-card-top{height:3px;position:absolute;top:0;left:0;right:0;border-radius:14px 14px 0 0;}
+.proj-icon{font-size:28px;margin-bottom:10px;}
+.proj-ref{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;}
+.proj-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;margin-bottom:6px;line-height:1.2;}
+.proj-method{font-family:'DM Mono',monospace;font-size:9px;padding:2px 9px;border-radius:20px;display:inline-block;margin-bottom:12px;}
+.proj-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;margin-bottom:16px;}
+.proj-meta{display:flex;flex-direction:column;gap:6px;}
+.proj-meta-row{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;}
+.proj-meta-label{color:var(--text-muted);}
+.proj-meta-val{color:var(--text-soft);}
+.prog-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:12px;}
+.prog-fill{height:100%;border-radius:2px;}
+.badge-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;}
+.badge-feat{font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);}
+/* Divider */
+.section-div{border-top:1px solid var(--border);margin:36px 0 28px;}
+.section-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="pm-hub.html" class="nav-back">← Retour au Dashboard</a>
+  <div class="nav-logo">PM Hub · Mode Démo</div>
+  <a href="pm-hub-settings.html" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;border-radius:5px;" title="Paramètres">⚙</a>
+</nav>
+
+<div class="container">
+  <div class="page-tag">Présentation</div>
+  <h1 class="page-h1">Projets de <em>démonstration</em></h1>
+  <p class="page-sub">3 projets vitrine complets — chacun avec une méthodologie différente, données RAID, Gantt, Budget, Gouvernance, RACI et Leçons apprises. À charger en un clic, à supprimer tout aussi facilement.</p>
+
+  <div class="actions-bar">
+    <button class="btn-load" onclick="loadDemoProjects()">⚡ Charger les 3 projets démo</button>
+    <button class="btn-delete" onclick="deleteDemoProjects()">🗑 Supprimer les projets démo</button>
+    <a href="pm-hub.html" class="btn-goto">→ Aller au Dashboard</a>
+  </div>
+
+  <div id="statusMsg"></div>
+
+  <!-- CARDS PREVIEW -->
+  <div class="proj-grid">
+
+    <!-- CARD 1 -->
+    <div class="proj-card">
+      <div class="proj-card-top" style="background:linear-gradient(90deg,#63d2b4,#4cbda0);"></div>
+      <div class="proj-icon">📡</div>
+      <div class="proj-ref">DEMO-2026-001</div>
+      <div class="proj-name">Déploiement Réseau 5G Core</div>
+      <span class="proj-method" style="background:rgba(99,210,180,.1);color:var(--accent);border:1px solid rgba(99,210,180,.2);">PRINCE2 · Waterfall</span>
+      <p class="proj-desc">Infrastructure critique télécoms — déploiement national 5G avec 4 sites pilotes, intégration NSN, monitoring prédictif. Projet en phase Exécution.</p>
+      <div class="proj-meta">
+        <div class="proj-meta-row"><span class="proj-meta-label">Budget</span><span class="proj-meta-val">850 000 €</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Durée</span><span class="proj-meta-val">Oct 2025 → Sep 2026</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Équipe</span><span class="proj-meta-val">4 membres</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Statut</span><span style="color:var(--success);font-family:'DM Mono',monospace;font-size:10px;">En cours · 45%</span></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:45%;background:var(--accent);"></div></div>
+      <div class="badge-list">
+        <span class="badge-feat">17 tâches Gantt</span>
+        <span class="badge-feat">6 risques RAID</span>
+        <span class="badge-feat">6 membres équipe</span>
+        <span class="badge-feat">4 comités</span>
+        <span class="badge-feat">2 CRs</span>
+        <span class="badge-feat">RACI complet</span>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="proj-card">
+      <div class="proj-card-top" style="background:linear-gradient(90deg,#7C3AED,#a78bfa);"></div>
+      <div class="proj-icon">📱</div>
+      <div class="proj-ref">DEMO-2026-002</div>
+      <div class="proj-name">App Mobile B2C — Sprint 3</div>
+      <span class="proj-method" style="background:rgba(124,58,237,.1);color:#a78bfa;border:1px solid rgba(124,58,237,.2);">Agile · Scrum</span>
+      <p class="proj-desc">Application mobile e-commerce — 8 sprints de 2 semaines. Paiement Stripe, notifications push, système de fidélité. MVP prévu Juin 2026.</p>
+      <div class="proj-meta">
+        <div class="proj-meta-row"><span class="proj-meta-label">Budget</span><span class="proj-meta-val">280 000 €</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Durée</span><span class="proj-meta-val">Déc 2025 → Juin 2026</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Équipe</span><span class="proj-meta-val">6 membres</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Statut</span><span style="color:#a78bfa;font-family:'DM Mono',monospace;font-size:10px;">Sprint 3/8 · 38%</span></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:38%;background:#7C3AED;"></div></div>
+      <div class="badge-list">
+        <span class="badge-feat">14 tâches Kanban</span>
+        <span class="badge-feat">6 risques RAID</span>
+        <span class="badge-feat">6 membres équipe</span>
+        <span class="badge-feat">1 bug critique iOS</span>
+        <span class="badge-feat">Backlog produit</span>
+        <span class="badge-feat">Dette technique</span>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="proj-card">
+      <div class="proj-card-top" style="background:linear-gradient(90deg,#e07070,#f09090);"></div>
+      <div class="proj-icon">🔄</div>
+      <div class="proj-ref">DEMO-2026-003</div>
+      <div class="proj-name">Migration ERP & SIRH</div>
+      <span class="proj-method" style="background:rgba(232,201,122,.1);color:var(--accent2);border:1px solid rgba(232,201,122,.2);">Hybride · Waterfall + Agile</span>
+      <p class="proj-desc">Transformation digitale RH — migration ERP legacy vers SAP S/4HANA. Projet à risque : qualité données insuffisante, résistance au changement détectée.</p>
+      <div class="proj-meta">
+        <div class="proj-meta-row"><span class="proj-meta-label">Budget</span><span class="proj-meta-val">520 000 €</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Durée</span><span class="proj-meta-val">Août 2025 → Mai 2026</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Équipe</span><span class="proj-meta-val">6 membres</span></div>
+        <div class="proj-meta-row"><span class="proj-meta-label">Statut</span><span style="color:var(--danger);font-family:'DM Mono',monospace;font-size:10px;">⚠ À risque · 62%</span></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:62%;background:var(--danger);"></div></div>
+      <div class="badge-list">
+        <span class="badge-feat">17 tâches Gantt</span>
+        <span class="badge-feat">7 risques RAID</span>
+        <span class="badge-feat">6 membres équipe</span>
+        <span class="badge-feat">3 CRs</span>
+        <span class="badge-feat">2 hypothèses KO</span>
+        <span class="badge-feat">Conduite du changement</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-div"></div>
+  <div class="section-label">Ce qui sera chargé pour chaque projet</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">📋</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Projet complet</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Équipe, budget, dates, priorité, phase, méthodologie</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">📅</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Gantt / Kanban</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Tâches, jalons, phases, progress, dates, owners</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">⚠️</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">RAID</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Risques, actions, issues, décisions avec statuts</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">💰</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Finance & EVM</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Budget lignes, BAC, AC, EV, CPI, SPI, EAC</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">🏛️</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Gouvernance</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Comités, décisions, actions, RACI, CRs, hypothèses</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">💡</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Leçons apprises</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Registre LL avec catégories, recommandations</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">👥</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Ressources</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Équipes affectées, disponibilité, charge</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:16px;margin-bottom:6px;">🔍</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;">Hypothèses</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.7;">Registre avec statuts valide/invalidée/à vérifier</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var DEMO_IDS = [9001, 9002, 9003];
+
+// ══════════════════════════════════════════════════════
+// DONNÉES DÉMO
+// ══════════════════════════════════════════════════════
+
+var DEMO_PROJECTS = [
+  // ── PROJET 1 : 5G Waterfall ───────────────────────
+  {
+    id:9001, ref:'DEMO-2026-001', name:'Déploiement Réseau 5G Core',
+    desc:'Déploiement d\'un réseau 5G Core national — architecture NSA puis SA, intégration Nokia NSN, 4 sites pilotes, monitoring prédictif temps réel. Projet critique en phase Exécution.',
+    status:'active', progress:45, type:'Télécoms / Infrastructure',
+    start:'2025-10-01', end:'2026-09-30', budget:'850 000',
+    sponsor:'Direction Réseau & Infrastructure', team:['AN','KB','ML','FD','PL','MR'],
+    icon:'📡', color:'#63d2b4', priority:'Critique', phase:'Exécution',
+    methodology:'waterfall', client:'Opérateur Télécom Grand Compte',
+    objectives:['Déployer 4 sites pilotes 5G Core avant fin T1 2026','Atteindre 99.9% de disponibilité réseau','Réduire la latence de 80ms à <5ms'],
+    createdAt:'2025-10-01T08:00:00.000Z'
+  },
+  // ── PROJET 2 : App Mobile Agile ───────────────────
+  {
+    id:9002, ref:'DEMO-2026-002', name:'App Mobile B2C — E-Commerce',
+    desc:'Développement d\'une application mobile e-commerce cross-platform (iOS/Android) avec React Native. Paiement Stripe, notifications push, catalogue produits, système de fidélité. Sprint 3/8.',
+    status:'active', progress:38, type:'Digital / Mobile',
+    start:'2025-12-01', end:'2026-06-30', budget:'280 000',
+    sponsor:'Direction Marketing Digital', team:['AN','TC','NB','ML','SC','RL'],
+    icon:'📱', color:'#7C3AED', priority:'Haute', phase:'Sprint 3 / 8',
+    methodology:'agile', client:'Retail Client Grand Compte',
+    objectives:['Livrer le MVP en 8 sprints','Atteindre 4.5/5 sur les stores','Onboarder 10 000 utilisateurs en 30 jours post-lancement'],
+    createdAt:'2025-12-01T08:00:00.000Z'
+  },
+  // ── PROJET 3 : ERP Hybrid (à risque) ─────────────
+  {
+    id:9003, ref:'DEMO-2026-003', name:'Migration ERP & SIRH — SAP S/4HANA',
+    desc:'Transformation digitale RH : migration ERP legacy vers SAP S/4HANA. Reprise de données 10 ans, formation 450 utilisateurs, déploiement en 3 vagues. Projet actuellement à risque.',
+    status:'risk', progress:62, type:'Transformation Digitale / ERP',
+    start:'2025-08-01', end:'2026-05-31', budget:'520 000',
+    sponsor:'DRH & DSI', team:['AN','ML','KB','CV','DD','EB'],
+    icon:'🔄', color:'#e07070', priority:'Critique', phase:'Déploiement — Vague 1',
+    methodology:'hybride', client:'Groupe Industriel — Interne',
+    objectives:['Migrer 100% des données RH sans perte','Former 450 utilisateurs finaux avant go-live','Réduire les processus RH manuels de 70%'],
+    createdAt:'2025-08-01T08:00:00.000Z'
+  }
+];
+
+// ── GANTT TASKS ────────────────────────────────────────
+var DEMO_GANTT = {};
+
+// Projet 1 — 5G Waterfall
+DEMO_GANTT[9001] = [
+  {id:1, name:'Phase 1 — Initialisation',     type:'group',     start:'2025-10-01', end:'2025-11-15', progress:100, color:'#63d2b4', owner:'AN'},
+  {id:2, name:'Kick-off & charte projet',      type:'milestone', start:'2025-10-05', end:'2025-10-05', progress:100, color:'#e8c97a', owner:'AN', deps:[1]},
+  {id:3, name:'Plan de management projet',     type:'task',      start:'2025-10-06', end:'2025-10-31', progress:100, color:'#63d2b4', owner:'AN', deps:[2]},
+  {id:4, name:'Registre RAID initial',         type:'task',      start:'2025-10-15', end:'2025-11-10', progress:100, color:'#63d2b4', owner:'AN', deps:[3]},
+  {id:5, name:'Phase 2 — Architecture',        type:'group',     start:'2025-11-01', end:'2025-12-31', progress:100, color:'#7ab8e8', owner:'ML'},
+  {id:6, name:'Architecture réseau 5G Core',   type:'task',      start:'2025-11-01', end:'2025-12-05', progress:100, color:'#7ab8e8', owner:'ML', deps:[4]},
+  {id:7, name:'Appel d\'offres équipements',   type:'task',      start:'2025-11-15', end:'2025-12-20', progress:100, color:'#7ab8e8', owner:'KB', deps:[6]},
+  {id:8, name:'Validation design ✅',           type:'milestone', start:'2026-01-10', end:'2026-01-10', progress:100, color:'#e8c97a', owner:'AN', deps:[7]},
+  {id:9, name:'Phase 3 — Déploiement',         type:'group',     start:'2026-01-15', end:'2026-06-30', progress:40,  color:'#e8c97a', owner:'KB'},
+  {id:10,name:'Déploiement sites pilotes (4)', type:'task',      start:'2026-01-20', end:'2026-03-15', progress:100, color:'#e8c97a', owner:'KB', deps:[8]},
+  {id:11,name:'Intégration & configuration',   type:'task',      start:'2026-03-01', end:'2026-04-30', progress:60,  color:'#e07070', owner:'KB', deps:[10]},
+  {id:12,name:'Tests & validation QA',         type:'task',      start:'2026-04-01', end:'2026-05-31', progress:0,   color:'#7ab8e8', owner:'SC', deps:[11]},
+  {id:13,name:'Phase 4 — Mise en production',  type:'group',     start:'2026-06-01', end:'2026-09-30', progress:0,   color:'#b07ae8', owner:'AN'},
+  {id:14,name:'Déploiement national',          type:'task',      start:'2026-06-01', end:'2026-08-15', progress:0,   color:'#b07ae8', owner:'KB', deps:[12]},
+  {id:15,name:'Recette opérateur',             type:'task',      start:'2026-07-15', end:'2026-09-10', progress:0,   color:'#b07ae8', owner:'AN', deps:[14]},
+  {id:16,name:'Go-Live 🚀',                    type:'milestone', start:'2026-09-15', end:'2026-09-15', progress:0,   color:'#e8c97a', owner:'AN', deps:[15]},
+  {id:17,name:'Clôture & REX',                 type:'task',      start:'2026-09-16', end:'2026-09-30', progress:0,   color:'#63d2b4', owner:'AN', deps:[16]},
+];
+
+// Projet 2 — App Mobile Scrum (Kanban)
+DEMO_GANTT[9002] = [
+  {id:1, name:'Connexion OAuth2 / SSO',        type:'task', start:'2025-12-01', end:'2025-12-14', progress:100, color:'#22C55E', owner:'SC', kanbanStatus:'done'},
+  {id:2, name:'Catalogue produits',            type:'task', start:'2025-12-08', end:'2025-12-21', progress:100, color:'#22C55E', owner:'ML', kanbanStatus:'done'},
+  {id:3, name:'Panier d\'achats',              type:'task', start:'2025-12-15', end:'2026-01-04', progress:100, color:'#22C55E', owner:'SC', kanbanStatus:'done'},
+  {id:4, name:'Intégration paiement Stripe',   type:'task', start:'2026-01-05', end:'2026-01-25', progress:100, color:'#22C55E', owner:'ML', kanbanStatus:'done'},
+  {id:5, name:'Profil & historique commandes', type:'task', start:'2026-01-20', end:'2026-02-08', progress:100, color:'#22C55E', owner:'SC', kanbanStatus:'done'},
+  {id:6, name:'Notifications push (Firebase)', type:'task', start:'2026-02-01', end:'2026-02-21', progress:85,  color:'#7C3AED', owner:'SC', kanbanStatus:'in_progress'},
+  {id:7, name:'Système de points fidélité',    type:'task', start:'2026-02-15', end:'2026-03-07', progress:70,  color:'#7C3AED', owner:'ML', kanbanStatus:'in_progress'},
+  {id:8, name:'Recherche & filtres avancés',   type:'task', start:'2026-03-01', end:'2026-03-21', progress:30,  color:'#7C3AED', owner:'SC', kanbanStatus:'in_progress'},
+  {id:9, name:'Chatbot service client (IA)',   type:'task', start:'2026-03-15', end:'2026-04-05', progress:0,   color:'#94a3b8', owner:'ML', kanbanStatus:'todo'},
+  {id:10,name:'Tableau de bord analytics',     type:'task', start:'2026-03-25', end:'2026-04-18', progress:0,   color:'#94a3b8', owner:'ML', kanbanStatus:'todo'},
+  {id:11,name:'Export données RGPD',           type:'task', start:'2026-04-10', end:'2026-04-30', progress:0,   color:'#94a3b8', owner:'SC', kanbanStatus:'todo'},
+  {id:12,name:'Tests de charge & performance', type:'task', start:'2026-05-01', end:'2026-05-20', progress:0,   color:'#94a3b8', owner:'ML', kanbanStatus:'todo'},
+  {id:13,name:'Beta test & corrections',       type:'task', start:'2026-05-15', end:'2026-06-05', progress:0,   color:'#94a3b8', owner:'SC', kanbanStatus:'todo'},
+  {id:14,name:'Release v1.0 🚀',               type:'milestone', start:'2026-06-20', end:'2026-06-20', progress:0, color:'#e8c97a', owner:'AN', kanbanStatus:'todo'},
+];
+
+// Projet 3 — ERP Hybrid
+DEMO_GANTT[9003] = [
+  {id:1, name:'Phase 1 — Cadrage & Analyse',   type:'group',    start:'2025-08-01', end:'2025-09-30', progress:100, color:'#63d2b4', owner:'AN'},
+  {id:2, name:'Analyse processus RH existants',type:'task',     start:'2025-08-01', end:'2025-08-31', progress:100, color:'#63d2b4', owner:'ML', deps:[1]},
+  {id:3, name:'Blueprint SAP S/4HANA',         type:'task',     start:'2025-08-15', end:'2025-09-20', progress:100, color:'#63d2b4', owner:'ML', deps:[2]},
+  {id:4, name:'Kick-off & charte validée ✅',   type:'milestone',start:'2025-09-25', end:'2025-09-25', progress:100, color:'#e8c97a', owner:'AN', deps:[3]},
+  {id:5, name:'Phase 2 — Configuration ERP',   type:'group',    start:'2025-10-01', end:'2025-12-31', progress:100, color:'#7ab8e8', owner:'ML'},
+  {id:6, name:'Paramétrage modules RH/Paie',   type:'task',     start:'2025-10-01', end:'2025-11-30', progress:100, color:'#7ab8e8', owner:'ML', deps:[4]},
+  {id:7, name:'Développements spécifiques Z',   type:'task',     start:'2025-11-01', end:'2025-12-20', progress:100, color:'#7ab8e8', owner:'KB', deps:[6]},
+  {id:8, name:'Phase 3 — Migration données',   type:'group',    start:'2026-01-01', end:'2026-02-28', progress:80,  color:'#e8c97a', owner:'ML'},
+  {id:9, name:'Extraction & nettoyage données', type:'task',     start:'2026-01-01', end:'2026-01-25', progress:100, color:'#e07070', owner:'ML', deps:[7]},
+  {id:10,name:'Migration test (environnement)', type:'task',     start:'2026-01-20', end:'2026-02-15', progress:90,  color:'#e07070', owner:'ML', deps:[9]},
+  {id:11,name:'Phase 4 — Tests & Recette',      type:'group',    start:'2026-02-15', end:'2026-04-15', progress:40,  color:'#e07070', owner:'SC'},
+  {id:12,name:'Tests unitaires modules',        type:'task',     start:'2026-02-15', end:'2026-03-10', progress:80,  color:'#e07070', owner:'SC', deps:[10]},
+  {id:13,name:'Recette utilisateurs (UAT)',     type:'task',     start:'2026-03-01', end:'2026-04-10', progress:35,  color:'#e07070', owner:'AN', deps:[12]},
+  {id:14,name:'Phase 5 — Go-Live',             type:'group',    start:'2026-04-15', end:'2026-05-31', progress:0,   color:'#b07ae8', owner:'AN'},
+  {id:15,name:'Formation 450 utilisateurs',    type:'task',     start:'2026-04-15', end:'2026-05-05', progress:0,   color:'#b07ae8', owner:'AN', deps:[13]},
+  {id:16,name:'Bascule production (Go-Live)',   type:'milestone',start:'2026-05-12', end:'2026-05-12', progress:0,   color:'#e8c97a', owner:'AN', deps:[15]},
+  {id:17,name:'Hypercare & clôture',            type:'task',     start:'2026-05-12', end:'2026-05-31', progress:0,   color:'#63d2b4', owner:'AN', deps:[16]},
+];
+
+// ── REGISTRE DES RISQUES (pmhub_rr_{id}) ───────────────
+// Format distinct du RAID : category, description, trigger, to, probability,
+// impact, source, responsePlan, riskOwner, status, createdAt
+var DEMO_RR = {};
+
+DEMO_RR[9001] = [
+  {id:'RR-001',category:'Fournisseur',  description:'Retard livraison équipements Nokia NSN — lead time 14 semaines', trigger:'SLA non respecté + pénurie mondiale composants télécoms', to:'threat', probability:'high',   impact:'high',   source:'Expert',      responsePlan:'Mitiger : pré-commande anticipée, clause pénale contractuelle, lot de réserve commandé',       riskOwner:'KB', status:'current',    createdAt:'2025-10-15'},
+  {id:'RR-002',category:'Réglementaire',description:'Homologation ARCEP fréquences 5G NR 3.5 GHz retardée',           trigger:'Dossier incomplet ou délai instruction > 3 mois',           to:'threat', probability:'medium', impact:'high',   source:'Expert',      responsePlan:'Mitiger : dossier déposé 6 semaines en avance, avocat télécom missionné',                      riskOwner:'AN', status:'current',    createdAt:'2025-10-20'},
+  {id:'RR-003',category:'Technique',    description:'Interférences 5G NR sur bande 3.5 GHz — zones denses Paris',    trigger:'Coexistence 5G/4G sur même bande, brouillages détectés',    to:'threat', probability:'medium', impact:'medium', source:'Mesures RF',  responsePlan:'Mitiger : campagne mesures RF pré-déploiement, optimisation paramètres antennaires',           riskOwner:'FD', status:'current',    createdAt:'2025-11-05'},
+  {id:'RR-004',category:'Sécurité',     description:'Surface d\'attaque élargie sur interfaces O&M N2/N3 exposées',  trigger:'Audit sécurité révèle 3 CVE non patchés',                   to:'threat', probability:'low',    impact:'high',   source:'Expert',      responsePlan:'Accepter post-mitigation : pentest réalisé, firewall applicatif + segmentation VRF déployés',  riskOwner:'SC', status:'mitigated',  createdAt:'2025-11-10'},
+  {id:'RR-005',category:'RH',           description:'Pénurie ingénieurs 5G SA certifiés — 2 postes non pourvus',     trigger:'Marché tendu, délai recrutement > 6 semaines',              to:'threat', probability:'high',   impact:'medium', source:'Observation', responsePlan:'Mitiger : appel à 2 freelances certifiés Nokia — contrats en cours de signature',               riskOwner:'AN', status:'current',    createdAt:'2026-01-20'},
+  {id:'RR-006',category:'Budget',       description:'Dépassement budgétaire phase déploiement national estimé +8%',  trigger:'Coûts d\'ingénierie supérieurs aux estimations initiales',  to:'threat', probability:'medium', impact:'high',   source:'Calcul',      responsePlan:'Mitiger : réserve gestion risques +50K€ soumise en COPIL avril',                              riskOwner:'AN', status:'current',    createdAt:'2026-02-15'},
+  {id:'RR-007',category:'Stratégique',  description:'Opportunité partenariat Nokia NSN pour MCO réseau 5G post-lancement', trigger:'Discussions préliminaires favorables — NOC mutualisé', to:'opportunity', probability:'medium', impact:'high', source:'Expert',   responsePlan:'Exploiter : négocier accord MCO cadre avant go-live Q3 2026',                                  riskOwner:'AN', status:'current',    createdAt:'2026-02-20'},
+];
+
+DEMO_RR[9002] = [
+  {id:'RR-001',category:'Technique',    description:'Dette technique accumulée — coverage tests unitaires à 24%',         trigger:'Sprints sous pression, refactoring différé',              to:'threat', probability:'high',   impact:'high',   source:'Analyse code', responsePlan:'Mitiger : Sprint 5 partiellement dédié au remboursement, SonarQube Quality Gate activé',    riskOwner:'ML', status:'current',  createdAt:'2025-12-15'},
+  {id:'RR-002',category:'Conformité',   description:'API Stripe non certifiée PCI-DSS Level 1 avant release v1.0',        trigger:'Audit de conformité non encore réalisé',                   to:'threat', probability:'high',   impact:'high',   source:'Expert',       responsePlan:'Mitiger : audit PCI-DSS commandé cabinet KPMG — rapport attendu 08/04',                      riskOwner:'ML', status:'current',  createdAt:'2026-01-10'},
+  {id:'RR-003',category:'Planning',     description:'Vélocité sprint en baisse -18% vs baseline — retard release MVP',    trigger:'Bug critique iOS + dette technique non anticipés',         to:'threat', probability:'medium', impact:'high',   source:'Observation',  responsePlan:'Mitiger : backlog Sprint 4 réduit de 2 stories, focus core features',                         riskOwner:'AN', status:'current',  createdAt:'2026-02-01'},
+  {id:'RR-004',category:'Externe',      description:'Soumission App Store refusée — politique Apple In-App potentiellement non conforme', trigger:'Guideline Apple 3.1.1 sur paiements tiers', to:'threat', probability:'medium', impact:'high', source:'Historique',  responsePlan:'Mitiger : pré-validation guidelines avec Apple Partner Program avant soumission',             riskOwner:'SC', status:'current',  createdAt:'2026-02-15'},
+  {id:'RR-005',category:'Conformité',   description:'Non-conformité RGPD — collecte données comportementales sans consentement explicite', trigger:'DPO identifie absence de banner consentement', to:'threat', probability:'low', impact:'high', source:'Expert',      responsePlan:'Mitiger : module consentement Didomi intégré au Sprint 6, DPO consulté',                     riskOwner:'ML', status:'current',  createdAt:'2026-03-01'},
+  {id:'RR-006',category:'Stratégique',  description:'Opportunité : adoption forte si NPS > 4.5 — viralité organique',    trigger:'Benchmark concurrent à 4.6/5 — marché porteur',            to:'opportunity', probability:'medium', impact:'high', source:'Benchmark',  responsePlan:'Exploiter : tests usabilité panel 20 utilisateurs, intégration module social Sprint 7',      riskOwner:'NB', status:'current',  createdAt:'2026-01-25'},
+];
+
+DEMO_RR[9003] = [
+  {id:'RR-001',category:'Données',      description:'Qualité données RH insuffisante — taux d\'erreur 18% sur 10 ans d\'historique', trigger:'Audit ETL révèle doublons, incohérences, champs vides', to:'threat', probability:'high', impact:'high', source:'Calcul',       responsePlan:'Mitiger : ETL Talend déployé, règles qualité définies, 60% tables traitées',               riskOwner:'ML', status:'current',    createdAt:'2025-09-01'},
+  {id:'RR-002',category:'Budget',       description:'Dépassement budget phase tests estimé à +25%',                        trigger:'Tests de non-régression modules Z sous-estimés',          to:'threat', probability:'high',   impact:'high',   source:'Calcul',       responsePlan:'Mitiger : CR-003 réserve +50K€ soumise COPIL — arbitrage attendu 01/04',                   riskOwner:'AN', status:'current',    createdAt:'2025-10-01'},
+  {id:'RR-003',category:'RH',           description:'Résistance forte managers de proximité — refus module temps réel',   trigger:'Enquête conduite changement : score adhésion 3.2/10',     to:'threat', probability:'high',   impact:'medium', source:'Observation',  responsePlan:'Mitiger : 15 champions internes formés, 3 ateliers CDC planifiés, coaching managers',       riskOwner:'DD', status:'current',    createdAt:'2025-09-15'},
+  {id:'RR-004',category:'RH',           description:'Consultants SAP clés (ML, KB) partagés avec projet concurrent DSI',  trigger:'Direction IT sollicite les mêmes experts en parallèle',   to:'threat', probability:'medium', impact:'high',   source:'Observation',  responsePlan:'Mitiger : réunion arbitrage direction IT prévue — exclusivité demandée jusqu\'au go-live',   riskOwner:'AN', status:'current',    createdAt:'2026-03-01'},
+  {id:'RR-005',category:'Technique',    description:'Incompatibilité interface SAP HCM / système paie externe Silae',     trigger:'API Silae non documentée — mapping champs incomplet',      to:'threat', probability:'medium', impact:'high',   source:'Expert',       responsePlan:'Accepter post-mitigation : connecteur IPG Solutions livré et testé sur périmètre test',      riskOwner:'CV', status:'mitigated',  createdAt:'2025-10-15'},
+  {id:'RR-006',category:'Réglementaire',description:'Retard validation partenaire social CSSCT — module gestion du temps', trigger:'Réunion CSSCT reportée — quorum non atteint',             to:'threat', probability:'medium', impact:'medium', source:'Réglementaire',responsePlan:'Mitiger : dossier déposé, présentation CSSCT réunion 08/04 — avis consultatif requis',      riskOwner:'AN', status:'current',    createdAt:'2026-02-10'},
+  {id:'RR-007',category:'Stratégique',  description:'Opportunité : ERP S/4HANA comme socle groupe — déploiement filiales', trigger:'Direction générale intéressée après démonstration Blueprint', to:'opportunity', probability:'medium', impact:'high', source:'Expert', responsePlan:'Exploiter : préparer business case déploiement groupe après go-live Vague 1',             riskOwner:'AN', status:'current',    createdAt:'2026-01-15'},
+];
+
+// ── RAID DATA ──────────────────────────────────────────
+var DEMO_RAIDS = {};
+
+// ── RAID 9001 : Infrastructure Télécoms / PRINCE2 Waterfall ──────────────────
+// Profil : risques techniques réseaux, réglementaires, contractuels
+DEMO_RAIDS[9001] = {
+  risks: [
+    {id:90101, desc:'Retard livraison équipements Nokia NSN — lead time allongé 14 semaines', prob:'high', impact:'high', score:0.69, severity:'critical', status:'open', owner:'KB', due:'2026-04-01', mitigation:'Clause pénale P.O. + lot de réserve commandé en anticipation', source:'Expert', updatedAt:'2026-03-10'},
+    {id:90102, desc:'Homologation ARCEP retardée — dossier en attente de visa technique', prob:'medium', impact:'high', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-05-15', mitigation:'Dossier déposé 6 semaines en avance + avocat spécialisé télécom missionné', source:'Réglementaire', updatedAt:'2026-03-18'},
+    {id:90103, desc:'Interférences 5G NR sur bande 3.5 GHz — zone dense Paris intramuros', prob:'medium', impact:'medium', score:0.25, severity:'medium', status:'open', owner:'ML', due:'2026-04-20', mitigation:'Campagne mesures RF planifiée — 4 sites à auditer avant déploiement', source:'Expert', updatedAt:'2026-03-12'},
+    {id:90104, desc:'Cyberattaque surface d\'attaque O&M élargie (interfaces N2/N3 exposées)', prob:'low', impact:'high', score:0.14, severity:'medium', status:'mitigated', owner:'SC', due:'2026-05-01', mitigation:'Audit pentest réalisé — firewall applicatif + segmentation VRF déployés', source:'Expert', updatedAt:'2026-02-20'},
+    {id:90105, desc:'Pénurie ingénieurs 5G SA certifiés sur marché — 2 postes non pourvus', prob:'high', impact:'medium', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-04-01', mitigation:'Appel à 2 freelances certifiés Nokia — contrats en cours de signature', source:'Observation', updatedAt:'2026-03-20'},
+    {id:90106, desc:'Dépassement budgétaire phase déploiement national (+8% estimé)', prob:'medium', impact:'high', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-04-15', mitigation:'Réserve gestion des risques +50K€ soumise en COPIL avril', source:'Calcul', updatedAt:'2026-03-18'},
+  ],
+  actions: [
+    {id:90111, desc:'Émettre bon de commande équipements NSN avec 3 semaines d\'avance', owner:'KB', due:'2026-04-01', status:'closed', severity:'critical', mitigation:'BOC émis le 20/03 — accusé réception Nokia reçu'},
+    {id:90112, desc:'Relancer ARCEP pour statut dossier homologation 3.5 GHz', owner:'AN', due:'2026-03-28', status:'progress', severity:'high', mitigation:'Réunion ARCEP programmée le 02/04'},
+    {id:90113, desc:'Réaliser campagne mesures RF interférences — sites Paris Nord/Est/Ouest', owner:'ML', due:'2026-04-20', status:'open', severity:'medium', mitigation:''},
+    {id:90114, desc:'Recruter 2 ingénieurs 5G SA freelance (contrats courts 3 mois)', owner:'AN', due:'2026-04-01', status:'progress', severity:'high', mitigation:'2 profils shortlistés — entretiens semaine 12'},
+    {id:90115, desc:'Présenter révision budgétaire + réserve risque en COPIL avril', owner:'AN', due:'2026-04-15', status:'open', severity:'high', mitigation:''},
+    {id:90116, desc:'Tests de charge réseau Core — simulation 10 000 UE simultanés', owner:'SC', due:'2026-05-01', status:'open', severity:'medium', mitigation:''},
+  ],
+  issues: [
+    {id:90121, desc:'Incompatibilité firmware AMF/SMF v3.1 — équipements site Lyon rejetés à l\'activation', severity:'critical', status:'open', owner:'ML', due:'2026-04-05'},
+    {id:90122, desc:'Délai permis de construire mairie Paris-Nord — antenne retardée de 4 semaines', severity:'high', status:'open', owner:'KB', due:'2026-04-15'},
+    {id:90123, desc:'Qualification site Marseille-Sud : câblage fibre non conforme norme ETSI', severity:'medium', status:'open', owner:'KB', due:'2026-04-20'},
+    {id:90124, desc:'Retard qualification site Paris-Nord — attestation mairie reçue hors délai', severity:'medium', status:'closed', owner:'KB', due:'2026-03-01'},
+  ],
+  decisions: [
+    {id:90131, desc:'Architecture Core 5G NSA puis SA — déploiement en 2 phases validé en COPIL M2', owner:'Direction Réseau & DSI', status:'closed', due:'2026-02-18'},
+    {id:90132, desc:'Choix fournisseur Nokia NSN retenu (score technique 84/100 vs Ericsson 78/100)', owner:'Comité Appel d\'Offres', status:'closed', due:'2025-12-20'},
+    {id:90133, desc:'Déploiement séquentiel Paris → Lyon → Marseille → Bordeaux (vs simultané) validé', owner:'Direction Réseau', status:'closed', due:'2026-01-15'},
+    {id:90134, desc:'Extension budget déploiement +50K€ — réserve gestion risques', owner:'Direction Financière', status:'open', due:'2026-04-15'},
+    {id:90135, desc:'Recours à cabinet juridique télécom pour suivi homologation ARCEP', owner:'Direction Juridique', status:'open', due:'2026-04-01'},
+  ]
+};
+
+// ── RAID 9002 : App Mobile / Agile Scrum ─────────────────────────────────────
+// Profil : impediments sprint, dette technique, conformité, adoption
+DEMO_RAIDS[9002] = {
+  risks: [
+    {id:90201, desc:'Dette technique accumulée — coverage tests unitaires à 24% (seuil critique < 30%)', prob:'high', impact:'high', score:0.69, severity:'critical', status:'open', owner:'ML', due:'2026-04-20', mitigation:'Sprint 5 dédié partiellement au remboursement dette + SonarQube seuil bloquant', source:'Analyse code', updatedAt:'2026-03-18'},
+    {id:90202, desc:'API paiement Stripe non certifiée PCI-DSS Level 1 avant release v1.0', prob:'high', impact:'high', score:0.69, severity:'critical', status:'open', owner:'ML', due:'2026-04-05', mitigation:'Audit PCI-DSS commandé cabinet KPMG — rapport attendu 08/04', source:'Expert', updatedAt:'2026-03-18'},
+    {id:90203, desc:'Vélocité Sprint en baisse (-18% vs baseline) — risque retard release MVP', prob:'medium', impact:'high', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-05-01', mitigation:'Backlog Sprint 4 réduit de 2 stories — focus core features uniquement', source:'Observation', updatedAt:'2026-03-15'},
+    {id:90204, desc:'Refus soumission App Store Apple — politique "Paiement In-App" potentiellement non conforme', prob:'medium', impact:'high', score:0.42, severity:'high', status:'open', owner:'SC', due:'2026-05-15', mitigation:'Pré-validation guidelines avec Apple Partner Program avant soumission', source:'Historique', updatedAt:'2026-03-10'},
+    {id:90205, desc:'Non-conformité RGPD — collecte données comportementales sans consentement explicite', prob:'low', impact:'high', score:0.14, severity:'medium', status:'open', owner:'ML', due:'2026-05-30', mitigation:'DPO consulté — module consentement Didomi intégré au Sprint 6', source:'Expert', updatedAt:'2026-03-08'},
+    {id:90206, desc:'Faible adoption utilisateurs — benchmark NPS concurrent à 4.6/5 (objectif 4.5)', prob:'low', impact:'medium', score:0.09, severity:'low', status:'open', owner:'SC', due:'2026-06-01', mitigation:'Tests usabilité panel 20 utilisateurs cibles planifiés Sprint 4', source:'Benchmark', updatedAt:'2026-03-10'},
+  ],
+  actions: [
+    {id:90211, desc:'Audit conformité PCI-DSS API Stripe — cabinet KPMG', owner:'ML', due:'2026-04-08', status:'progress', severity:'critical', mitigation:'Mission lancée — entretiens techniques en cours'},
+    {id:90212, desc:'Activer SonarQube Quality Gate bloquant PR si coverage < 30%', owner:'ML', due:'2026-03-28', status:'closed', severity:'critical', mitigation:'Gate activé en CI — 3 PRs bloquées et corrigées'},
+    {id:90213, desc:'Session Backlog Refinement Sprint 4 avec Product Owner — réduction scope', owner:'AN', due:'2026-03-28', status:'closed', severity:'high', mitigation:'Sprint 4 = 22 story points (vs 28 Sprint 3)'},
+    {id:90214, desc:'Pré-validation App Store Guidelines auprès Apple Partner Program', owner:'SC', due:'2026-04-20', status:'open', severity:'high', mitigation:''},
+    {id:90215, desc:'Intégrer SDK consentement RGPD Didomi — Sprint 6', owner:'ML', due:'2026-05-10', status:'open', severity:'medium', mitigation:''},
+    {id:90216, desc:'Organiser tests usabilité avec panel 20 utilisateurs — livrables UX', owner:'SC', due:'2026-04-15', status:'open', severity:'low', mitigation:''},
+  ],
+  issues: [
+    {id:90221, desc:'Bug critique checkout — NullPointerException sur iOS 17.4 lors du paiement 3D Secure', severity:'critical', status:'open', owner:'SC', due:'2026-03-25'},
+    {id:90222, desc:'Performances dégradées sur Android < 3 Go RAM — temps chargement catalogue > 8s', severity:'high', status:'open', owner:'ML', due:'2026-04-05'},
+    {id:90223, desc:'Conflit merge branches "notifications" et "fidélité" — 2 jours d\'investigation perdus', severity:'medium', status:'closed', owner:'SC', due:'2026-03-10'},
+    {id:90224, desc:'Notifications push silencieuses sur background iOS — APNs token expiré', severity:'medium', status:'open', owner:'SC', due:'2026-04-08'},
+  ],
+  decisions: [
+    {id:90231, desc:'Réduction scope Sprint 3 : -2 stories (wishlist, multi-adresse) reportées S4', owner:'Product Owner', status:'closed', due:'2026-03-08'},
+    {id:90232, desc:'Framework React Native retenu (score 87/100 vs Flutter 82/100)', owner:'Direction Technique', status:'closed', due:'2025-12-05'},
+    {id:90233, desc:'Ajout module "Wishlist" au backlog Sprint 5 — demande prioritaire client retail', owner:'Product Owner', status:'closed', due:'2026-03-18'},
+    {id:90234, desc:'Migration CI/CD vers GitHub Actions approuvée (vs Jenkins legacy)', owner:'Lead Tech', status:'closed', due:'2026-03-15'},
+    {id:90235, desc:'Report release MVP : 20 juin → 4 juillet 2026 (-2 semaines buffer sécurité)', owner:'Direction Marketing', status:'open', due:'2026-04-01'},
+  ]
+};
+
+// ── RAID 9003 : Migration ERP / Hybride (projet à risque) ────────────────────
+// Profil : qualité données, conduite du changement, partenaire social, dépassements
+DEMO_RAIDS[9003] = {
+  risks: [
+    {id:90301, desc:'Qualité données RH à migrer insuffisante — taux erreur 18% détecté sur 10 ans d\'historique', prob:'high', impact:'high', score:0.69, severity:'critical', status:'open', owner:'ML', due:'2026-04-01', mitigation:'Plan nettoyage données + ETL Talend déployé — 60% tables traitées', source:'Calcul', updatedAt:'2026-03-20'},
+    {id:90302, desc:'Dépassement budget phase tests estimé à +25% (tests non-régression sous-estimés)', prob:'high', impact:'high', score:0.69, severity:'critical', status:'open', owner:'AN', due:'2026-04-01', mitigation:'CR-003 réserve +50K€ soumise Comité Pilotage — arbitrage le 01/04', source:'Calcul', updatedAt:'2026-03-20'},
+    {id:90303, desc:'Résistance au changement managers de proximité — refus d\'utiliser le module temps réel', prob:'high', impact:'medium', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-04-15', mitigation:'15 champions internes identifiés + ateliers change management planifiés', source:'Observation', updatedAt:'2026-03-15'},
+    {id:90304, desc:'Consultants SAP clés (ML, KB) partiellement mobilisés sur projet concurrent DSI', prob:'medium', impact:'high', score:0.42, severity:'high', status:'open', owner:'AN', due:'2026-03-30', mitigation:'Réunion arbitrage direction IT prévue le 25/03 — exclusivité demandée', source:'Observation', updatedAt:'2026-03-22'},
+    {id:90305, desc:'Incompatibilité interface SAP HCM / système paie externe Silae (API non documentée)', prob:'medium', impact:'high', score:0.42, severity:'high', status:'mitigated', owner:'KB', due:'2026-03-01', mitigation:'Intégrateur tiers IPG Solutions mandaté — connecteur livré et testé', source:'Expert', updatedAt:'2026-03-05'},
+    {id:90306, desc:'Retard validation partenaire social CSSCT sur module gestion du temps', prob:'medium', impact:'medium', score:0.25, severity:'medium', status:'open', owner:'AN', due:'2026-04-10', mitigation:'Dossier CSSCT déposé — présentation prévue réunion du 08/04', source:'Réglementaire', updatedAt:'2026-03-12'},
+    {id:90307, desc:'Key Users indisponibles pour sessions recette UAT — contraintes opérationnelles', prob:'medium', impact:'medium', score:0.25, severity:'medium', status:'open', owner:'AN', due:'2026-04-15', mitigation:'Planning recette revu : sessions 2h max, créneaux fixes avec DRH', source:'Observation', updatedAt:'2026-03-12'},
+  ],
+  actions: [
+    {id:90311, desc:'ETL Talend : traitement nettoyage 100% tables RH + rapport qualité final', owner:'ML', due:'2026-03-28', status:'progress', severity:'critical', mitigation:'60% tables traitées — 3 règles métier en cours de clarification'},
+    {id:90312, desc:'COPIL extraordinaire : présenter CR-003 réserve budget +50K€ — demande décision', owner:'AN', due:'2026-04-01', status:'open', severity:'critical', mitigation:''},
+    {id:90313, desc:'Réunion arbitrage direction IT — exclusivité ML/KB sur projet ERP', owner:'AN', due:'2026-03-25', status:'open', severity:'high', mitigation:''},
+    {id:90314, desc:'Ateliers conduite du changement : 3 sessions managers (20 personnes/session)', owner:'AN', due:'2026-04-10', status:'open', severity:'high', mitigation:''},
+    {id:90315, desc:'Tests non-régression modules Z : compléter les 340 cas de test restants', owner:'KB', due:'2026-04-05', status:'progress', severity:'high', mitigation:'200/340 tests validés — 140 restants'},
+    {id:90316, desc:'Présenter dossier CSSCT — module gestion du temps, règles conventions collectives', owner:'AN', due:'2026-04-08', status:'open', severity:'medium', mitigation:''},
+    {id:90317, desc:'Fixer planning ferme recette UAT avec DRH — engagement sur 180 Key Users', owner:'AN', due:'2026-03-28', status:'open', severity:'medium', mitigation:''},
+  ],
+  issues: [
+    {id:90321, desc:'Doublons critiques données salariés : 8% du périmètre (340 doublons identifiés)', severity:'critical', status:'open', owner:'ML', due:'2026-03-28'},
+    {id:90322, desc:'Erreur calcul ancienneté sur 340 salariés — règle conventionnelle temps partiel mal interprétée', severity:'critical', status:'open', owner:'KB', due:'2026-04-05'},
+    {id:90323, desc:'Module gestion absences — incompatibilité avec convention collective HCR (art. L.3121)', severity:'high', status:'open', owner:'KB', due:'2026-04-10'},
+    {id:90324, desc:'Accès environnement test SAP Sandbox refusé à 8 Key Users — droits SAP BASIS non créés', severity:'medium', status:'closed', owner:'AN', due:'2026-03-15'},
+    {id:90325, desc:'Export rapport social annuel incomplet — champs DADS non mappés en migration', severity:'medium', status:'open', owner:'ML', due:'2026-04-20'},
+  ],
+  decisions: [
+    {id:90331, desc:'Déploiement en 3 vagues géographiques retenu (vs big-bang) — réduction risque go-live', owner:'Comité Pilotage', status:'closed', due:'2025-09-25'},
+    {id:90332, desc:'Extension plan conduite du changement +40K€ — passage de 3 à 5 sessions formation', owner:'DRH', status:'closed', due:'2026-02-10'},
+    {id:90333, desc:'Recours intégrateur tiers IPG Solutions pour connecteur SAP/Silae', owner:'DSI', status:'closed', due:'2026-02-28'},
+    {id:90334, desc:'Report Go-Live Vague 1 de 3 semaines — données non suffisamment nettoyées', owner:'Comité Pilotage', status:'closed', due:'2026-03-20'},
+    {id:90335, desc:'Arbitrage budget tests — réserve +50K€ en attente décision direction', owner:'Direction Générale', status:'open', due:'2026-04-01'},
+    {id:90336, desc:'Ouverture d\'un comité restreint "qualité données" bimensuel jusqu\'au go-live', owner:'Comité Pilotage', status:'open', due:'2026-04-05'},
+  ]
+};
+
+// ── BUDGET DATA ────────────────────────────────────────
+var DEMO_BUDGETS = {};
+
+DEMO_BUDGETS[9001] = {
+  planned: 850000, committed: 680000, consumed: 382500, currency: '€',
+  entries: [
+    {id:1, category:'Infrastructure réseau', planned:510000, actual:229125, status:'on_track'},
+    {id:2, category:'Ingénierie & intégration', planned:127500, actual:57375, status:'on_track'},
+    {id:3, category:'Sécurité & audit', planned:85000, actual:38250, status:'on_track'},
+    {id:4, category:'Tests & qualification', planned:68000, actual:0, status:'not_started'},
+    {id:5, category:'Formation & documentation', planned:34000, actual:22950, status:'on_track'},
+    {id:6, category:'Management & gouvernance', planned:25500, actual:34800, status:'over_budget'},
+  ]
+};
+
+DEMO_BUDGETS[9002] = {
+  planned: 280000, committed: 168000, consumed: 106400, currency: '€',
+  entries: [
+    {id:1, category:'Développement backend',   planned:84000,  actual:42000, status:'on_track'},
+    {id:2, category:'Développement mobile',    planned:112000, actual:53200, status:'on_track'},
+    {id:3, category:'Design UX/UI',            planned:28000,  actual:11200, status:'on_track'},
+    {id:4, category:'Tests & QA',              planned:22400,  actual:0, status:'not_started'},
+    {id:5, category:'Infrastructure & DevOps', planned:22400,  actual:0, status:'not_started'},
+    {id:6, category:'Management projet',       planned:11200,  actual:0, status:'not_started'},
+  ]
+};
+
+DEMO_BUDGETS[9003] = {
+  planned: 520000, committed: 494000, consumed: 322400, currency: '€',
+  entries: [
+    {id:1, category:'Licences SAP S/4HANA',    planned:156000, actual:156000, status:'on_track'},
+    {id:2, category:'Intégration & migration',  planned:130000, actual:97500, status:'on_track'},
+    {id:3, category:'Développements spéc. Z',   planned:78000,  actual:93600, status:'over_budget'},
+    {id:4, category:'Tests & recette UAT',      planned:62400,  actual:0, status:'not_started'},
+    {id:5, category:'Conduite du changement',   planned:57200,  actual:41600, status:'on_track'},
+    {id:6, category:'Formation utilisateurs',   planned:26000,  actual:0, status:'not_started'},
+    {id:7, category:'Management & gouvernance', planned:10400,  actual:33700, status:'over_budget'},
+  ]
+};
+
+// ── GOUVERNANCE : COMITÉS ──────────────────────────────
+var DEMO_COMMITTEES = {};
+
+DEMO_COMMITTEES[9001] = [
+  {id:1, type:'Kick-off',  date:'2025-10-05', participants:'CdP, MOA, DSI, Direction Réseau, Équipe projet', agenda:'Lancement officiel — objectifs, planning, budget, organisation équipe', cr:'Charte projet signée. Planning M0 approuvé. Équipe constituée. Prochaine étape : Architecture réseau.', status:'tenu'},
+  {id:2, type:'COPIL',     date:'2025-12-10', participants:'Direction, CdP, MOA, DSI',                     agenda:'Bilan phase Initialisation — Architecture validée, choix fournisseur NSN', cr:'Architecture NSA→SA validée. Fournisseur Nokia NSN retenu. Budget engagé à 40%.', status:'tenu'},
+  {id:3, type:'COPIL',     date:'2026-02-18', participants:'Direction, CdP, MOA, KB',                     agenda:'Revue phase déploiement sites pilotes — avancement, risques', cr:'Sites pilotes 2/4 opérationnels. Risque RR-001 escaladé. Réserve budget +50K€ soumise.', status:'tenu'},
+  {id:4, type:'Revue technique', date:'2026-04-22', participants:'CdP, Équipe technique, Expert Nokia',   agenda:'Validation intégration & tests avant déploiement national', cr:'', status:'planifie'},
+];
+
+DEMO_COMMITTEES[9002] = [
+  {id:1, type:'Kick-off',  date:'2025-12-01', participants:'CdP, PO, Équipe dev, Design',  agenda:'Lancement sprint 0 — Vision produit, backlog initial, DoD',                 cr:'Backlog initial 48 stories. Sprint 0 complété. Environnements configurés.', status:'tenu'},
+  {id:2, type:'COPROJ',    date:'2026-01-15', participants:'CdP, PO, Direction Marketing', agenda:'Sprint Review 1-2 — Démo connexion, catalogue, panier',                    cr:'Vélocité sprint 1: 21pts, sprint 2: 19pts. Objectif 22pts/sprint ajusté à 20pts.', status:'tenu'},
+  {id:3, type:'Revue technique', date:'2026-02-19', participants:'CdP, Lead Dev, RSSI',   agenda:'Sprint Review 2 — Intégration paiement Stripe, conformité PCI-DSS',        cr:'Bug critique iOS 17 identifié. Audit PCI-DSS commandé. CR-001 soumis.', status:'tenu'},
+  {id:4, type:'COPROJ',    date:'2026-04-02', participants:'CdP, PO, Direction Marketing', agenda:'Sprint Review 3-4 — Notifications push, fidélité, décision report release', cr:'', status:'planifie'},
+];
+
+DEMO_COMMITTEES[9003] = [
+  {id:1, type:'Kick-off',  date:'2025-09-25', participants:'DRH, DSI, CdP, Équipe SAP, Direction', agenda:'Lancement transformation — Vision, périmètre, gouvernance, planning vagues', cr:'Déploiement 3 vagues validé. Budget 520K€ approuvé. Champions internes identifiés.', status:'tenu'},
+  {id:2, type:'COPIL',     date:'2025-12-05', participants:'DRH, DSI, CdP, Direction',            agenda:'Bilan configuration SAP — Go/NoGo migration données',                      cr:'Configuration 95% complète. Go migration données accordé. Risques données signalés.', status:'tenu'},
+  {id:3, type:'COPIL',     date:'2026-02-10', participants:'DRH, DSI, CdP, Direction, RSSI',      agenda:'Bilan migration données — Qualité données, tests, risques',               cr:'Taux erreur 18% données — inacceptable. Plan nettoyage approuvé. Extension CDC +40K€.', status:'tenu'},
+  {id:4, type:'COPIL',     date:'2026-03-20', participants:'DRH, DSI, CdP, Direction',            agenda:'Revue risques critiques — Report go-live Vague 1',                         cr:'Report go-live 3 semaines acté. Budget phase tests en dépassement. COPIL extra convoqué.', status:'tenu'},
+  {id:5, type:'Revue technique', date:'2026-04-01', participants:'CdP, DSI, Responsable UAT',    agenda:'COPIL extraordinaire — Arbitrage budget tests (+50K€)',                    cr:'', status:'planifie'},
+];
+
+// ── GOUVERNANCE : RACI ─────────────────────────────────
+var DEMO_RACI = {};
+
+function makeRaci(rows, assignments) {
+  var cells = {};
+  assignments.forEach(function(a){ cells[a[0]+'_'+a[1]] = a[2]; });
+  return { rows: rows, cells: cells };
+}
+var RACI_ROWS_GOV = [
+  {id:1,label:'Initialisation & Cadrage'}, {id:2,label:'Planification détaillée'},
+  {id:3,label:'Exécution / Développement'},{id:4,label:'Tests & Validation'},
+  {id:5,label:'Déploiement & Mise en prod'},{id:6,label:'Clôture & REX'},
+];
+DEMO_RACI[9001] = makeRaci(RACI_ROWS_GOV, [
+  [1,'AN','A'],[1,'KB','R'],[1,'ML','C'],[1,'SC','I'],
+  [2,'AN','A'],[2,'ML','R'],[2,'KB','C'],[2,'SC','I'],
+  [3,'AN','A'],[3,'KB','R'],[3,'ML','C'],[3,'SC','C'],
+  [4,'AN','A'],[4,'SC','R'],[4,'KB','C'],[4,'ML','I'],
+  [5,'AN','A'],[5,'KB','R'],[5,'ML','C'],[5,'SC','C'],
+  [6,'AN','R'],[6,'ML','C'],[6,'KB','I'],[6,'SC','I'],
+]);
+DEMO_RACI[9002] = makeRaci(RACI_ROWS_GOV, [
+  [1,'AN','A'],[1,'SC','R'],[1,'ML','C'],
+  [2,'AN','A'],[2,'ML','R'],[2,'SC','C'],
+  [3,'AN','A'],[3,'SC','R'],[3,'ML','R'],
+  [4,'AN','A'],[4,'SC','R'],[4,'ML','C'],
+  [5,'AN','A'],[5,'ML','R'],[5,'SC','C'],
+  [6,'AN','R'],[6,'ML','C'],[6,'SC','I'],
+]);
+DEMO_RACI[9003] = makeRaci(RACI_ROWS_GOV, [
+  [1,'AN','A'],[1,'ML','R'],[1,'KB','C'],[1,'SC','I'],
+  [2,'AN','A'],[2,'ML','R'],[2,'KB','R'],[2,'SC','C'],
+  [3,'AN','A'],[3,'ML','R'],[3,'KB','C'],[3,'SC','I'],
+  [4,'AN','A'],[4,'SC','R'],[4,'KB','C'],[4,'ML','C'],
+  [5,'AN','A'],[5,'KB','R'],[5,'ML','C'],[5,'SC','C'],
+  [6,'AN','R'],[6,'ML','C'],[6,'KB','I'],[6,'SC','I'],
+]);
+
+// ── CHANGEMENTS (CRs) ─────────────────────────────────
+var DEMO_CHANGES = {};
+
+DEMO_CHANGES[9001] = [
+  {id:'CR-001',title:'Extension couverture — 2 sites supplémentaires',  type:'Périmètre',decision:'approved',status:'implemented',requestor:'MOA',date:'2026-01-20',impact:'+8j, +35K€',priority:'high',   desc:'Le client souhaite étendre la couverture à 2 sites additionnels non prévus initialement.'},
+  {id:'CR-002',title:'Ajout plateforme monitoring temps réel (APM)',    type:'Périmètre',decision:'pending', status:'submitted',  requestor:'CdP', date:'2026-03-15',impact:'+5j, +22K€',priority:'medium',desc:'Demande d\'intégration d\'une solution APM (Datadog) pour le monitoring réseau temps réel.'},
+];
+DEMO_CHANGES[9002] = [
+  {id:'CR-001',title:'Module programme fidélité gamifié',               type:'Périmètre',decision:'pending', status:'in_review',  requestor:'Marketing',date:'2026-02-28',impact:'+10j, +18K€',priority:'medium',desc:'Ajout d\'un système de gamification (badges, niveaux) au module fidélité, non prévu en V1.'},
+];
+DEMO_CHANGES[9003] = [
+  {id:'CR-001',title:'Extension plan conduite du changement (+40K€)',   type:'Budget',   decision:'approved',status:'implemented',requestor:'DRH', date:'2026-02-05',impact:'+40K€',         priority:'high',   desc:'Face à la résistance détectée, extension du programme CDC avec coaching managers et e-learning.'},
+  {id:'CR-002',title:'Report go-live Vague 1 de 3 semaines',           type:'Délai',    decision:'approved',status:'implemented',requestor:'CdP', date:'2026-03-18',impact:'+21j calendaires',priority:'high',   desc:'Qualité des données insuffisante — taux d\'erreur 18% nécessite délai nettoyage supplémentaire.'},
+  {id:'CR-003',title:'Réserve budget phase tests (+50K€)',              type:'Budget',   decision:'pending', status:'submitted',  requestor:'CdP', date:'2026-03-22',impact:'+50K€',         priority:'critical',desc:'Dépassement phase tests prévu à +25%. Demande de réserve pour couvrir les tests et corrections.'},
+];
+
+// ── HYPOTHÈSES ─────────────────────────────────────────
+var DEMO_ASSUMPTIONS = {};
+
+DEMO_ASSUMPTIONS[9001] = [
+  {id:'H-001',desc:'Nokia NSN livrera les équipements dans les délais contractuels (SLA 95%)',owner:'KB', category:'Technique',status:'valid',  impact:'Retard déploiement +6 semaines si invalidée',verifiedDate:'2025-12-20'},
+  {id:'H-002',desc:'La DSI fournira les accès VPN et infrastructure d\'hébergement OAM',      owner:'ML', category:'Technique',status:'valid',  impact:'Blocage mise en service si accès non fournis',   verifiedDate:'2026-01-15'},
+  {id:'H-003',desc:'Pas de changement réglementaire sur les fréquences 5G (ARCEP) en 2026',  owner:'AN', category:'Externe',  status:'unknown',impact:'Arrêt ou refonte architecture si fréquences modifiées',verifiedDate:''},
+];
+DEMO_ASSUMPTIONS[9002] = [
+  {id:'H-001',desc:'L\'API Stripe v3 restera compatible pendant toute la durée du projet',    owner:'ML', category:'Technique',status:'valid',  impact:'Refactoring complet paiement si dépréciation',  verifiedDate:'2025-12-15'},
+  {id:'H-002',desc:'Les utilisateurs cibles disposeront d\'un smartphone iOS 16+ ou Android 12+',owner:'SC',category:'Externe',status:'valid',  impact:'Réduction du marché cible si parc plus vieux',  verifiedDate:'2025-12-01'},
+  {id:'H-003',desc:'L\'App Store et Google Play valideront l\'app dans les délais standards', owner:'AN', category:'Externe',  status:'unknown',impact:'Retard release si validation >2 semaines',        verifiedDate:''},
+];
+DEMO_ASSUMPTIONS[9003] = [
+  {id:'H-001',desc:'Les données RH historiques (10 ans) sont exploitables à 95% minimum',    owner:'ML', category:'Technique',status:'invalid',impact:'Migration partielle — risque non-conformité sociale',verifiedDate:'2026-03-10'},
+  {id:'H-002',desc:'Les Key Users seront disponibles à 60% pendant la phase recette UAT',    owner:'AN', category:'Équipe',   status:'unknown',impact:'Planning recette décalé si dispo <40%',           verifiedDate:''},
+  {id:'H-003',desc:'SAP S/4HANA 2023 supportera tous les modules Z actuels sans refonte',    owner:'KB', category:'Technique',status:'invalid',impact:'Redéveloppement 8 interfaces critiques nécessaire',verifiedDate:'2026-01-20'},
+  {id:'H-004',desc:'La direction garantit un budget de réserve de 10% du budget total',      owner:'AN', category:'Budget',   status:'valid',  impact:'Dépassement non couvert si réserve retirée',        verifiedDate:'2025-09-25'},
+];
+
+// ── LEÇONS APPRISES ────────────────────────────────────
+var DEMO_LESSONS = {};
+
+DEMO_LESSONS[9001] = [
+  {id:'LL-001',category:'Planning',      phase:'Phase 2',  desc:'Le découpage en phases ≤6 semaines avec jalons de validation a évité les dérives', impact:'Validation design réalisée en temps et heure, architecture approuvée sans retard',  recommendation:'Systématiser les jalons de validation intermédiaires sur tout projet >6 mois',owner:'AN', date:'2026-01-15'},
+  {id:'LL-002',category:'Risque',        phase:'Phase 3',  desc:'Absence de clause SLA précise sur les délais de livraison équipements NSN',         impact:'Retard équipements détecté en cours de déploiement — 3 semaines de marge perdues',recommendation:'Inclure systématiquement des pénalités de retard clairement définies dans les contrats fournisseurs',owner:'KB',date:'2026-03-10'},
+];
+DEMO_LESSONS[9002] = [
+  {id:'LL-001',category:'Technique',     phase:'Sprint 2', desc:'L\'intégration continue et les tests automatisés ont réduit les régressions de 60%', impact:'Zéro bug de régression sur les modules livrés en production intermédiaire',        recommendation:'Maintenir un coverage test >80% et intégrer Detox pour les tests E2E mobile',  owner:'SC', date:'2026-02-01'},
+  {id:'LL-002',category:'Planning',      phase:'Sprint 3', desc:'La vélocité planifiée (22pts) était trop optimiste sans buffer pour la dette technique',impact:'Scope réduit en sprint 3 — retard risqué sur la release MVP',                  recommendation:'Inclure 20% de buffer pour dette technique dans la vélocité sprint agile',     owner:'AN', date:'2026-03-15'},
+];
+DEMO_LESSONS[9003] = [
+  {id:'LL-001',category:'Équipe',        phase:'Phase 2',  desc:'Les champions internes métier ont accéléré l\'adoption lors des ateliers de configuration',impact:'Participation 40% plus élevée aux ateliers avec les champions vs sans',           recommendation:'Identifier et former des champions internes dès le kick-off sur tout projet ERP',owner:'AN', date:'2025-12-10'},
+  {id:'LL-002',category:'Risque',        phase:'Phase 3',  desc:'La qualité des données source n\'a pas été évaluée assez tôt dans le projet',          impact:'Taux d\'erreur 18% découvert en migration test — 3 semaines de retard',          recommendation:'Réaliser un audit qualité données complet dès la phase Cadrage (avant Blueprint)',owner:'ML', date:'2026-03-05'},
+  {id:'LL-003',category:'Gouvernance',   phase:'Phase 4',  desc:'Les COPIL mensuels étaient insuffisants pendant la phase de crise données',           impact:'Décisions prises avec 2 semaines de retard — escalade tardive vers la direction', recommendation:'Prévoir des COPIL extraordinaires hebdomadaires dès qu\'un risque critique est activé',owner:'AN',date:'2026-03-20'},
+];
+
+// ── RESSOURCES DÉMO ────────────────────────────────────
+// Membres spécialisés ajoutés aux 4 ressources globales existantes
+var DEMO_RESOURCES = [
+  // ── Communs aux 4 existants (inchangés, conservés pour cohérence) ──
+  // AN, ML, KB, SC déjà dans DEFAULT_RESOURCES de pmhub-data.js
+  // ── Projet 9001 — Télécoms / 5G ──
+  { id:'FD', name:'Fatima Diallo',      role:'RF Engineer',           level:'Confirmé', availability:90, skills:['5G NR','Drive Test','Antennes','Nokia RAN','Couverture RF'],      color:'#63d2b4' },
+  { id:'PL', name:'Pierre Laurent',     role:'Network Architect',     level:'Senior',   availability:75, skills:['5G Core','NSA/SA','3GPP','AMF/SMF','Architecture réseau'],         color:'#7ab8e8' },
+  { id:'MR', name:'Mounir Rachedi',     role:'Integration Engineer',  level:'Confirmé', availability:80, skills:['Nokia NSN','Configuration réseau','IPRAN','Tests QA réseau'],      color:'#e8c97a' },
+  // ── Projet 9002 — App Mobile / Agile ──
+  { id:'TC', name:'Thomas Chen',        role:'Lead Dev React Native',  level:'Senior',   availability:100,skills:['React Native','TypeScript','iOS','Android','CI/CD','Jest'],        color:'#a78bfa' },
+  { id:'NB', name:'Nadia Bouchard',     role:'Product Owner',          level:'Confirmé', availability:60, skills:['Scrum','User Stories','Figma','Backlog','Roadmap produit'],          color:'#f472b6' },
+  { id:'RL', name:'Romain Lefebvre',    role:'QA Engineer Mobile',     level:'Junior',   availability:100,skills:['Tests automatisés','Detox','Appium','Performance','SonarQube'],    color:'#34d399' },
+  // ── Projet 9003 — ERP / Transformation ──
+  { id:'CV', name:'Christine Vidal',    role:'SAP HCM Consultant',     level:'Expert',   availability:80, skills:['SAP S/4HANA','SAP HR','Paie','SuccessFactors','ABAP'],              color:'#fb923c' },
+  { id:'DD', name:'Didier Dupont',      role:'Change Manager',          level:'Senior',   availability:70, skills:['Conduite du changement','PROSCI','Formation','Communication','ADKAR'], color:'#c084fc' },
+  { id:'EB', name:'Emma Bertrand',      role:'Data Migration Analyst',  level:'Confirmé', availability:90, skills:['ETL Talend','SQL','SAP HANA','Qualité données','Migration'],       color:'#38bdf8' },
+];
+
+// IDs des ressources démo à supprimer à la désinstallation
+var DEMO_RESOURCE_IDS = DEMO_RESOURCES.map(function(r){ return r.id; });
+
+// ══════════════════════════════════════════════════════
+// FONCTIONS DE CHARGEMENT / SUPPRESSION
+// ══════════════════════════════════════════════════════
+function showStatus(msg, type) {
+  var el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = 'block';
+  if (type === 'ok') setTimeout(function(){ el.style.display='none'; }, 5000);
+}
+
+function loadDemoProjects() {
+  try {
+    // 1. Projets
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('pmhub_projects') || '[]'); } catch(e){}
+    // Retirer les éventuels démo déjà présents
+    existing = existing.filter(function(p){ return DEMO_IDS.indexOf(p.id) === -1; });
+    // Ajouter les 3 démo en tête
+    var merged = DEMO_PROJECTS.concat(existing);
+    localStorage.setItem('pmhub_projects', JSON.stringify(merged));
+
+    // 2. RAID
+    var allRaids = {};
+    try { allRaids = JSON.parse(localStorage.getItem('pmhub_raids') || '{}'); } catch(e){}
+    DEMO_IDS.forEach(function(id){ allRaids[id] = DEMO_RAIDS[id]; });
+    localStorage.setItem('pmhub_raids', JSON.stringify(allRaids));
+
+    // 3. Gantt / Kanban tasks
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_tasks_' + id, JSON.stringify(DEMO_GANTT[id]));
+    });
+
+    // 4. Budget
+    var allBudgets = {};
+    try { allBudgets = JSON.parse(localStorage.getItem('pmhub_budget') || '{}'); } catch(e){}
+    DEMO_IDS.forEach(function(id){ allBudgets[id] = DEMO_BUDGETS[id]; });
+    localStorage.setItem('pmhub_budget', JSON.stringify(allBudgets));
+
+    // 5. Comités
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_committees_' + id, JSON.stringify(DEMO_COMMITTEES[id]));
+    });
+
+    // 6. RACI
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_raci_' + id, JSON.stringify(DEMO_RACI[id]));
+    });
+
+    // 7. Changements
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_changes_' + id, JSON.stringify(DEMO_CHANGES[id]));
+    });
+
+    // 8. Hypothèses
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_assumptions_' + id, JSON.stringify(DEMO_ASSUMPTIONS[id]));
+    });
+
+    // 9. Leçons apprises
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_lessons_' + id, JSON.stringify(DEMO_LESSONS[id]));
+    });
+
+    // 10. Registre des risques (pmhub_rr_{id}) — stockage distinct du RAID
+    DEMO_IDS.forEach(function(id){
+      localStorage.setItem('pmhub_rr_' + id, JSON.stringify(DEMO_RR[id]));
+    });
+
+    // 11b. Sprints Agile — projet 9002 (App Mobile Scrum)
+    var DEMO_SPRINTS_9002 = {
+      config: { duration: 14, velocity_target: 20 },
+      sprints: [
+        { id:1, name:'Sprint 1', goal:'Connexion OAuth2, catalogue produits — fondations UX',             start:'2025-12-01', end:'2025-12-14', capacity:22, completed:21, taskIds:[1,2],  status:'closed' },
+        { id:2, name:'Sprint 2', goal:'Panier d\'achats — flux complet ajout/modification/suppression',   start:'2025-12-15', end:'2025-12-28', capacity:20, completed:19, taskIds:[3],    status:'closed' },
+        { id:3, name:'Sprint 3', goal:'Intégration Stripe — paiement sécurisé 3DS2',                      start:'2026-01-05', end:'2026-01-18', capacity:20, completed:18, taskIds:[4],    status:'closed' },
+        { id:4, name:'Sprint 4', goal:'Profil utilisateur et historique des commandes',                    start:'2026-01-19', end:'2026-02-01', capacity:20, completed:17, taskIds:[5],    status:'closed' },
+        { id:5, name:'Sprint 5', goal:'Notifications push Firebase — engagement post-achat',               start:'2026-02-02', end:'2026-02-15', capacity:20, completed:20, taskIds:[6],    status:'closed' },
+        { id:6, name:'Sprint 6', goal:'Système de points fidélité — gamification & rétention',             start:'2026-02-16', end:'2026-03-01', capacity:20, completed:16, taskIds:[7],    status:'closed' },
+        { id:7, name:'Sprint 7', goal:'Recherche avancée & filtres — expérience découverte catalogue',     start:'2026-03-09', end:'2026-03-28', capacity:20, completed:null, taskIds:[8,9], status:'active' },
+        { id:8, name:'Sprint 8', goal:'Tableau de bord analytics & export RGPD',                           start:'2026-03-29', end:'2026-04-11', capacity:20, completed:null, taskIds:[10,11],status:'planned'},
+        { id:9, name:'Sprint 9', goal:'Tests de charge, beta & corrections — prêt release',                start:'2026-04-12', end:'2026-04-25', capacity:20, completed:null, taskIds:[12,13],status:'planned'}
+      ]
+    };
+    localStorage.setItem('pmhub_sprints_9002', JSON.stringify(DEMO_SPRINTS_9002));
+
+    // 11c. Sprints Hybride — projet 9003 (ERP SAP S/4HANA)
+    // Partie Agile du projet : itérations de recette UAT + configuration modulaire
+    var DEMO_SPRINTS_9003 = {
+      config: { duration: 14, velocity_target: 18 },
+      sprints: [
+        { id:1, name:'Itération 1', goal:'Recette modules RH — paramétrage paie et congés',              start:'2026-02-16', end:'2026-03-01', capacity:18, completed:16, taskIds:[12],   status:'closed' },
+        { id:2, name:'Itération 2', goal:'Recette modules Finance — comptabilité & reporting',            start:'2026-03-02', end:'2026-03-15', capacity:18, completed:14, taskIds:[13],   status:'closed' },
+        { id:3, name:'Itération 3', goal:'UAT vague 1 — 150 utilisateurs RH, corrections bloquants',     start:'2026-03-16', end:'2026-03-29', capacity:18, completed:null, taskIds:[13],  status:'active' },
+        { id:4, name:'Itération 4', goal:'Formation pilote & documentation utilisateur finale',           start:'2026-03-30', end:'2026-04-12', capacity:16, completed:null, taskIds:[15],  status:'planned'},
+        { id:5, name:'Itération 5', goal:'Go-Live préparation — cutover plan, bascule production',       start:'2026-04-13', end:'2026-04-26', capacity:14, completed:null, taskIds:[],    status:'planned'}
+      ]
+    };
+    localStorage.setItem('pmhub_sprints_9003', JSON.stringify(DEMO_SPRINTS_9003));
+
+    // 11. Ressources — écriture directe de la liste complète (4 membres existants + 9 démo)
+    var ALL_RESOURCES = [
+      { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',         level:'Senior',   availability:80,  skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'],          color:'#63d2b4' },
+      { id:'ML', name:'Marc Leblanc',         role:'Data Architect',           level:'Senior',   availability:60,  skills:['Data Engineering','Python','SQL','Azure'],              color:'#7ab8e8' },
+      { id:'KB', name:'Karim Benali',         role:'Infrastructure Engineer',  level:'Confirmé', availability:80,  skills:['Datacenter','Réseau','VMware','Linux'],                 color:'#e8c97a' },
+      { id:'SC', name:'Sophie Carré',         role:'AI/ML Engineer',           level:'Confirmé', availability:70,  skills:['ML','Python','TensorFlow','MLOps'],                     color:'#e07070' },
+      { id:'FD', name:'Fatima Diallo',        role:'RF Engineer',              level:'Confirmé', availability:90,  skills:['5G NR','Drive Test','Antennes','Nokia RAN','Couverture RF'], color:'#63d2b4' },
+      { id:'PL', name:'Pierre Laurent',       role:'Network Architect',        level:'Senior',   availability:75,  skills:['5G Core','NSA/SA','3GPP','AMF/SMF','Architecture réseau'],  color:'#7ab8e8' },
+      { id:'MR', name:'Mounir Rachedi',       role:'Integration Engineer',     level:'Confirmé', availability:80,  skills:['Nokia NSN','Configuration réseau','IPRAN','Tests QA réseau'], color:'#e8c97a' },
+      { id:'TC', name:'Thomas Chen',          role:'Lead Dev React Native',    level:'Senior',   availability:100, skills:['React Native','TypeScript','iOS','Android','CI/CD','Jest'],   color:'#a78bfa' },
+      { id:'NB', name:'Nadia Bouchard',       role:'Product Owner',            level:'Confirmé', availability:60,  skills:['Scrum','User Stories','Figma','Backlog','Roadmap produit'],   color:'#f472b6' },
+      { id:'RL', name:'Romain Lefebvre',      role:'QA Engineer Mobile',       level:'Junior',   availability:100, skills:['Tests automatisés','Detox','Appium','Performance','SonarQube'], color:'#34d399' },
+      { id:'CV', name:'Christine Vidal',      role:'SAP HCM Consultant',       level:'Expert',   availability:80,  skills:['SAP S/4HANA','SAP HR','Paie','SuccessFactors','ABAP'],         color:'#fb923c' },
+      { id:'DD', name:'Didier Dupont',        role:'Change Manager',           level:'Senior',   availability:70,  skills:['Conduite du changement','PROSCI','Formation','Communication','ADKAR'], color:'#c084fc' },
+      { id:'EB', name:'Emma Bertrand',        role:'Data Migration Analyst',   level:'Confirmé', availability:90,  skills:['ETL Talend','SQL','SAP HANA','Qualité données','Migration'],   color:'#38bdf8' },
+    ];
+    localStorage.setItem('pmhub_resources', JSON.stringify(ALL_RESOURCES));
+
+    // ── ANTI-SYNC SUPABASE : stamper tous les keys démo dans pmhub_sync_ts ──
+    // Sans ce stamp, Supabase (last-write-wins) récupère les données cloud au
+    // chargement du dashboard et écrase les données démo qu'on vient d'écrire.
+    var nowIso = new Date().toISOString();
+    var syncTs = {};
+    try { syncTs = JSON.parse(localStorage.getItem('pmhub_sync_ts') || '{}'); } catch(e) {}
+    var stampKeys = ['pmhub_projects', 'pmhub_raids', 'pmhub_budget', 'pmhub_resources'];
+    DEMO_IDS.forEach(function(id) {
+      stampKeys.push('pmhub_tasks_' + id);
+      stampKeys.push('pmhub_committees_' + id);
+      stampKeys.push('pmhub_raci_' + id);
+      stampKeys.push('pmhub_changes_' + id);
+      stampKeys.push('pmhub_assumptions_' + id);
+      stampKeys.push('pmhub_lessons_' + id);
+      stampKeys.push('pmhub_rr_' + id);
+    });
+    stampKeys.push('pmhub_sprints_9002');
+    stampKeys.push('pmhub_sprints_9003');
+    stampKeys.forEach(function(k) { syncTs[k] = nowIso; });
+    localStorage.setItem('pmhub_sync_ts', JSON.stringify(syncTs));
+
+    showStatus('✓ 3 projets démo chargés avec succès — redirection vers le dashboard…', 'ok');
+    setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1800);
+
+  } catch(e) {
+    showStatus('⚠ Erreur lors du chargement : ' + e.message, 'err');
+  }
+}
+
+function deleteDemoProjects() {
+  if (!confirm('Supprimer les 3 projets de démonstration et toutes leurs données ?')) return;
+  try {
+    // Projets
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('pmhub_projects') || '[]'); } catch(e){}
+    localStorage.setItem('pmhub_projects', JSON.stringify(existing.filter(function(p){ return DEMO_IDS.indexOf(p.id) === -1; })));
+
+    // RAID
+    var allRaids = {};
+    try { allRaids = JSON.parse(localStorage.getItem('pmhub_raids') || '{}'); } catch(e){}
+    DEMO_IDS.forEach(function(id){ delete allRaids[id]; });
+    localStorage.setItem('pmhub_raids', JSON.stringify(allRaids));
+
+    // Budget
+    var allBudgets = {};
+    try { allBudgets = JSON.parse(localStorage.getItem('pmhub_budget') || '{}'); } catch(e){}
+    DEMO_IDS.forEach(function(id){ delete allBudgets[id]; });
+    localStorage.setItem('pmhub_budget', JSON.stringify(allBudgets));
+
+    // Clés individuelles
+    var suffixes = ['pmhub_tasks_','pmhub_committees_','pmhub_raci_','pmhub_changes_','pmhub_assumptions_','pmhub_lessons_','pmhub_stakeholders_','pmhub_communication_','pmhub_rr_'];
+    DEMO_IDS.forEach(function(id){
+      suffixes.forEach(function(s){ localStorage.removeItem(s + id); });
+    });
+
+    // Ressources — restaurer les 4 membres d'origine
+    var BASE_RESOURCES = [
+      { id:'AN', name:'Abdelhakim Nechniche', role:'Project Manager',        level:'Senior',   availability:80, skills:['PMP','PRINCE2','Jira','Power BI','Télécoms'], color:'#63d2b4' },
+      { id:'ML', name:'Marc Leblanc',         role:'Data Architect',          level:'Senior',   availability:60, skills:['Data Engineering','Python','SQL','Azure'],    color:'#7ab8e8' },
+      { id:'KB', name:'Karim Benali',         role:'Infrastructure Engineer', level:'Confirmé', availability:80, skills:['Datacenter','Réseau','VMware','Linux'],        color:'#e8c97a' },
+      { id:'SC', name:'Sophie Carré',         role:'AI/ML Engineer',          level:'Confirmé', availability:70, skills:['ML','Python','TensorFlow','MLOps'],            color:'#e07070' },
+    ];
+    localStorage.setItem('pmhub_resources', JSON.stringify(BASE_RESOURCES));
+
+    showStatus('✓ Projets démo supprimés — redirection…', 'ok');
+    setTimeout(function(){ window.location.href = 'pm-hub.html'; }, 1500);
+  } catch(e) {
+    showStatus('⚠ Erreur : ' + e.message, 'err');
+  }
+}
+</script>
+</body>
+</html>

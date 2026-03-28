@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelHub — Pipeline Delivery</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+<script src="hub-mini-chat.js"></script>
+<style>
+.page-hero { margin-bottom: 28px; }
+.hero-bar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+.kpi-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: var(--transition);
+}
+.kpi-card:hover { border-color: var(--border-active); transform: translateY(-2px); }
+.kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:8px; }
+.kpi-value { font-size:28px; font-weight:700; font-family:var(--font-heading); }
+.kpi-sub { font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+.toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+.toolbar-spacer { flex:1; }
+select, input[type=text] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size:13px;
+  font-family: var(--font-body);
+  outline:none;
+  transition: var(--transition);
+}
+select:focus, input[type=text]:focus { border-color: var(--primary); }
+
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size:13px; font-weight:600;
+  cursor:pointer; border:none;
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+.btn-primary { background: var(--primary); color: #0B0F19; }
+.btn-primary:hover { opacity:0.88; transform:translateY(-1px); }
+.btn-ghost { background: var(--surface2); color: var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+.btn-danger { background: rgba(239,68,68,0.12); color: var(--danger); border:1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background: rgba(239,68,68,0.22); }
+.btn-sm { padding:5px 12px; font-size:12px; }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th {
+  text-align:left; font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--text-muted); padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  font-family: var(--font-mono);
+}
+.data-table td {
+  padding:13px 16px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  color: var(--text);
+  vertical-align:middle;
+}
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tbody tr { transition: var(--transition); }
+.data-table tbody tr:hover { background: var(--surface2); }
+
+.badge {
+  display:inline-flex; align-items:center;
+  padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:600;
+  font-family: var(--font-mono);
+  letter-spacing:0.04em;
+}
+.badge-backlog    { background:rgba(156,163,175,0.15); color:#9CA3AF; }
+.badge-in_progress{ background:rgba(45,212,191,0.15);  color:var(--primary); }
+.badge-review     { background:rgba(245,158,11,0.15);  color:var(--warning); }
+.badge-delivered  { background:rgba(34,197,94,0.15);   color:var(--success); }
+.badge-high   { background:rgba(239,68,68,0.15);   color:var(--danger); }
+.badge-medium { background:rgba(245,158,11,0.15);  color:var(--warning); }
+.badge-low    { background:rgba(156,163,175,0.15); color:#9CA3AF; }
+.badge-critical { background:rgba(239,68,68,0.2); color:#FF6B6B; }
+
+.progress-bar-wrap { background:var(--surface3); border-radius:99px; height:6px; width:120px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:99px; transition:width 0.4s; }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(6px);
+  z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.22s;
+}
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:32px;
+  width:520px; max-width:95vw;
+  max-height:90vh; overflow-y:auto;
+  box-shadow: var(--shadow);
+  transform: translateY(20px);
+  transition: transform 0.25s var(--ease-out);
+}
+.modal-overlay.active .modal { transform:translateY(0); }
+.modal-title { font-family:var(--font-heading); font-size:18px; font-weight:700; margin-bottom:24px; }
+.form-group { margin-bottom:18px; }
+.form-label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.06em; }
+.form-input {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text); padding:10px 14px;
+  font-size:13px; font-family:var(--font-body); outline:none; transition:var(--transition);
+}
+.form-input:focus { border-color:var(--primary); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state-icon { font-size:48px; margin-bottom:16px; }
+.empty-state-title { font-size:16px; font-weight:600; color:var(--text-soft); margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    <a href="delhub-dashboard.html" style="color:inherit;text-decoration:none;">DelHub / v1.0</a>
+  </div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="delhub-settings.html" class="nav-icon" title="Paramètres"><span class="nav-icon-symbol">⚙</span></a>
+  </div>
+</nav>
+<a href="#" class="ai-float-btn" id="aiFloatBtn" title="Assistant IA">🤖</a>
+<div class="layout">
+  <aside class="sidebar" id="delhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main" style="padding:32px;overflow-y:auto">
+
+    <div class="hero-bar">
+      <div class="hero-left">
+        <span class="hero-badge">Delivery</span>
+        <h1 class="hero-title">Pipeline Delivery</h1>
+        <p class="hero-sub">Suivi des livrables, phases et progression</p>
+      </div>
+      <div id="addBtnWrap"></div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <select id="filterPhase">
+        <option value="">Toutes les phases</option>
+        <option value="backlog">Backlog</option>
+        <option value="in_progress">En cours</option>
+        <option value="review">En review</option>
+        <option value="delivered">Livré</option>
+      </select>
+      <select id="filterPriority">
+        <option value="">Toutes les priorités</option>
+        <option value="critical">Critique</option>
+        <option value="high">Haute</option>
+        <option value="medium">Moyenne</option>
+        <option value="low">Basse</option>
+      </select>
+      <div class="toolbar-spacer"></div>
+      <span id="countLabel" style="font-size:12px;color:var(--text-muted)"></span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table" id="pipelineTable">
+        <thead>
+          <tr>
+            <th>Livrable</th>
+            <th>Client</th>
+            <th>Phase</th>
+            <th>Priorité</th>
+            <th>Progression</th>
+            <th>Échéance</th>
+            <th>Owner</th>
+            <th id="actionsHeader" style="display:none">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="pipelineTbody"></tbody>
+      </table>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nouveau livrable</div>
+    <form id="pipelineForm" autocomplete="off">
+      <div class="form-group">
+        <label class="form-label">Livrable *</label>
+        <input class="form-input" type="text" id="f_deliverable" placeholder="Nom du livrable" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client</label>
+          <input class="form-input" type="text" id="f_client" placeholder="Client">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner</label>
+          <input class="form-input" type="text" id="f_owner" placeholder="Responsable">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phase</label>
+          <select class="form-input" id="f_phase">
+            <option value="backlog">Backlog</option>
+            <option value="in_progress">En cours</option>
+            <option value="review">En review</option>
+            <option value="delivered">Livré</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priorité</label>
+          <select class="form-input" id="f_priority">
+            <option value="low">Basse</option>
+            <option value="medium">Moyenne</option>
+            <option value="high">Haute</option>
+            <option value="critical">Critique</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Progression (%)</label>
+          <input class="form-input" type="number" id="f_progress" min="0" max="100" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Échéance</label>
+          <input class="form-input" type="date" id="f_dueDate">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dépendances (IDs, virgule)</label>
+        <input class="form-input" type="text" id="f_dependencies" placeholder="ex: 123, 456">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modalCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="modalSubmit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  if (typeof DELHUB === 'undefined') return;
+
+  var canWrite = DELHUB.canWrite('pipeline');
+  var editingId = null;
+
+  var phaseLabels = { backlog:'Backlog', in_progress:'En cours', review:'En review', delivered:'Livré' };
+  var priorityLabels = { critical:'Critique', high:'Haute', medium:'Moyenne', low:'Basse' };
+
+  // Add button
+  if (canWrite) {
+    document.getElementById('addBtnWrap').innerHTML =
+      '<button class="btn btn-primary" id="addBtn">+ Nouveau livrable</button>';
+    document.getElementById('addBtn').addEventListener('click', openAdd);
+    document.getElementById('actionsHeader').style.display = '';
+  }
+
+  function renderKPIs() {
+    var items = DELHUB.getPipeline();
+    var total = items.length;
+    var inProg = items.filter(function(i) { return i.phase === 'in_progress'; }).length;
+    var review  = items.filter(function(i) { return i.phase === 'review'; }).length;
+    var delivered = items.filter(function(i) { return i.phase === 'delivered'; }).length;
+    var avgProg = total ? Math.round(items.reduce(function(s,i) { return s + (Number(i.progress)||0); }, 0) / total) : 0;
+
+    var kpis = [
+      { label:'Total livrables', value: total, sub:'dans le pipeline', color:'var(--text)' },
+      { label:'En cours', value: inProg, sub:'in_progress', color:'var(--primary)' },
+      { label:'En review', value: review, sub:'en attente validation', color:'var(--warning)' },
+      { label:'Livrés', value: delivered, sub:'terminés', color:'var(--success)' },
+      { label:'Progression moy.', value: avgProg+'%', sub:'avancement global', color: avgProg >= 70 ? 'var(--success)' : 'var(--warning)' },
+    ];
+    document.getElementById('kpiStrip').innerHTML = kpis.map(function(k) {
+      return '<div class="kpi-card"><div class="kpi-label">'+k.label+'</div>' +
+        '<div class="kpi-value" style="color:'+k.color+'">'+k.value+'</div>' +
+        '<div class="kpi-sub">'+k.sub+'</div></div>';
+    }).join('');
+  }
+
+  function getProgressColor(p) {
+    if (p >= 80) return 'var(--success)';
+    if (p >= 40) return 'var(--primary)';
+    return 'var(--warning)';
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  function renderTable() {
+    var items = DELHUB.getPipeline();
+    var phase = document.getElementById('filterPhase').value;
+    var priority = document.getElementById('filterPriority').value;
+
+    if (phase) items = items.filter(function(i) { return i.phase === phase; });
+    if (priority) items = items.filter(function(i) { return i.priority === priority; });
+
+    document.getElementById('countLabel').textContent = items.length + ' livrable(s)';
+
+    if (!items.length) {
+      document.getElementById('pipelineTbody').innerHTML =
+        '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📦</div>' +
+        '<div class="empty-state-title">Aucun livrable</div>' +
+        '<p>Ajoutez votre premier livrable pour commencer.</p></div></td></tr>';
+      return;
+    }
+
+    document.getElementById('pipelineTbody').innerHTML = items.map(function(item) {
+      var prog = Number(item.progress) || 0;
+      var isOverdue = item.dueDate && new Date(item.dueDate) < new Date() && item.phase !== 'delivered';
+      return '<tr>' +
+        '<td><strong style="color:var(--text)">' + (item.deliverable || '—') + '</strong></td>' +
+        '<td style="color:var(--text-muted)">' + (item.client || '—') + '</td>' +
+        '<td><span class="badge badge-' + item.phase + '">' + (phaseLabels[item.phase] || item.phase) + '</span></td>' +
+        '<td><span class="badge badge-' + (item.priority||'medium') + '">' + (priorityLabels[item.priority] || item.priority || '—') + '</span></td>' +
+        '<td>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:'+prog+'%;background:'+getProgressColor(prog)+'"></div></div>' +
+            '<span style="font-size:12px;font-family:var(--font-mono);color:var(--text-muted)">'+prog+'%</span>' +
+          '</div>' +
+        '</td>' +
+        '<td style="color:'+(isOverdue?'var(--danger)':'var(--text-muted)')+'">'+formatDate(item.dueDate)+(isOverdue?' ⚠':'')+'</td>' +
+        '<td style="color:var(--text-muted)">' + (item.owner || '—') + '</td>' +
+        (canWrite ?
+          '<td><div style="display:flex;gap:6px">' +
+            '<button class="btn btn-ghost btn-sm" onclick="PIPELINE_PAGE.edit('+item.id+')">Éditer</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="PIPELINE_PAGE.del('+item.id+')">Suppr.</button>' +
+          '</div></td>' : '') +
+      '</tr>';
+    }).join('');
+  }
+
+  function openAdd() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Nouveau livrable';
+    document.getElementById('pipelineForm').reset();
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function openEdit(id) {
+    var items = DELHUB.getPipeline();
+    var item = items.find(function(i) { return i.id === id; });
+    if (!item) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Éditer le livrable';
+    document.getElementById('f_deliverable').value = item.deliverable || '';
+    document.getElementById('f_client').value = item.client || '';
+    document.getElementById('f_owner').value = item.owner || '';
+    document.getElementById('f_phase').value = item.phase || 'backlog';
+    document.getElementById('f_priority').value = item.priority || 'medium';
+    document.getElementById('f_progress').value = item.progress || 0;
+    document.getElementById('f_dueDate').value = item.dueDate ? item.dueDate.substring(0,10) : '';
+    document.getElementById('f_dependencies').value = (item.dependencies || []).join(', ');
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    editingId = null;
+  }
+
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  document.getElementById('pipelineForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var deps = document.getElementById('f_dependencies').value
+      .split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    var data = {
+      deliverable: document.getElementById('f_deliverable').value.trim(),
+      client: document.getElementById('f_client').value.trim(),
+      owner: document.getElementById('f_owner').value.trim(),
+      phase: document.getElementById('f_phase').value,
+      priority: document.getElementById('f_priority').value,
+      progress: Number(document.getElementById('f_progress').value) || 0,
+      dueDate: document.getElementById('f_dueDate').value || null,
+      dependencies: deps,
+    };
+    if (!data.deliverable) return;
+    if (editingId) {
+      DELHUB.updatePipelineItem(editingId, data);
+    } else {
+      DELHUB.addPipelineItem(data);
+    }
+    closeModal();
+    renderKPIs();
+    renderTable();
+  });
+
+  document.getElementById('filterPhase').addEventListener('change', renderTable);
+  document.getElementById('filterPriority').addEventListener('change', renderTable);
+
+  // Public interface for inline onclick
+  window.PIPELINE_PAGE = {
+    edit: openEdit,
+    del: function(id) {
+      if (confirm('Supprimer ce livrable ?')) {
+        DELHUB.deletePipelineItem(id);
+        renderKPIs();
+        renderTable();
+      }
+    }
+  };
+
+  renderKPIs();
+  renderTable();
+})();
+</script>
+<script>
+window.HUB_AI_PAGE = {
+  pageId: 'delhub-pipeline',
+  title: 'IA Pipeline Delivery',
+  icon: '\u{1F680}',
+  suggestions: ['Forecast de livraison Q2', 'Goulots d\'etranglement pipeline', 'Prediction capacite vs demande', 'Risques de retard delivery'],
+  buildContext: function() {
+    if (typeof DELHUB === 'undefined') return '';
+    try {
+      var kpis = DELHUB.getDashboardKPIs('delivery');
+      return 'Pipeline Delivery: releases=' + ((kpis.delivery||{}).upcomingReleases||0) + ', SLA compliance=' + ((kpis.delivery||{}).slaCompliance||100) + '%, incidents ouverts=' + ((kpis.delivery||{}).openIncidents||0);
+    } catch(e) { return ''; }
+  },
+  predictions: function() { return 'Analyse mon pipeline delivery et donne des predictions de livraison, risques de retard, et recommandations de capacity planning.'; }
+};
+</script>
+<script src="hub-ai-widget.js"></script>
+</body>
+</html>

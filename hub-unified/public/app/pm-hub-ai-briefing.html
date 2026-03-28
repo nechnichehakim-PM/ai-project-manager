@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Briefing hebdomadaire</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.brief-week { font-family:'DM Mono',monospace; font-size:10px; color:var(--accent3); margin-top:8px; letter-spacing:.05em; }
+.brief-stats { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.bstat { background:var(--glass); border:1px solid var(--border); border-radius:6px; padding:5px 12px; font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); }
+.bstat strong { color:var(--text); font-size:12px; display:block; margin-bottom:1px; }
+.btn-pdf-brief { display:none; }
+.btn-pdf-brief.show { display:inline-flex; }
+</style>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="ph ph-row">
+      <div>
+        <div class="ph-tag">Intelligence portfolio</div>
+        <div class="ph-h1">Briefing <em>hebdomadaire</em></div>
+        <div class="ph-sub">Synthèse automatique de tous vos projets, prête en secondes.</div>
+        <div class="brief-week" id="briefWeek"></div>
+        <div class="brief-stats" id="briefStats"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+        <button class="btn-p" id="btnBriefing" onclick="genBriefing()">📊 Générer le briefing</button>
+        <button class="btn-s btn-pdf-brief" id="btnBriefPDF" onclick="exportBriefingPDF()">⬇ Télécharger PDF</button>
+      </div>
+    </div>
+    <div class="tool-body">
+      <div id="bEmpty" style="text-align:center;padding:50px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Cliquez sur <strong style="color:var(--accent);">Générer le briefing</strong> pour obtenir votre synthèse.</div>
+      <div class="bsections" id="bSections" style="display:none;">
+        <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">🎯</span><div class="bblock-title">Résumé exécutif</div></div><div class="bblock-body" id="bR"></div></div>
+        <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">📈</span><div class="bblock-title">Avancement par projet</div></div><div class="bblock-body" id="bA"></div></div>
+        <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">🔴</span><div class="bblock-title">Points d'attention & risques</div></div><div class="bblock-body" id="bP"></div></div>
+        <div class="bblock"><div class="bblock-hdr"><span class="bblock-icon">✅</span><div class="bblock-title">Actions prioritaires cette semaine</div></div><div class="bblock-body" id="bAc"></div></div>
+        <div style="display:flex;gap:8px;padding-top:4px;">
+          <button class="btn-s" onclick="copyBriefing()">📋 Copier tout</button>
+          <button class="btn-s" onclick="genBriefing()">🔄 Actualiser</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  function getWeekRange() {
+    var now = new Date();
+    var day = now.getDay();
+    var diffMon = (day === 0 ? -6 : 1 - day);
+    var mon = new Date(now); mon.setDate(now.getDate() + diffMon);
+    var fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    var fmt = function(d) { return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }); };
+    return 'Semaine du ' + fmt(mon) + ' au ' + fmt(fri) + ' · S' + getWeekNum(now);
+  }
+  function getWeekNum(d) {
+    var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  }
+  function loadBriefStats() {
+    var weekEl = document.getElementById('briefWeek');
+    if (weekEl) weekEl.textContent = getWeekRange();
+    if (typeof PMHUB === 'undefined') return;
+    var projs = PMHUB.getProjects ? PMHUB.getProjects() : [];
+    var active = projs.filter(function(p) { return p.status === 'active'; });
+    var closed = projs.filter(function(p) { return p.status === 'closed'; });
+    var allRisks = 0;
+    active.forEach(function(p) {
+      var r = PMHUB.getRaids && PMHUB.getRaids(p.id);
+      if (r) allRisks += (r.risks || []).filter(function(x) { return x.status !== 'closed'; }).length;
+    });
+    var avgProg = active.length ? Math.round(active.reduce(function(s, p) { return s + (p.progress || 0); }, 0) / active.length) : 0;
+    var s = document.getElementById('briefStats');
+    if (!s) return;
+    s.innerHTML = [
+      ['Actifs', active.length],
+      ['Clôturés', closed.length],
+      ['Avancement moy.', avgProg + '%'],
+      ['Risques ouverts', allRisks]
+    ].map(function(x) {
+      return '<div class="bstat"><strong>' + x[1] + '</strong>' + x[0] + '</div>';
+    }).join('');
+  }
+  // Show PDF button after generation
+  var origGen = window.genBriefing;
+  if (origGen) {
+    var _orig = origGen;
+    window.genBriefing = async function() {
+      await _orig();
+      var btn = document.getElementById('btnBriefPDF');
+      if (btn) btn.classList.add('show');
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadBriefStats);
+  } else { loadBriefStats(); }
+})();
+</script>
+</body>
+</html>

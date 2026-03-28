@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Hub — Analyse RAID IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="themes/hub-theme.css">
+<link rel="stylesheet" href="pmhub-ai-pages.css">
+<style>
+.rsev-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px; }
+.rsev-item { background:var(--glass); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.rsev-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); margin-bottom:6px; }
+.rsev-bar-wrap { height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+.rsev-bar { height:100%; border-radius:2px; transition:width .4s ease; }
+.rsev-count { font-family:'DM Mono',monospace; font-size:12px; font-weight:600; margin-bottom:2px; }
+.raid-proj-sel { background:var(--glass); border:1px solid var(--border); color:var(--text); font-family:'DM Mono',monospace; font-size:10px; padding:6px 10px; border-radius:6px; min-width:200px; }
+</style>
+<script src="hub-data.js"></script>
+<script src="hub-nav-context.js"></script>
+<script src="hub-sidebar.js"></script>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="ctx-banner" id="ctxBanner" style="display:none;"></div>
+<nav>
+  <a href="pm-hub-ai.html" class="nav-back" title="Retour au Centre IA">← Retour</a>
+  <div class="nav-logo"><a href="pm-hub.html" style="color:inherit;text-decoration:none;">PM Hub</a></div>
+  <div class="nav-context" id="nav-context"></div>
+  <div class="nav-links">
+    <a href="pm-hub.html" class="nav-cta">+ Nouveau projet</a>
+    <a href="pm-hub-settings.html" class="nav-icon" title="Paramètres">⚙</a>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="sidebar" id="pmhub-sidebar"></aside>
+  <div class="main-col">
+  <main class="main">
+    <div class="ph ph-row">
+      <div>
+        <div class="ph-tag">Analyse IA</div>
+        <div class="ph-h1">Analyse des <em>risques</em></div>
+        <div class="ph-sub">L'IA lit votre RAID et vous donne un diagnostic actionnable.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+        <select class="raid-proj-sel" id="raidProjSel" onchange="refreshRaidView()"></select>
+        <button class="btn-p" id="btnRaid" onclick="analyseRaidSelected()">🔍 Analyser ce projet</button>
+      </div>
+    </div>
+    <div class="tool-body" id="raidBody">
+      <div class="akpis" id="raidKpis"></div>
+      <div class="rsev-grid" id="raidSev"></div>
+      <div id="raidEmpty" style="text-align:center;padding:40px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">Cliquez sur <strong style="color:var(--accent);">Analyser ce projet</strong> pour obtenir le diagnostic.</div>
+      <div class="rcard" id="raidRes">
+        <div class="rcard-hdr">
+          <div class="rcard-lbl" id="raidLbl">Diagnostic IA — RAID</div>
+          <div class="rcard-acts">
+            <button class="btn-s" onclick="copyEl('raidBody2')">📋 Copier</button>
+            <button class="btn-s" onclick="analyseRaidSelected()">🔄</button>
+          </div>
+        </div>
+        <div class="rcard-body" id="raidBody2"></div>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="pmhub-ai.js"></script>
+<script>
+(function() {
+  var SEV_CFG = [
+    { key: 'critical', label: 'Critiques', color: 'var(--danger)' },
+    { key: 'high',     label: 'Élevés',   color: '#E07050' },
+    { key: 'medium',   label: 'Moyens',   color: 'var(--warning)' },
+    { key: 'low',      label: 'Faibles',  color: 'var(--success)' }
+  ];
+
+  function initProjSel() {
+    if (typeof PMHUB === 'undefined') return;
+    var projs = PMHUB.getProjects ? PMHUB.getProjects().filter(function(p) { return p.status === 'active'; }) : [];
+    var sel = document.getElementById('raidProjSel');
+    if (!sel) return;
+    sel.innerHTML = projs.length
+      ? projs.map(function(p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('')
+      : '<option value="">Aucun projet actif</option>';
+  }
+
+  window.refreshRaidView = function() {
+    if (typeof PMHUB === 'undefined') return;
+    var sel = document.getElementById('raidProjSel');
+    var pid = sel ? parseInt(sel.value, 10) : null;
+    var raid = pid && PMHUB.getRaids ? PMHUB.getRaids(pid) : null;
+    if (!raid) return;
+    var risks = raid.risks || [];
+    var or = risks.filter(function(r) { return r.status !== 'closed'; }).length;
+    var cr = risks.filter(function(r) { return r.severity === 'critical'; }).length;
+    var oa = (raid.actions || []).filter(function(a) { return a.status !== 'closed'; }).length;
+    var oi = (raid.issues || []).filter(function(i) { return i.status !== 'closed'; }).length;
+    var kpis = document.getElementById('raidKpis');
+    if (kpis) {
+      kpis.innerHTML = [
+        [or, 'Risques ouverts', or > 2 ? 'var(--danger)' : 'var(--warning)'],
+        [cr, 'Critiques', cr > 0 ? 'var(--danger)' : 'var(--success)'],
+        [oa, 'Actions ouvertes', 'var(--accent3)'],
+        [oi, 'Issues actives', oi > 0 ? 'var(--warning)' : 'var(--success)']
+      ].map(function(x) {
+        return '<div class="akpi"><div class="akpi-val" style="color:' + x[2] + '">' + x[0] + '</div><div class="akpi-lbl">' + x[1] + '</div></div>';
+      }).join('');
+    }
+    // Severity breakdown
+    var total = risks.length || 1;
+    var sev = document.getElementById('raidSev');
+    if (sev) {
+      sev.innerHTML = SEV_CFG.map(function(s) {
+        var n = risks.filter(function(r) { return r.severity === s.key; }).length;
+        var pct = Math.round((n / total) * 100);
+        return '<div class="rsev-item"><div class="rsev-count" style="color:' + s.color + '">' + n + '</div><div class="rsev-label">' + s.label + '</div><div class="rsev-bar-wrap"><div class="rsev-bar" style="width:' + pct + '%;background:' + s.color + '"></div></div></div>';
+      }).join('');
+    }
+  };
+
+  window.analyseRaidSelected = function() {
+    var sel = document.getElementById('raidProjSel');
+    var pid = sel ? parseInt(sel.value, 10) : null;
+    if (!pid) { return; }
+    // Override analyseRaid to use selected project
+    if (typeof PMHUB === 'undefined') return;
+    if (!PMHUB.isAIEnabled()) {
+      var tb = document.querySelector('.tool-body');
+      if (tb) tb.insertAdjacentHTML('afterbegin', '<div class="ia-off"><div style="font-size:22px">⚡</div><div><div class="ia-off-ttl">IA non configurée</div><div class="ia-off-sub">Configurez votre fournisseur IA pour utiliser cette fonctionnalité.</div></div><a href="pm-hub-settings.html?section=ai">⚙ Configurer</a></div>');
+      return;
+    }
+    var projs = PMHUB.getProjects ? PMHUB.getProjects() : [];
+    var proj = projs.find(function(p) { return p.id === pid; });
+    if (!proj) { return; }
+    var raid = PMHUB.getRaids && PMHUB.getRaids(proj.id);
+    var res = document.getElementById('raidRes');
+    var body = document.getElementById('raidBody2');
+    var empty = document.getElementById('raidEmpty');
+    var btn = document.getElementById('btnRaid');
+    var lbl = document.getElementById('raidLbl');
+    if (empty) empty.style.display = 'none';
+    if (res) res.classList.add('show');
+    if (lbl) lbl.textContent = 'Diagnostic IA — ' + proj.name;
+    if (body) { body.className = 'rcard-body loading'; body.textContent = '⏳ Analyse en cours…'; }
+    if (btn) btn.disabled = true;
+    var raidTxt = 'Projet: ' + proj.name + ' | Avancement: ' + proj.progress + '%\nRISQUES(' + (raid && raid.risks ? raid.risks.length : 0) + '): ' + ((raid && raid.risks) || []).map(function(r) { return '[' + r.severity + '/' + r.status + '] ' + r.desc + ' Owner:' + r.owner + ' Mitigation:' + (r.mitigation || 'non definie'); }).join(' | ') + '\nACTIONS(' + ((raid && raid.actions) ? raid.actions.length : 0) + '): ' + ((raid && raid.actions) || []).map(function(a) { return '[' + a.status + '] ' + a.desc + ' Owner:' + a.owner + ' Due:' + (a.due || '?'); }).join(' | ') + '\nISSUES(' + ((raid && raid.issues) ? raid.issues.length : 0) + '): ' + ((raid && raid.issues) || []).map(function(i) { return i.desc; }).join(' | ') + '\nDECISIONS(' + ((raid && raid.decisions) ? raid.decisions.length : 0) + '): ' + ((raid && raid.decisions) || []).map(function(d) { return '[' + d.status + '] ' + d.desc; }).join(' | ');
+    PMHUB.callAI('Tu es expert en gestion des risques projet (PMP, PRINCE2). Analyse de facon structuree et actionnable.', 'Analyse ce RAID Log et donne-moi:\n1. DIAGNOSTIC: sante du RAID (score /10) et points critiques\n2. TOP 3 RISQUES a traiter EN URGENCE avec actions concretes\n3. ACTIONS en retard ou a risque de derapage\n4. RISQUES OUBLIES: 2-3 risques probables non listes\n5. CE QUI VA BIEN dans la gestion des risques\n6. RECOMMANDATIONS: 3 actions concretes pour ameliorer\n\n' + raidTxt)
+    .then(function(r) {
+      if (body) { body.className = 'rcard-body'; body.textContent = r; }
+      if (window._toast) window._toast('Analyse terminée !');
+    }).catch(function(err) {
+      if (body) { body.className = 'rcard-body'; body.textContent = 'Erreur: ' + err.message; }
+    }).finally(function() {
+      if (btn) btn.disabled = false;
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { initProjSel(); refreshRaidView(); });
+  } else { initProjSel(); refreshRaidView(); }
+})();
+</script>
+</body>
+</html>
