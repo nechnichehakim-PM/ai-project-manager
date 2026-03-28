@@ -209,7 +209,7 @@ html[data-theme="light"] .meth-guard-btn.secondary{color:var(--text-muted);}
 
 <div class="layout" style="display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 65px);overflow:hidden;position:relative;z-index:1;margin-top:65px;">
   <aside class="sidebar" id="pmhub-sidebar"></aside>
-  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+  <div class="main-col" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
 
 <!-- PROJECT BAR -->
 <div class="project-bar">
@@ -1220,5 +1220,23 @@ function initSeekbar() {
 // ══════════════════════════════════════════════════════
 init();
 </script>
+<script>
+window.PMHUB_AI_CTX = {
+  label: 'Analyse Planning',
+  cacheKey: 'gantt_' + (new URLSearchParams(location.search).get('project')||''),
+  buildPrompt: function() {
+    var pid = new URLSearchParams(location.search).get('project') || localStorage.getItem('pmhub_current_project');
+    var p = PMHUB.getProjectById(pid);
+    var raw = PMHUB.getGanttTasks ? PMHUB.getGanttTasks(pid) : null;
+    var tasks = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.tasks) ? raw.tasks : []);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var late = tasks.filter(function(t){return t.end && new Date(t.end)<today && (t.progress||0)<100;});
+    var milestones = tasks.filter(function(t){return t.milestone||t.type==='milestone';});
+    var upcomingM = milestones.filter(function(t){var d=new Date(t.end||t.start||'');return d>=today && Math.round((d-today)/86400000)<=30;});
+    return 'Projet: '+(p?p.name:'N/A')+'\nAvancement global: '+(p?p.progress||0:0)+'%\nTotal tâches: '+tasks.length+'\nTâches en retard: '+late.length+'\nJalons à 30j: '+upcomingM.length+'\n\nRETARDS:\n'+late.slice(0,5).map(function(t){return '- '+(t.name||t.text||'?')+' (prévu: '+t.end+', avancement: '+(t.progress||0)+'%)';}).join('\n')+'\n\nJALONS PROCHAINS:\n'+upcomingM.slice(0,4).map(function(t){return '- '+(t.name||t.text||'?')+' le '+t.end;}).join('\n')+'\n\nAnalyse le planning et donne: 1) Retards critiques à traiter 2) Risques sur le chemin critique 3) Recommandations de replanification';
+  }
+};
+</script>
+<script src="pmhub-ai-context.js"></script>
 </body>
 </html>
