@@ -207,10 +207,17 @@
     }
     var main = document.querySelector('.main') || document.querySelector('.main-col') || document.querySelector('main');
     if (main) {
-      main.appendChild(el);
+      // If container is .main, it already has padding (48px 56px). Otherwise wrap with same spacing.
+      if (main.classList.contains('main')) {
+        main.appendChild(el);
+      } else {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'padding:0 56px 24px;flex-shrink:0;';
+        wrap.appendChild(el);
+        main.appendChild(wrap);
+      }
       console.log('[AIWidget] Inserted at bottom of', main.tagName + '.' + main.className);
     } else {
-      // Fallback: append to body before </body>
       document.body.appendChild(el);
       console.log('[AIWidget] Fallback: appended to body');
     }
@@ -252,7 +259,7 @@
     ]);
   }
 
-  var AI_TIMEOUT = 90000; // 90 secondes
+  var AI_TIMEOUT = 300000; // 5 minutes (modeles de raisonnement type gpt-5, o1, o3)
 
   // ── Predictions ──
   async function runPredictions(customQ) {
