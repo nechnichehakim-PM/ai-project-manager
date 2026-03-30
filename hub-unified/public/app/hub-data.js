@@ -693,7 +693,7 @@ const DELHUB = (() => {
     { id: 'lost',        label: 'Perdu',              color: '#EF4444' },
   ];
 
-  function getCRM()           { return load(KEYS.crm, []); }
+  function getCRM()           { return load(KEYS.crm, DEFAULT_CRM); }
   function saveCRM(list)      { return save(KEYS.crm, list); }
   function addCRMEntry(entry) { const list = getCRM(); entry.id = entry.id || Date.now(); entry.createdAt = new Date().toISOString(); entry.stage = entry.stage || 'prospect'; list.unshift(entry); saveCRM(list); return entry; }
   function updateCRMEntry(id, changes) { const list = getCRM(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes, updatedAt: new Date().toISOString() }; saveCRM(list); return list[idx]; }
@@ -719,63 +719,152 @@ const DELHUB = (() => {
   }
 
   // Proposals
-  function getProposals()         { return load(KEYS.proposals, []); }
+  function getProposals()         { return load(KEYS.proposals, DEFAULT_PROPOSALS); }
   function saveProposals(list)    { return save(KEYS.proposals, list); }
   function addProposal(proposal)  { const list = getProposals(); proposal.id = proposal.id || Date.now(); proposal.createdAt = new Date().toISOString(); proposal.status = proposal.status || 'draft'; list.unshift(proposal); saveProposals(list); return proposal; }
   function updateProposal(id, changes) { const list = getProposals(); const idx = list.findIndex(p => p.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveProposals(list); return list[idx]; }
   function deleteProposal(id)     { saveProposals(getProposals().filter(p => p.id !== id)); }
 
   // Contracts
-  function getContracts()         { return load(KEYS.contracts, []); }
+  function getContracts()         { return load(KEYS.contracts, DEFAULT_CONTRACTS); }
   function saveContracts(list)    { return save(KEYS.contracts, list); }
   function addContract(contract)  { const list = getContracts(); contract.id = contract.id || Date.now(); contract.createdAt = new Date().toISOString(); contract.status = contract.status || 'draft'; list.unshift(contract); saveContracts(list); return contract; }
   function updateContract(id, changes) { const list = getContracts(); const idx = list.findIndex(c => c.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveContracts(list); return list[idx]; }
   function deleteContract(id)     { saveContracts(getContracts().filter(c => c.id !== id)); }
 
   // P&L
-  function getPnL()           { return load(KEYS.pnl, []); }
+  function getPnL()           { return load(KEYS.pnl, DEFAULT_PNL); }
   function savePnL(list)      { return save(KEYS.pnl, list); }
   function addPnLEntry(entry) { const list = getPnL(); entry.id = entry.id || Date.now(); list.unshift(entry); savePnL(list); return entry; }
   function updatePnLEntry(id, changes) { const list = getPnL(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; savePnL(list); return list[idx]; }
   function deletePnLEntry(id) { savePnL(getPnL().filter(e => e.id !== id)); }
 
   // Forecast
-  function getForecasts()         { return load(KEYS.forecast, []); }
+  function getForecasts()         { return load(KEYS.forecast, DEFAULT_FORECAST); }
   function saveForecasts(list)    { return save(KEYS.forecast, list); }
   function addForecast(entry)     { const list = getForecasts(); entry.id = entry.id || Date.now(); list.unshift(entry); saveForecasts(list); return entry; }
   function updateForecast(id, changes) { const list = getForecasts(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveForecasts(list); return list[idx]; }
   function deleteForecast(id)     { saveForecasts(getForecasts().filter(e => e.id !== id)); }
 
+  // ── DEMO DATA (fallback quand localStorage vide) ──
+  const DEFAULT_ENGAGEMENTS = [
+    { id:2001, client:'Orange France',    contractId:'CTR-2024-001', slaName:'Disponibilité infrastructure',  target:99.5, actual:99.7, unit:'%',      status:'met',      lastMeasured:'2026-03-28' },
+    { id:2002, client:'Orange France',    contractId:'CTR-2024-001', slaName:'Temps de résolution P1',        target:4,    actual:3.2,  unit:'heures',  status:'met',      lastMeasured:'2026-03-28' },
+    { id:2003, client:'SFR Business',     contractId:'CTR-2024-002', slaName:'Disponibilité firewall',        target:99.9, actual:99.2, unit:'%',       status:'breached', lastMeasured:'2026-03-29' },
+    { id:2004, client:'SFR Business',     contractId:'CTR-2024-002', slaName:'Temps de réponse support',      target:2,    actual:2.8,  unit:'heures',  status:'at_risk',  lastMeasured:'2026-03-29' },
+    { id:2005, client:'Bouygues Telecom', contractId:'CTR-2025-003', slaName:'Uptime plateforme billing',     target:99.8, actual:99.9, unit:'%',       status:'met',      lastMeasured:'2026-03-27' },
+    { id:2006, client:'Bouygues Telecom', contractId:'CTR-2025-003', slaName:'Délai livraison features',      target:10,   actual:12,   unit:'jours',   status:'at_risk',  lastMeasured:'2026-03-25' },
+    { id:2007, client:'Engie Digital',    contractId:'CTR-2025-004', slaName:'Disponibilité NOC 24/7',        target:99.5, actual:99.6, unit:'%',       status:'met',      lastMeasured:'2026-03-28' },
+    { id:2008, client:'Engie Digital',    contractId:'CTR-2025-004', slaName:'MTTR incidents majeurs',        target:8,    actual:6.5,  unit:'heures',  status:'met',      lastMeasured:'2026-03-26' },
+  ];
+
+  const DEFAULT_PIPELINE = [
+    { id:1001, deliverable:'Migration SOC vers Cloud Azure',       client:'Orange France',    phase:'in_progress', priority:'critical', progress:62,  dueDate:'2026-04-15', owner:'Karim Benali',   dependencies:[] },
+    { id:1002, deliverable:'Déploiement Firewall Next-Gen',        client:'SFR Business',     phase:'review',      priority:'high',     progress:90,  dueDate:'2026-04-05', owner:'Sophie Martin',  dependencies:[1001] },
+    { id:1003, deliverable:'Intégration API Billing v3',           client:'Bouygues Telecom', phase:'in_progress', priority:'high',     progress:45,  dueDate:'2026-04-30', owner:'Marc Lefebvre',  dependencies:[] },
+    { id:1004, deliverable:'Formation équipe NOC (12 agents)',     client:'Engie Digital',    phase:'delivered',   priority:'medium',   progress:100, dueDate:'2026-03-20', owner:'Karim Benali',   dependencies:[] },
+    { id:1005, deliverable:'Audit Sécurité ISO 27001',             client:'Orange France',    phase:'backlog',     priority:'medium',   progress:0,   dueDate:'2026-05-30', owner:'Non assigné',    dependencies:[1002] },
+    { id:1006, deliverable:'Refonte Dashboard Supervision',        client:'SFR Business',     phase:'in_progress', priority:'medium',   progress:30,  dueDate:'2026-05-15', owner:'Sophie Martin',  dependencies:[] },
+    { id:1007, deliverable:'PRA / Plan de Reprise Activité',       client:'Bouygues Telecom', phase:'backlog',     priority:'high',     progress:10,  dueDate:'2026-06-01', owner:'Marc Lefebvre',  dependencies:[1003] },
+    { id:1008, deliverable:'Mise à jour CMDB (assets +380)',       client:'Engie Digital',    phase:'review',      priority:'low',      progress:85,  dueDate:'2026-04-10', owner:'Karim Benali',   dependencies:[] },
+  ];
+
+  const DEFAULT_RELEASES = [
+    { id:4001, name:'Release Orange — Migration Cloud v2',  version:'2.4.0', date:'2026-04-05', status:'ready',    goNoGo:'go',      environment:'Production',        items:['Migration VMs Azure','Basculement DNS','Tests de charge'],      notes:'Go validé en comité technique le 28/03' },
+    { id:4002, name:'Release SFR — Firewall NG Patch',      version:'1.9.2', date:'2026-04-12', status:'planned',  goNoGo:'pending', environment:'Production',        items:['Mise à jour firmware','Règles IPS','Validation config'],          notes:'En attente validation SFR' },
+    { id:4003, name:'Release Bouygues — API Billing v3',    version:'3.0.0', date:'2026-04-30', status:'planned',  goNoGo:'pending', environment:'Staging → Prod',    items:['Déploiement API','Migration données','Tests régression'],         notes:'Dépend livraison ticket 1003' },
+    { id:4004, name:'Release Engie — CMDB Update',          version:'1.2.1', date:'2026-04-10', status:'ready',    goNoGo:'go',      environment:'Production',        items:['Import assets','Réconciliation CI','Validation ITSM'],            notes:'' },
+    { id:4005, name:'Hotfix SFR — Incident Firewall',       version:'1.9.1', date:'2026-03-29', status:'deployed', goNoGo:'go',      environment:'Production',        items:['Correctif règle NAT','Redémarrage service'],                     notes:'Déployé en urgence suite incident P1' },
+  ];
+
+  const DEFAULT_CAPACITY = [
+    { id:3001, team:'Équipe Infra & Cloud',  members:5, period:'Avril 2026', availableHours:800,  allocatedHours:720,  utilization:90 },
+    { id:3002, team:'Équipe Sécurité',       members:3, period:'Avril 2026', availableHours:480,  allocatedHours:440,  utilization:92 },
+    { id:3003, team:'Équipe Développement',  members:6, period:'Avril 2026', availableHours:960,  allocatedHours:580,  utilization:60 },
+    { id:3004, team:'Équipe NOC / Support',  members:8, period:'Avril 2026', availableHours:1280, allocatedHours:1100, utilization:86 },
+    { id:3005, team:'Équipe Infra & Cloud',  members:5, period:'Mai 2026',   availableHours:800,  allocatedHours:650,  utilization:81 },
+    { id:3006, team:'Équipe Sécurité',       members:3, period:'Mai 2026',   availableHours:480,  allocatedHours:320,  utilization:67 },
+    { id:3007, team:'Équipe Développement',  members:6, period:'Mai 2026',   availableHours:960,  allocatedHours:870,  utilization:91 },
+  ];
+
+  const DEFAULT_INCIDENTS = [
+    { id:5001, title:'Firewall SFR — Coupure partielle trafic entrant', severity:'P1', status:'investigating', client:'SFR Business',     escalatedTo:'Claire Fontaine (Head)',  description:'Interruption partielle du trafic entrant sur le firewall principal SFR depuis 14h30.',        impact:'Indisponibilité partielle ~2000 utilisateurs SFR Business', resolution:'',                                                        createdAt:'2026-03-29T14:30:00.000Z', resolvedAt:null },
+    { id:5002, title:'API Billing — Timeout intermittent requêtes',     severity:'P2', status:'investigating', client:'Bouygues Telecom',  escalatedTo:'Karim Benali',            description:'Des timeouts intermittents observés sur l\'API billing depuis 72h. Pics à 08h et 18h.',       impact:'Ralentissements sur la facturation en temps réel',          resolution:'',                                                        createdAt:'2026-03-27T08:15:00.000Z', resolvedAt:null },
+    { id:5003, title:'Supervision NOC — Perte alertes email',           severity:'P3', status:'resolved',      client:'Engie Digital',     escalatedTo:'',                        description:'Le système d\'alertes email du NOC n\'envoyait plus les notifications depuis 48h.',            impact:'Alertes manquées, monitoring dégradé pendant 2 jours',      resolution:'Correction configuration SMTP — serveur relai changé',   createdAt:'2026-03-25T10:00:00.000Z', resolvedAt:'2026-03-26T16:30:00.000Z' },
+    { id:5004, title:'Certificat SSL expiré — portail client Orange',   severity:'P2', status:'resolved',      client:'Orange France',     escalatedTo:'Sophie Martin',           description:'Le certificat SSL du portail client Orange a expiré, provoquant une alerte sécurité.',         impact:'Accès portail client bloqué (message "non sécurisé")',       resolution:'Renouvellement certificat + automatisation via cron',     createdAt:'2026-03-22T09:00:00.000Z', resolvedAt:'2026-03-22T11:45:00.000Z' },
+    { id:5005, title:'Surcharge CPU serveur de monitoring',             severity:'P3', status:'closed',        client:'Engie Digital',     escalatedTo:'',                        description:'Le serveur Zabbix a atteint 95% CPU pendant 3h, causant des gaps dans les métriques.',        impact:'Données de monitoring incomplètes sur la plage 02h-05h',    resolution:'Optimisation requêtes BDD Zabbix + ajout RAM',           createdAt:'2026-03-18T02:00:00.000Z', resolvedAt:'2026-03-18T05:30:00.000Z' },
+    { id:5006, title:'Latence VPN — accès remote Orange',               severity:'P3', status:'closed',        client:'Orange France',     escalatedTo:'',                        description:'Latence anormale sur le VPN remote access Orange (>400ms au lieu de <50ms).',                impact:'Dégradation performance pour les équipes remote Orange',     resolution:'Rerouting BGP corrigé + mise à jour concentrateur VPN', createdAt:'2026-03-15T16:00:00.000Z', resolvedAt:'2026-03-16T10:00:00.000Z' },
+  ];
+
+  const DEFAULT_CONTRACTS = [
+    { id:6001, client:'Orange France',    scope:'Infrastructure Cloud & Sécurité — Migration et exploitation', startDate:'2024-01-01', endDate:'2026-12-31', value:480000, status:'active',    renewalDate:'2026-10-01', contactName:'Éric Moreau (DSI Orange)',       deliverables:['Migration Azure','SOC managé','Support N2/N3'] },
+    { id:6002, client:'SFR Business',     scope:'Firewall & Cybersécurité — GTI/GTR 4h/8h',                   startDate:'2024-06-01', endDate:'2026-05-31', value:220000, status:'active',    renewalDate:'2026-03-01', contactName:'Nadia Vidal (RSSI SFR)',          deliverables:['Firewall managé','Supervision 24/7','Rapports mensuels'] },
+    { id:6003, client:'Bouygues Telecom', scope:'Développement et intégration API Billing',                    startDate:'2025-01-15', endDate:'2026-07-15', value:185000, status:'active',    renewalDate:'2026-06-15', contactName:'Pierre Garnier (CTO Bouygues)',   deliverables:['API v3','Tests charge','Documentation'] },
+    { id:6004, client:'Engie Digital',    scope:'NOC Managé et Supervision Infrastructure',                    startDate:'2025-03-01', endDate:'2027-02-28', value:310000, status:'active',    renewalDate:'2026-12-01', contactName:'Lucie Bernard (IT Manager Engie)', deliverables:['NOC 24/7','CMDB','Rapports hebdo'] },
+    { id:6005, client:'TotalEnergies',    scope:'Audit sécurité et conseil RSSI',                              startDate:'2025-09-01', endDate:'2025-12-31', value:65000,  status:'completed', renewalDate:null,         contactName:'Alain Petit (RSSI Total)',        deliverables:['Rapport audit','Roadmap sécu'] },
+  ];
+
+  const DEFAULT_PNL = [
+    { id:7001, contractId:6001, period:'Q1 2026', revenue:120000, costs:78000, margin:42000, details:{ labor:62000, tools:8000, overhead:8000, other:0 } },
+    { id:7002, contractId:6002, period:'Q1 2026', revenue:55000,  costs:38000, margin:17000, details:{ labor:30000, tools:5000, overhead:3000, other:0 } },
+    { id:7003, contractId:6003, period:'Q1 2026', revenue:46250,  costs:35000, margin:11250, details:{ labor:30000, tools:2000, overhead:3000, other:0 } },
+    { id:7004, contractId:6004, period:'Q1 2026', revenue:77500,  costs:52000, margin:25500, details:{ labor:44000, tools:4000, overhead:4000, other:0 } },
+    { id:7005, contractId:6001, period:'Q4 2025', revenue:120000, costs:80000, margin:40000, details:{ labor:64000, tools:8000, overhead:8000, other:0 } },
+    { id:7006, contractId:6002, period:'Q4 2025', revenue:55000,  costs:40000, margin:15000, details:{ labor:32000, tools:5000, overhead:3000, other:0 } },
+  ];
+
+  const DEFAULT_CRM = [
+    { id:8001, company:'SNCF Connect',         contact:'Bertrand Allard',   email:'b.allard@sncf.fr',       stage:'negotiation', amount:290000, source:'Réseau',         sector:'Transport', notes:'Appel d\'offres cybersécurité — shortlist de 3', probability:65,  createdAt:'2026-01-15T10:00:00.000Z' },
+    { id:8002, company:'BNP Paribas',           contact:'Isabelle Voss',     email:'i.voss@bnp.fr',          stage:'proposal',    amount:450000, source:'Salon IT',       sector:'Finance',   notes:'Projet SOC managé 3 ans — RFP envoyée',         probability:40,  createdAt:'2026-02-01T09:00:00.000Z' },
+    { id:8003, company:'Veolia Environnement',  contact:'Marc Durand',       email:'m.durand@veolia.fr',     stage:'qualified',   amount:175000, source:'Recommandation', sector:'Energie',   notes:'Besoin monitoring OT/IT convergence',           probability:55,  createdAt:'2026-02-20T14:00:00.000Z' },
+    { id:8004, company:'Air France',            contact:'Stéphanie Noir',    email:'s.noir@airfrance.fr',    stage:'won',         amount:380000, source:'Appel sortant',  sector:'Transport', notes:'Contrat signé — démarrage mai 2026',            probability:100, createdAt:'2025-11-10T11:00:00.000Z' },
+    { id:8005, company:'Société Générale',      contact:'Philippe Roux',     email:'p.roux@socgen.fr',       stage:'lost',        amount:520000, source:'Appel d\'offres',sector:'Finance',   notes:'Perdu face à Capgemini sur le prix',            probability:0,   createdAt:'2025-12-01T10:00:00.000Z' },
+    { id:8006, company:'La Poste Groupe',       contact:'Anne Chevalier',    email:'a.chevalier@laposte.fr', stage:'prospect',    amount:120000, source:'LinkedIn',       sector:'Services',  notes:'Premier contact — périmètre à définir',         probability:20,  createdAt:'2026-03-10T16:00:00.000Z' },
+  ];
+
+  const DEFAULT_PROPOSALS = [
+    { id:9001, crmId:8001, title:'Proposition SOC Managé — SNCF Connect',    amount:290000, status:'sent',     sentDate:'2026-03-01', validUntil:'2026-04-01', description:'Mise en place d\'un SOC managé 24/7 avec SIEM, threat hunting et réponse à incidents.' },
+    { id:9002, crmId:8002, title:'Offre SOC & Cyber BNP Paribas 3 ans',      amount:450000, status:'sent',     sentDate:'2026-02-15', validUntil:'2026-03-31', description:'SOC managé + tests d\'intrusion annuels + formation équipes.' },
+    { id:9003, crmId:8003, title:'Monitoring OT/IT Convergence — Veolia',    amount:175000, status:'draft',    sentDate:null,         validUntil:null,         description:'Supervision unifiée des systèmes OT et IT avec alerting temps réel.' },
+    { id:9004, crmId:8004, title:'Infrastructure Cloud & Sécu — Air France', amount:380000, status:'accepted', sentDate:'2026-01-20', validUntil:'2026-02-28', description:'Migration infrastructure + supervision 24/7.' },
+  ];
+
+  const DEFAULT_FORECAST = [
+    { id:10001, period:'Q2 2026', pipelineTotal:1435000, weightedTotal:648500, committedRevenue:298750, targetRevenue:500000, gap:201250 },
+    { id:10002, period:'Q3 2026', pipelineTotal:1050000, weightedTotal:420000, committedRevenue:120000, targetRevenue:480000, gap:360000 },
+    { id:10003, period:'Q1 2026', pipelineTotal:1195000, weightedTotal:556750, committedRevenue:380000, targetRevenue:450000, gap:70000  },
+  ];
+
   // Engagements / SLA
-  function getEngagements()       { return load(KEYS.engagements, []); }
+  function getEngagements()       { return load(KEYS.engagements, DEFAULT_ENGAGEMENTS); }
   function saveEngagements(list)  { return save(KEYS.engagements, list); }
   function addEngagement(entry)   { const list = getEngagements(); entry.id = entry.id || Date.now(); entry.status = entry.status || 'met'; list.unshift(entry); saveEngagements(list); return entry; }
   function updateEngagement(id, changes) { const list = getEngagements(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveEngagements(list); return list[idx]; }
   function deleteEngagement(id)   { saveEngagements(getEngagements().filter(e => e.id !== id)); }
 
   // Pipeline
-  function getPipeline()          { return load(KEYS.pipeline, []); }
+  function getPipeline()          { return load(KEYS.pipeline, DEFAULT_PIPELINE); }
   function savePipeline(list)     { return save(KEYS.pipeline, list); }
   function addPipelineItem(item)  { const list = getPipeline(); item.id = item.id || Date.now(); item.phase = item.phase || 'backlog'; list.unshift(item); savePipeline(list); return item; }
   function updatePipelineItem(id, changes) { const list = getPipeline(); const idx = list.findIndex(i => i.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; savePipeline(list); return list[idx]; }
   function deletePipelineItem(id) { savePipeline(getPipeline().filter(i => i.id !== id)); }
 
   // Releases
-  function getReleases()          { return load(KEYS.releases, []); }
+  function getReleases()          { return load(KEYS.releases, DEFAULT_RELEASES); }
   function saveReleases(list)     { return save(KEYS.releases, list); }
   function addRelease(release)    { const list = getReleases(); release.id = release.id || Date.now(); release.status = release.status || 'planned'; release.goNoGo = release.goNoGo || 'pending'; list.unshift(release); saveReleases(list); return release; }
   function updateRelease(id, changes) { const list = getReleases(); const idx = list.findIndex(r => r.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveReleases(list); return list[idx]; }
   function deleteRelease(id)      { saveReleases(getReleases().filter(r => r.id !== id)); }
 
   // Capacity
-  function getCapacity()          { return load(KEYS.capacity, []); }
+  function getCapacity()          { return load(KEYS.capacity, DEFAULT_CAPACITY); }
   function saveCapacity(list)     { return save(KEYS.capacity, list); }
   function addCapacityEntry(entry){ const list = getCapacity(); entry.id = entry.id || Date.now(); list.unshift(entry); saveCapacity(list); return entry; }
   function updateCapacityEntry(id, changes) { const list = getCapacity(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveCapacity(list); return list[idx]; }
   function deleteCapacityEntry(id){ saveCapacity(getCapacity().filter(e => e.id !== id)); }
 
   // Incidents
-  function getIncidents()         { return load(KEYS.incidents, []); }
+  function getIncidents()         { return load(KEYS.incidents, DEFAULT_INCIDENTS); }
   function saveIncidents(list)    { return save(KEYS.incidents, list); }
   function addIncident(incident)  { const list = getIncidents(); incident.id = incident.id || Date.now(); incident.status = incident.status || 'open'; incident.createdAt = new Date().toISOString(); list.unshift(incident); saveIncidents(list); return incident; }
   function updateIncident(id, changes) { const list = getIncidents(); const idx = list.findIndex(i => i.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveIncidents(list); return list[idx]; }
