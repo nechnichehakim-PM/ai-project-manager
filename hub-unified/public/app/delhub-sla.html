@@ -400,12 +400,12 @@ window.HUB_AI_PAGE = {
     var inc = DELHUB.getIncidents();
     var lines = ['=== SLA & ENGAGEMENTS (' + eng.length + ') ==='];
     eng.forEach(function(e) {
-      lines.push('- ' + (e.name||e.service||'?') + ': statut=' + (e.status||'?') + ', cible=' + (e.target||'?') + ', actuel=' + (e.current||'?') + ', penalite=' + (e.penalty||'N/A'));
+      lines.push('- Client: ' + (e.client||'?') + ' | SLA: ' + (e.slaName||e.name||e.service||'?') + ' | cible=' + (e.target||'?') + ' ' + (e.unit||'') + ' | actuel=' + (e.actual||e.current||'?') + ' | statut=' + (e.status||'?'));
     });
     var open = inc.filter(function(i){ return i.status==='open'||i.status==='investigating'; });
-    lines.push('\n=== INCIDENTS (' + inc.length + ', ' + open.length + ' ouverts) ===');
+    lines.push('\n=== INCIDENTS (' + inc.length + ' total, ' + open.length + ' ouverts) ===');
     inc.slice(0,15).forEach(function(i) {
-      lines.push('- ' + (i.title||i.name||'?') + ': priorite=' + (i.priority||i.severity||'?') + ', statut=' + (i.status||'?') + ', date=' + (i.date||i.createdAt||'?'));
+      lines.push('- ' + (i.title||i.name||'?') + ': severite=' + (i.severity||i.priority||'?') + ', statut=' + (i.status||'?') + ', client=' + (i.client||'?') + ', date=' + (i.createdAt||i.date||'?'));
     });
     return lines.join('\n');
   },
