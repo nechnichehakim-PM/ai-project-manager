@@ -542,7 +542,7 @@ const PMHUB = (() => {
     if (s.provider === 'anthropic') {
       body = { model, max_tokens: 4096, system: systemPrompt, messages: [{ role:'user', content: userPrompt }] };
     } else {
-      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], temperature: 0.7, max_completion_tokens: 4096 };
+      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], max_completion_tokens: 16000 };
     }
     console.log('[PMHUB.callAI] Requete:', s.provider, model, 'system:', systemPrompt.length, 'user:', userPrompt.length);
     const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(body) });
@@ -896,7 +896,7 @@ const DELHUB = (() => {
     if (s.provider === 'anthropic') {
       body = { model, max_tokens: 4096, system: systemPrompt, messages: [{ role:'user', content: userPrompt }] };
     } else {
-      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], temperature: 0.7, max_completion_tokens: 4096 };
+      body = { model, messages: [{ role:'system', content: systemPrompt }, { role:'user', content: userPrompt }], max_completion_tokens: 16000 };
     }
     console.log('[DELHUB.callAI] Requete:', s.provider, model, 'system:', systemPrompt.length, 'user:', userPrompt.length);
     const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(body) });
