@@ -693,7 +693,7 @@ const DELHUB = (() => {
     { id: 'lost',        label: 'Perdu',              color: '#EF4444' },
   ];
 
-  function getCRM()           { return load(KEYS.crm, DEFAULT_CRM); }
+  function getCRM()           { return loadOrDefault(KEYS.crm, DEFAULT_CRM); }
   function saveCRM(list)      { return save(KEYS.crm, list); }
   function addCRMEntry(entry) { const list = getCRM(); entry.id = entry.id || Date.now(); entry.createdAt = new Date().toISOString(); entry.stage = entry.stage || 'prospect'; list.unshift(entry); saveCRM(list); return entry; }
   function updateCRMEntry(id, changes) { const list = getCRM(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes, updatedAt: new Date().toISOString() }; saveCRM(list); return list[idx]; }
@@ -719,28 +719,28 @@ const DELHUB = (() => {
   }
 
   // Proposals
-  function getProposals()         { return load(KEYS.proposals, DEFAULT_PROPOSALS); }
+  function getProposals()         { return loadOrDefault(KEYS.proposals, DEFAULT_PROPOSALS); }
   function saveProposals(list)    { return save(KEYS.proposals, list); }
   function addProposal(proposal)  { const list = getProposals(); proposal.id = proposal.id || Date.now(); proposal.createdAt = new Date().toISOString(); proposal.status = proposal.status || 'draft'; list.unshift(proposal); saveProposals(list); return proposal; }
   function updateProposal(id, changes) { const list = getProposals(); const idx = list.findIndex(p => p.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveProposals(list); return list[idx]; }
   function deleteProposal(id)     { saveProposals(getProposals().filter(p => p.id !== id)); }
 
   // Contracts
-  function getContracts()         { return load(KEYS.contracts, DEFAULT_CONTRACTS); }
+  function getContracts()         { return loadOrDefault(KEYS.contracts, DEFAULT_CONTRACTS); }
   function saveContracts(list)    { return save(KEYS.contracts, list); }
   function addContract(contract)  { const list = getContracts(); contract.id = contract.id || Date.now(); contract.createdAt = new Date().toISOString(); contract.status = contract.status || 'draft'; list.unshift(contract); saveContracts(list); return contract; }
   function updateContract(id, changes) { const list = getContracts(); const idx = list.findIndex(c => c.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveContracts(list); return list[idx]; }
   function deleteContract(id)     { saveContracts(getContracts().filter(c => c.id !== id)); }
 
   // P&L
-  function getPnL()           { return load(KEYS.pnl, DEFAULT_PNL); }
+  function getPnL()           { return loadOrDefault(KEYS.pnl, DEFAULT_PNL); }
   function savePnL(list)      { return save(KEYS.pnl, list); }
   function addPnLEntry(entry) { const list = getPnL(); entry.id = entry.id || Date.now(); list.unshift(entry); savePnL(list); return entry; }
   function updatePnLEntry(id, changes) { const list = getPnL(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; savePnL(list); return list[idx]; }
   function deletePnLEntry(id) { savePnL(getPnL().filter(e => e.id !== id)); }
 
   // Forecast
-  function getForecasts()         { return load(KEYS.forecast, DEFAULT_FORECAST); }
+  function getForecasts()         { return loadOrDefault(KEYS.forecast, DEFAULT_FORECAST); }
   function saveForecasts(list)    { return save(KEYS.forecast, list); }
   function addForecast(entry)     { const list = getForecasts(); entry.id = entry.id || Date.now(); list.unshift(entry); saveForecasts(list); return entry; }
   function updateForecast(id, changes) { const list = getForecasts(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveForecasts(list); return list[idx]; }
@@ -835,36 +835,39 @@ const DELHUB = (() => {
     { id:10003, period:'Q1 2026', pipelineTotal:1195000, weightedTotal:556750, committedRevenue:380000, targetRevenue:450000, gap:70000  },
   ];
 
+  // Helper : retourne les données ou le fallback si vide
+  function loadOrDefault(key, fallback) { const d = load(key, null); return (d && d.length > 0) ? d : fallback; }
+
   // Engagements / SLA
-  function getEngagements()       { return load(KEYS.engagements, DEFAULT_ENGAGEMENTS); }
+  function getEngagements()       { return loadOrDefault(KEYS.engagements, DEFAULT_ENGAGEMENTS); }
   function saveEngagements(list)  { return save(KEYS.engagements, list); }
   function addEngagement(entry)   { const list = getEngagements(); entry.id = entry.id || Date.now(); entry.status = entry.status || 'met'; list.unshift(entry); saveEngagements(list); return entry; }
   function updateEngagement(id, changes) { const list = getEngagements(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveEngagements(list); return list[idx]; }
   function deleteEngagement(id)   { saveEngagements(getEngagements().filter(e => e.id !== id)); }
 
   // Pipeline
-  function getPipeline()          { return load(KEYS.pipeline, DEFAULT_PIPELINE); }
+  function getPipeline()          { return loadOrDefault(KEYS.pipeline, DEFAULT_PIPELINE); }
   function savePipeline(list)     { return save(KEYS.pipeline, list); }
   function addPipelineItem(item)  { const list = getPipeline(); item.id = item.id || Date.now(); item.phase = item.phase || 'backlog'; list.unshift(item); savePipeline(list); return item; }
   function updatePipelineItem(id, changes) { const list = getPipeline(); const idx = list.findIndex(i => i.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; savePipeline(list); return list[idx]; }
   function deletePipelineItem(id) { savePipeline(getPipeline().filter(i => i.id !== id)); }
 
   // Releases
-  function getReleases()          { return load(KEYS.releases, DEFAULT_RELEASES); }
+  function getReleases()          { return loadOrDefault(KEYS.releases, DEFAULT_RELEASES); }
   function saveReleases(list)     { return save(KEYS.releases, list); }
   function addRelease(release)    { const list = getReleases(); release.id = release.id || Date.now(); release.status = release.status || 'planned'; release.goNoGo = release.goNoGo || 'pending'; list.unshift(release); saveReleases(list); return release; }
   function updateRelease(id, changes) { const list = getReleases(); const idx = list.findIndex(r => r.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveReleases(list); return list[idx]; }
   function deleteRelease(id)      { saveReleases(getReleases().filter(r => r.id !== id)); }
 
   // Capacity
-  function getCapacity()          { return load(KEYS.capacity, DEFAULT_CAPACITY); }
+  function getCapacity()          { return loadOrDefault(KEYS.capacity, DEFAULT_CAPACITY); }
   function saveCapacity(list)     { return save(KEYS.capacity, list); }
   function addCapacityEntry(entry){ const list = getCapacity(); entry.id = entry.id || Date.now(); list.unshift(entry); saveCapacity(list); return entry; }
   function updateCapacityEntry(id, changes) { const list = getCapacity(); const idx = list.findIndex(e => e.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveCapacity(list); return list[idx]; }
   function deleteCapacityEntry(id){ saveCapacity(getCapacity().filter(e => e.id !== id)); }
 
   // Incidents
-  function getIncidents()         { return load(KEYS.incidents, DEFAULT_INCIDENTS); }
+  function getIncidents()         { return loadOrDefault(KEYS.incidents, DEFAULT_INCIDENTS); }
   function saveIncidents(list)    { return save(KEYS.incidents, list); }
   function addIncident(incident)  { const list = getIncidents(); incident.id = incident.id || Date.now(); incident.status = incident.status || 'open'; incident.createdAt = new Date().toISOString(); list.unshift(incident); saveIncidents(list); return incident; }
   function updateIncident(id, changes) { const list = getIncidents(); const idx = list.findIndex(i => i.id === id); if (idx === -1) return false; list[idx] = { ...list[idx], ...changes }; saveIncidents(list); return list[idx]; }
