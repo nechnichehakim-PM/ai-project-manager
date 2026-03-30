@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Chargement demo...</title>
+<link rel="stylesheet" href="themes/hub-theme.css">
+<style>
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; gap:16px; }
+.msg { font-family: var(--font-heading); font-size:1.2rem; color:var(--text); }
+.sub { font-size:0.85rem; color:var(--text-muted); }
+.bar-wrap { width:320px; height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:99px; background:var(--primary); width:0; transition:width 0.4s; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="msg">Chargement des données démo...</div>
+<div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
+<div class="sub" id="status">Initialisation...</div>
+
+<script>
+(function() {
+  var bar = document.getElementById('bar');
+  var status = document.getElementById('status');
+
+  function step(pct, msg) {
+    bar.style.width = pct + '%';
+    status.textContent = msg;
+  }
+
+  step(10, 'Réinitialisation du profil...');
+
+  // Profil
+  var role = (new URLSearchParams(location.search).get('role')) || 'delivery';
+  var names = { god:'Abdelhakim Nechniche', pm:'Sophie Martin', delivery:'Karim Benali', business:'Marie Dupont', sales:'Thomas Leroy', head:'Claire Fontaine' };
+  var profile = { name: names[role] || role, email: 'demo-'+role+'@techdeliver.fr', role: role, org:'TechDeliver SAS', demo:true };
+  localStorage.setItem('hub_profile',    JSON.stringify(profile));
+  localStorage.setItem('delhub_profile', JSON.stringify(profile));
+  localStorage.setItem('pmhub_profile',  JSON.stringify(profile));
+  sessionStorage.removeItem('hub_simulated_role');
+
+  step(20, 'Pipeline Delivery...');
+  localStorage.setItem('delhub_pipeline', JSON.stringify([
+    { id:1001, deliverable:'Migration SOC vers Cloud Azure',       client:'Orange France',    phase:'in_progress', priority:'critical', progress:62,  dueDate:'2026-04-15', owner:'Karim Benali',  dependencies:[] },
+    { id:1002, deliverable:'Déploiement Firewall Next-Gen',        client:'SFR Business',     phase:'review',      priority:'high',     progress:90,  dueDate:'2026-04-05', owner:'Sophie Martin', dependencies:[1001] },
+    { id:1003, deliverable:'Intégration API Billing v3',           client:'Bouygues Telecom', phase:'in_progress', priority:'high',     progress:45,  dueDate:'2026-04-30', owner:'Marc Lefebvre', dependencies:[] },
+    { id:1004, deliverable:'Formation équipe NOC (12 agents)',     client:'Engie Digital',    phase:'delivered',   priority:'medium',   progress:100, dueDate:'2026-03-20', owner:'Karim Benali',  dependencies:[] },
+    { id:1005, deliverable:'Audit Sécurité ISO 27001',             client:'Orange France',    phase:'backlog',     priority:'medium',   progress:0,   dueDate:'2026-05-30', owner:'Non assigné',   dependencies:[1002] },
+    { id:1006, deliverable:'Refonte Dashboard Supervision',        client:'SFR Business',     phase:'in_progress', priority:'medium',   progress:30,  dueDate:'2026-05-15', owner:'Sophie Martin', dependencies:[] },
+    { id:1007, deliverable:'PRA / Plan de Reprise Activité',       client:'Bouygues Telecom', phase:'backlog',     priority:'high',     progress:10,  dueDate:'2026-06-01', owner:'Marc Lefebvre', dependencies:[1003] },
+    { id:1008, deliverable:'Mise à jour CMDB (assets +380)',       client:'Engie Digital',    phase:'review',      priority:'low',      progress:85,  dueDate:'2026-04-10', owner:'Karim Benali',  dependencies:[] }
+  ]));
+
+  step(35, 'SLA & Engagements...');
+  localStorage.setItem('delhub_engagements', JSON.stringify([
+    { id:2001, client:'Orange France',    contractId:'CTR-2024-001', slaName:'Disponibilité infrastructure',  target:99.5, actual:99.7, unit:'%',     status:'met',      lastMeasured:'2026-03-28' },
+    { id:2002, client:'Orange France',    contractId:'CTR-2024-001', slaName:'Temps de résolution P1',        target:4,    actual:3.2,  unit:'heures', status:'met',      lastMeasured:'2026-03-28' },
+    { id:2003, client:'SFR Business',     contractId:'CTR-2024-002', slaName:'Disponibilité firewall',        target:99.9, actual:99.2, unit:'%',      status:'breached', lastMeasured:'2026-03-29' },
+    { id:2004, client:'SFR Business',     contractId:'CTR-2024-002', slaName:'Temps de réponse support',      target:2,    actual:2.8,  unit:'heures', status:'at_risk',  lastMeasured:'2026-03-29' },
+    { id:2005, client:'Bouygues Telecom', contractId:'CTR-2025-003', slaName:'Uptime plateforme billing',     target:99.8, actual:99.9, unit:'%',      status:'met',      lastMeasured:'2026-03-27' },
+    { id:2006, client:'Bouygues Telecom', contractId:'CTR-2025-003', slaName:'Délai livraison features',      target:10,   actual:12,   unit:'jours',  status:'at_risk',  lastMeasured:'2026-03-25' },
+    { id:2007, client:'Engie Digital',    contractId:'CTR-2025-004', slaName:'Disponibilité NOC 24/7',        target:99.5, actual:99.6, unit:'%',      status:'met',      lastMeasured:'2026-03-28' },
+    { id:2008, client:'Engie Digital',    contractId:'CTR-2025-004', slaName:'MTTR incidents majeurs',        target:8,    actual:6.5,  unit:'heures', status:'met',      lastMeasured:'2026-03-26' }
+  ]));
+
+  step(48, 'Incidents...');
+  localStorage.setItem('delhub_incidents', JSON.stringify([
+    { id:5001, title:'Firewall SFR — Coupure partielle trafic entrant', severity:'P1', status:'investigating', client:'SFR Business',     escalatedTo:'Claire Fontaine (Head)',  description:'Interruption partielle du trafic entrant sur le firewall principal SFR depuis 14h30. Impact estimé : 30% du trafic bloqué.',  impact:'Indisponibilité partielle ~2000 utilisateurs SFR Business',  resolution:'',                                                       createdAt:'2026-03-29T14:30:00.000Z', resolvedAt:null },
+    { id:5002, title:'API Billing — Timeout intermittent requêtes',     severity:'P2', status:'investigating', client:'Bouygues Telecom',  escalatedTo:'Karim Benali',            description:'Timeouts intermittents sur l\'API billing depuis 72h. Pics à 08h et 18h.',                                                      impact:'Ralentissements sur la facturation en temps réel',           resolution:'',                                                       createdAt:'2026-03-27T08:15:00.000Z', resolvedAt:null },
+    { id:5003, title:'Supervision NOC — Perte alertes email',           severity:'P3', status:'resolved',      client:'Engie Digital',     escalatedTo:'',                        description:'Alertes email NOC inactives pendant 48h.',                                                                                          impact:'Alertes manquées, monitoring dégradé 2 jours',               resolution:'Correction SMTP — serveur relai changé',                 createdAt:'2026-03-25T10:00:00.000Z', resolvedAt:'2026-03-26T16:30:00.000Z' },
+    { id:5004, title:'Certificat SSL expiré — portail Orange',          severity:'P2', status:'resolved',      client:'Orange France',     escalatedTo:'Sophie Martin',           description:'Certificat SSL expiré sur le portail client Orange.',                                                                               impact:'Accès portail bloqué (alerte sécurité navigateur)',          resolution:'Renouvellement certificat + automatisation cron',        createdAt:'2026-03-22T09:00:00.000Z', resolvedAt:'2026-03-22T11:45:00.000Z' },
+    { id:5005, title:'Surcharge CPU serveur de monitoring',             severity:'P3', status:'closed',        client:'Engie Digital',     escalatedTo:'',                        description:'Serveur Zabbix à 95% CPU pendant 3h.',                                                                                              impact:'Données monitoring incomplètes plage 02h-05h',               resolution:'Optimisation BDD Zabbix + RAM ajoutée',                  createdAt:'2026-03-18T02:00:00.000Z', resolvedAt:'2026-03-18T05:30:00.000Z' },
+    { id:5006, title:'Latence VPN — accès remote Orange',               severity:'P3', status:'closed',        client:'Orange France',     escalatedTo:'',                        description:'Latence >400ms sur VPN remote access (normal <50ms).',                                                                              impact:'Dégradation performance remote Orange France',               resolution:'Rerouting BGP + mise à jour concentrateur VPN',          createdAt:'2026-03-15T16:00:00.000Z', resolvedAt:'2026-03-16T10:00:00.000Z' }
+  ]));
+
+  step(60, 'Releases...');
+  localStorage.setItem('delhub_releases', JSON.stringify([
+    { id:4001, name:'Release Orange — Migration Cloud v2',  version:'2.4.0', date:'2026-04-05', status:'ready',    goNoGo:'go',      environment:'Production',     items:['Migration VMs Azure','Basculement DNS','Tests de charge'],    notes:'Go validé en comité technique le 28/03' },
+    { id:4002, name:'Release SFR — Firewall NG Patch',      version:'1.9.2', date:'2026-04-12', status:'planned',  goNoGo:'pending', environment:'Production',     items:['Mise à jour firmware','Règles IPS','Validation config'],      notes:'En attente validation SFR' },
+    { id:4003, name:'Release Bouygues — API Billing v3',    version:'3.0.0', date:'2026-04-30', status:'planned',  goNoGo:'pending', environment:'Staging → Prod', items:['Déploiement API','Migration données','Tests régression'],     notes:'Dépend livraison ticket 1003' },
+    { id:4004, name:'Release Engie — CMDB Update',          version:'1.2.1', date:'2026-04-10', status:'ready',    goNoGo:'go',      environment:'Production',     items:['Import assets','Réconciliation CI','Validation ITSM'],        notes:'' },
+    { id:4005, name:'Hotfix SFR — Incident Firewall',       version:'1.9.1', date:'2026-03-29', status:'deployed', goNoGo:'go',      environment:'Production',     items:['Correctif règle NAT','Redémarrage service'],                  notes:'Déployé en urgence suite incident P1' }
+  ]));
+
+  step(72, 'Capacity Planning...');
+  localStorage.setItem('delhub_capacity', JSON.stringify([
+    { id:3001, team:'Équipe Infra & Cloud',  members:5, period:'Avril 2026', availableHours:800,  allocatedHours:720,  utilization:90 },
+    { id:3002, team:'Équipe Sécurité',       members:3, period:'Avril 2026', availableHours:480,  allocatedHours:440,  utilization:92 },
+    { id:3003, team:'Équipe Développement',  members:6, period:'Avril 2026', availableHours:960,  allocatedHours:580,  utilization:60 },
+    { id:3004, team:'Équipe NOC / Support',  members:8, period:'Avril 2026', availableHours:1280, allocatedHours:1100, utilization:86 },
+    { id:3005, team:'Équipe Infra & Cloud',  members:5, period:'Mai 2026',   availableHours:800,  allocatedHours:650,  utilization:81 },
+    { id:3006, team:'Équipe Sécurité',       members:3, period:'Mai 2026',   availableHours:480,  allocatedHours:320,  utilization:67 },
+    { id:3007, team:'Équipe Développement',  members:6, period:'Mai 2026',   availableHours:960,  allocatedHours:870,  utilization:91 }
+  ]));
+
+  step(82, 'Contrats & Business...');
+  localStorage.setItem('delhub_contracts', JSON.stringify([
+    { id:6001, client:'Orange France',    scope:'Infrastructure Cloud & Sécurité — Migration et exploitation', startDate:'2024-01-01', endDate:'2026-12-31', value:480000, status:'active',    renewalDate:'2026-10-01', contactName:'Éric Moreau (DSI Orange)',        deliverables:['Migration Azure','SOC managé','Support N2/N3'] },
+    { id:6002, client:'SFR Business',     scope:'Firewall & Cybersécurité — GTI/GTR 4h/8h',                   startDate:'2024-06-01', endDate:'2026-05-31', value:220000, status:'active',    renewalDate:'2026-03-01', contactName:'Nadia Vidal (RSSI SFR)',           deliverables:['Firewall managé','Supervision 24/7','Rapports mensuels'] },
+    { id:6003, client:'Bouygues Telecom', scope:'Développement et intégration API Billing',                    startDate:'2025-01-15', endDate:'2026-07-15', value:185000, status:'active',    renewalDate:'2026-06-15', contactName:'Pierre Garnier (CTO Bouygues)',    deliverables:['API v3','Tests charge','Documentation'] },
+    { id:6004, client:'Engie Digital',    scope:'NOC Managé et Supervision Infrastructure',                    startDate:'2025-03-01', endDate:'2027-02-28', value:310000, status:'active',    renewalDate:'2026-12-01', contactName:'Lucie Bernard (IT Manager Engie)', deliverables:['NOC 24/7','CMDB','Rapports hebdo'] },
+    { id:6005, client:'TotalEnergies',    scope:'Audit sécurité et conseil RSSI',                              startDate:'2025-09-01', endDate:'2025-12-31', value:65000,  status:'completed', renewalDate:null,         contactName:'Alain Petit (RSSI Total)',         deliverables:['Rapport audit','Roadmap sécu'] }
+  ]));
+  localStorage.setItem('delhub_pnl', JSON.stringify([
+    { id:7001, contractId:6001, period:'Q1 2026', revenue:120000, costs:78000, margin:42000, details:{ labor:62000, tools:8000, overhead:8000, other:0 } },
+    { id:7002, contractId:6002, period:'Q1 2026', revenue:55000,  costs:38000, margin:17000, details:{ labor:30000, tools:5000, overhead:3000, other:0 } },
+    { id:7003, contractId:6003, period:'Q1 2026', revenue:46250,  costs:35000, margin:11250, details:{ labor:30000, tools:2000, overhead:3000, other:0 } },
+    { id:7004, contractId:6004, period:'Q1 2026', revenue:77500,  costs:52000, margin:25500, details:{ labor:44000, tools:4000, overhead:4000, other:0 } },
+    { id:7005, contractId:6001, period:'Q4 2025', revenue:120000, costs:80000, margin:40000, details:{ labor:64000, tools:8000, overhead:8000, other:0 } },
+    { id:7006, contractId:6002, period:'Q4 2025', revenue:55000,  costs:40000, margin:15000, details:{ labor:32000, tools:5000, overhead:3000, other:0 } }
+  ]));
+
+  step(90, 'CRM & Commercial...');
+  localStorage.setItem('delhub_crm', JSON.stringify([
+    { id:8001, company:'SNCF Connect',        contact:'Bertrand Allard',  email:'b.allard@sncf.fr',       stage:'negotiation', amount:290000, source:'Réseau',          sector:'Transport', notes:'Appel d\'offres cybersécurité — shortlist de 3', probability:65,  createdAt:'2026-01-15T10:00:00.000Z' },
+    { id:8002, company:'BNP Paribas',          contact:'Isabelle Voss',    email:'i.voss@bnp.fr',          stage:'proposal',    amount:450000, source:'Salon IT',        sector:'Finance',   notes:'Projet SOC managé 3 ans — RFP envoyée',         probability:40,  createdAt:'2026-02-01T09:00:00.000Z' },
+    { id:8003, company:'Veolia Environnement', contact:'Marc Durand',      email:'m.durand@veolia.fr',     stage:'qualified',   amount:175000, source:'Recommandation',  sector:'Energie',   notes:'Besoin monitoring OT/IT convergence',           probability:55,  createdAt:'2026-02-20T14:00:00.000Z' },
+    { id:8004, company:'Air France',           contact:'Stéphanie Noir',   email:'s.noir@airfrance.fr',    stage:'won',         amount:380000, source:'Appel sortant',   sector:'Transport', notes:'Contrat signé — démarrage mai 2026',            probability:100, createdAt:'2025-11-10T11:00:00.000Z' },
+    { id:8005, company:'Société Générale',     contact:'Philippe Roux',    email:'p.roux@socgen.fr',       stage:'lost',        amount:520000, source:'Appel d\'offres', sector:'Finance',   notes:'Perdu face à Capgemini sur le prix',            probability:0,   createdAt:'2025-12-01T10:00:00.000Z' },
+    { id:8006, company:'La Poste Groupe',      contact:'Anne Chevalier',   email:'a.chevalier@laposte.fr', stage:'prospect',    amount:120000, source:'LinkedIn',        sector:'Services',  notes:'Premier contact — périmètre à définir',         probability:20,  createdAt:'2026-03-10T16:00:00.000Z' }
+  ]));
+  localStorage.setItem('delhub_proposals', JSON.stringify([
+    { id:9001, crmId:8001, title:'Proposition SOC Managé — SNCF Connect',    amount:290000, status:'sent',     sentDate:'2026-03-01', validUntil:'2026-04-01', description:'SOC managé 24/7 avec SIEM, threat hunting et réponse à incidents.' },
+    { id:9002, crmId:8002, title:'Offre SOC & Cyber BNP Paribas 3 ans',      amount:450000, status:'sent',     sentDate:'2026-02-15', validUntil:'2026-03-31', description:'SOC managé + tests d\'intrusion annuels + formation équipes.' },
+    { id:9003, crmId:8003, title:'Monitoring OT/IT Convergence — Veolia',    amount:175000, status:'draft',    sentDate:null,         validUntil:null,         description:'Supervision unifiée OT et IT avec alerting temps réel.' },
+    { id:9004, crmId:8004, title:'Infrastructure Cloud & Sécu — Air France', amount:380000, status:'accepted', sentDate:'2026-01-20', validUntil:'2026-02-28', description:'Migration infrastructure + supervision 24/7.' }
+  ]));
+  localStorage.setItem('delhub_forecast', JSON.stringify([
+    { id:10001, period:'Q2 2026', pipelineTotal:1435000, weightedTotal:648500, committedRevenue:298750, targetRevenue:500000, gap:201250 },
+    { id:10002, period:'Q3 2026', pipelineTotal:1050000, weightedTotal:420000, committedRevenue:120000, targetRevenue:480000, gap:360000 },
+    { id:10003, period:'Q1 2026', pipelineTotal:1195000, weightedTotal:556750, committedRevenue:380000, targetRevenue:450000, gap:70000  }
+  ]));
+
+  step(100, 'Redirection...');
+
+  var pages = { god:'pm-hub.html', pm:'pm-hub.html', delivery:'delhub-dashboard.html', business:'delhub-contracts.html', sales:'delhub-crm.html', head:'delhub-dashboard.html' };
+  setTimeout(function() {
+    window.location.href = pages[role] || 'delhub-dashboard.html';
+  }, 500);
+})();
+</script>
+</body>
+</html>
